@@ -1,0 +1,41 @@
+.wy-side-nav-search {
+    background-color: #007842;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: #004224;
+}
+
+.wy-nav-top {
+    background-color: #007842;
+}
+
+.icon {
+    color: #007842;
+}
+
+.fa {
+    color: #007842;
+}
+
+.sig .sig-object .py{
+    background: #e2f0d9!important;
+    color: #007842!important;
+    border-top: 3px solid #007842!important;
+}
+
+span.caption-text{
+    color: #007842;
+}
+
+.note{
+    background: #e2f0d9!important;
+}
+
+.admonition-title{
+    background: #007842!important;
+}
+
+span.caption-text{
+    color: #007842;
+}
