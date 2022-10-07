@@ -2,9 +2,9 @@
 
 # -- Project information
 
-project = 'Lumache'
-copyright = '2021, Graziella'
-author = 'Graziella'
+project = 'BeGin'
+copyright = '2022, Data Mining Lab'
+author = 'Jihoon Ko*, Shinhwan Kang*, and Kijung Shin'
 
 release = '0.1'
 version = '0.1.0'

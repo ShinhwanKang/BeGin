@@ -19,7 +19,66 @@ how to :ref:`installation` the project.
 Contents
 --------
 
-.. toctree::
+.. toctree:: ./000/
+   :maxdepth: 1
+   :caption: Get Started   
 
-   usage
-   api
+   install
+   tutorials
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Datasets
+   :hidden:
+
+   010/node_dataset
+   010/link_dataset
+   010/graph_dataset
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Dataset Loader
+   :hidden:
+   :titlesonly:
+
+   020/base
+   020/load_node_datset
+   020/load_link_datset
+   020/load_graph_datset
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Scenarios
+   :hidden:
+   :titlesonly:
+   :glob:
+
+   030/base
+   030/node_cls
+   030/link_pred
+   030/graph_cls
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Trainer
+   :hidden:
+   :titlesonly:
+   :glob:
+
+   040/common
+   040/node
+   040/link
+   040/graph
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Evaluator
+   :hidden:
+   :titlesonly:
+   :glob:
+
+   050/performance
+   050/metric
+
+
+
