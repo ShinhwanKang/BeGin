@@ -1,2 +1,2 @@
-BitCoin-OTC
+CIFAR10
 ==============
