@@ -30,9 +30,9 @@ Contents
    :caption: Dataset Loader
 
    020/base
-   020/load_node_datset
-   020/load_link_datset
-   020/load_graph_datset
+   020/load_node_dataset
+   020/load_link_dataset
+   020/load_graph_dataset
 
 .. toctree::
    :maxdepth: 2
