@@ -1,8 +1,5 @@
 Datasets for Graph-Level Problems
 ===================================
 
-.. autosummary::
-    :toctree: 
-    :nosignatures:
-    
+.. toctree:: 
     graph_datasets/molhiv

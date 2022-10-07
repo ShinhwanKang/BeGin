@@ -1,8 +1,6 @@
 Datasets for Node-Level Problems
 ===================================
 
-.. autosummary::
-    :toctree: 
-    :nosignatures:
-    
+
+.. toctree:: 
     node_datasets/cora

@@ -1,8 +1,5 @@
 Datasets for Link-Level Problems
 ===================================
 
-.. autosummary::
-    :toctree: 
-    :nosignatures:
-    
+.. toctree:: 
     link_datasets/bitcoin
