@@ -23,9 +23,7 @@ Contents
    000/tutorials
 
 .. toctree::
-   :maxdepth: 2
    :caption: Datasets
-   .. :hidden:
 
    010/node_dataset
    010/link_dataset
@@ -34,7 +32,6 @@ Contents
 .. toctree::
    :maxdepth: 2
    :caption: Dataset Loader
-   .. :hidden:
    :titlesonly:
 
    020/base
@@ -45,9 +42,7 @@ Contents
 .. toctree::
    :maxdepth: 2
    :caption: Scenarios
-   .. :hidden:
    :titlesonly:
-   .. :glob:
 
    030/base
    030/node_cls
@@ -57,9 +52,7 @@ Contents
 .. toctree::
    :maxdepth: 2
    :caption: Trainer
-   .. :hidden:
    :titlesonly:
-   .. :glob:
 
    040/common
    040/node
@@ -69,9 +62,7 @@ Contents
 .. toctree::
    :maxdepth: 2
    :caption: Evaluator
-   .. :hidden:
    :titlesonly:
-   .. :glob:
 
    050/performance
    050/metric
