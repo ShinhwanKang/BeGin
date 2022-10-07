@@ -5,4 +5,4 @@ Datasets for Node-Level Problems
     :toctree: 
     :nosignatures:
     
-    ../datasets/cora
+    node_datasets/cora
