@@ -1,8 +1,6 @@
-"""
-    sdsds
-"""
+from BaseContinualFramework import BaseContinualFramework
 
-class BaseIncrementalBenchmark:
+class BaseIncrementalBenchmark(BaseContinualFramework):
     """
     Base framework for graph continual learning111
 
