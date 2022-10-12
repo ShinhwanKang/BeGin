@@ -7,7 +7,7 @@ kkkk
 .. automodule:: trainer
     :members:
     :undoc-members:
-    :show-inheritance:
+    .. :show-inheritance:
 
 
     bbbb
@@ -15,21 +15,29 @@ kkkk
     .. automodule:: trainer.BaseContinualFramework
         :members:
 
+    -----
+
+    kkkk
+    -----
+
 
     bbbb
     ~~~~~~
     .. automodule:: trainer.BaseGraphIncrementalBenchmark
         :members:
 
+    -----
 
     bbbb
     ~~~~~~
     .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
+    -----
 
     bbbb
     ~~~~~~
     .. automodule:: trainer.BaseLinkIncrementalBenchmark
         :members:
 
+    -----
