@@ -1,2 +1,5 @@
-link_pred
+DGLLinkPredictionIL
 ==================
+
+.. automodule:: scenarios.DGLLinkPredictionIL
+    :members:

@@ -1,2 +1,5 @@
-graph_cls
+DGLGraphClassificationIL
 ==================
+
+.. automodule:: scenarios.DGLGraphClassificationIL
+    :members:

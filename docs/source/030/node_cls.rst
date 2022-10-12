@@ -1,2 +1,5 @@
-node_cls
+DGLNodeClassificationIL
 ==================
+
+.. automodule:: scenarios.DGLNodeClassificationIL
+    :members:

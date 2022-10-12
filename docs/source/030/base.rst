@@ -1,14 +1,6 @@
 DGLBasicIL
 ==================
 
-.. .. automodule:: scenarios
-..     :members:
-..     :show-inheritance:
-
-..     -----
-
 .. automodule:: scenarios.DGLBasicIL
-    :members:
+   :members:
 
-.. automodule:: scenarios.DGLNodeClassificationIL
-    :members:
