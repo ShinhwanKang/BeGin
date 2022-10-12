@@ -10,5 +10,5 @@ DGLBasicIL
 
    -------
 
-   .. automodule:: scenarios.scenario_dgl
+   .. automodule:: scenarios.DGLBasicIL
        :members:
