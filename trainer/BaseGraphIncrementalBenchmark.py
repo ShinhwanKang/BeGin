@@ -22,6 +22,9 @@ class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
 
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+        :returns int: a+b
+        """
         g_train = torch.Generator()
         g_train.manual_seed(0)
         train_loader = dgl.dataloading.GraphDataLoader(curr_dataset['train'], batch_size=128, shuffle=True, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_train)

@@ -50,6 +50,9 @@ class BaseContinualFramework:
 
     @property
     def incr_type(self):
+        """
+        :returns int: a+b
+        """
         return self.__scenario.incr_type
         
     @property
@@ -57,6 +60,9 @@ class BaseContinualFramework:
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):
+        """
+        :returns int: a+b
+        """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
     def _reset_optimizer(self, target_optimizer):

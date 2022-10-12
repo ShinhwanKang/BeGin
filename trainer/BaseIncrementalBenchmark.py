@@ -14,6 +14,9 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
         self.scheduler_fn = kwargs['scheduler_fn']
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+        :returns int: a+b
+        """
         return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):

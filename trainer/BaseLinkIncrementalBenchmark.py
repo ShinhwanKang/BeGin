@@ -20,6 +20,9 @@ class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
         self._dataloader_seed_worker = seed_worker
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+        :returns int: a+b
+        """
         graph = curr_dataset['graph'].clone()
         node_feats = graph.ndata.pop('feat')
         curr_training_states['graph'] = (graph, node_feats)

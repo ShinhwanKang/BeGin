@@ -11,10 +11,6 @@ AAA
         :members:
 
 
-    CCC
-    
-    ------
-
     .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
