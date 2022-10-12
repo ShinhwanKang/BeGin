@@ -3,7 +3,7 @@
 """
 
 
-class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
+class BaseLinkIncrementalBenchmark:
     """
     Base framework under link-level problems
 

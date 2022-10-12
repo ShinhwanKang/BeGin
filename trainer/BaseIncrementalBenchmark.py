@@ -2,7 +2,7 @@
     sdsds
 """
 
-class BaseIncrementalBenchmark(BaseContinualFramework):
+class BaseIncrementalBenchmark:
     """
     Base framework for graph continual learning111
 

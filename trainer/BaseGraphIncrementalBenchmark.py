@@ -3,7 +3,7 @@
 """
 
 
-class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
+class BaseGraphIncrementalBenchmark:
     """
     Base framework under graph-level problems
 
