@@ -10,13 +10,13 @@
     :members:
 
 
-.. automodule:: trainer.BaseIncrementalBenchmark
-    :members:
+.. .. automodule:: trainer.BaseIncrementalBenchmark
+..     :members:
 
 
-.. automodule:: trainer.BaseLinkIncrementalBenchmark
-    :members:
+.. .. automodule:: trainer.BaseLinkIncrementalBenchmark
+..     :members:
 
 
-.. automodule:: trainer.BaseGraphIncrementalBenchmark
-    :members:
+.. .. automodule:: trainer.BaseGraphIncrementalBenchmark
+..     :members:
