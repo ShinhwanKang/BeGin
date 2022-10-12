@@ -1,24 +1,15 @@
-"""
-    My Module
-    ~~~~~~~~~~~~~~
-"""
 class BaseContinualFramework:
     """
-    aaa
+    Base framework for graph continual learning
 
-    :param int a: a
-    :param int b: b
+    :param int model: ...
+    :param int scenario: ...
+    :param int optimizer_fn: ...
+    :param int loss_fn: ...
+    :param int,optional device: ...
+    :param int,optional kwargs: ...
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
-        """
-        aaa
-
-        :return: bbb
-
-        Example:
-            >>> Test(1, 2).is_same()
-            False
-        """
         self.args = kwargs['args']
         if self.args.benchmark:
             dgl.seed(self.args.seed)
