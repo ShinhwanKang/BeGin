@@ -1,14 +1,15 @@
 DGLBasicIL
 ==================
 
-.. automodule:: scenarios
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: scenarios
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
 
-   Modules
+..    Modules
 
-   -------
+..    -------
 
-   .. automodule:: scenarios.DGLBasicIL
-       :members:
+.. automodule:: scenarios.DGLBasicIL
+    :members:
+    :show-inheritance:
