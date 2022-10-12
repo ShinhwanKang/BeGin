@@ -1,4 +1,5 @@
-AAA
+aaa
+
 ======
 
 .. automodule:: trainer
@@ -6,11 +7,18 @@ AAA
     :undoc-members:
     :show-inheritance:
 
+    modules
+    
+    ------
 
-    .. automodule:: BaseContinualFramework
+
+    bbbb
+    ~~~~~~
+    .. automodule:: trainer.BaseContinualFramework
         :members:
 
-
-    .. automodule:: BaseIncrementalBenchmark
+    bbbb
+    ~~~~~~
+    .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
