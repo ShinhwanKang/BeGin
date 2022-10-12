@@ -79,6 +79,9 @@ class BaseContinualFramework:
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
         
     def fit(self, epoch_per_task = 1):
+        """
+        :returns int: a+b
+        """
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
         initial_training_state = self._initTrainingStates(self.__scenario, self.__model, self.__optimizer)
         training_states = {'exp': copy.deepcopy(initial_training_state), 'base': None, 'accum': None}
