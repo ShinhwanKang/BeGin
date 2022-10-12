@@ -2,11 +2,11 @@ Datasets for Node-Level Problems
 ===================================
 
 
-.. toctree:: 
-    node_datasets/cora
-    node_datasets/citeseer
-    node_datasets/ogbn-proteins
-    node_datasets/ogbn-arxiv
+.. .. toctree:: 
+..     node_datasets/cora
+..     node_datasets/citeseer
+..     node_datasets/ogbn-proteins
+..     node_datasets/ogbn-arxiv
 
 
 -----
@@ -43,6 +43,6 @@ We support `Domain-Incremental` setting for this dataset.
 -----
 ogbn-arxiv
 -----
-The dataset `ogbn-proteins <https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv>`_ is a citation network.
+The dataset `ogbn-arxiv <https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv>`_ is a citation network.
 
 We support `Task-`, `Class-`,  and `Time-Incremental` settings for this dataset. 
