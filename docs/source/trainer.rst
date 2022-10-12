@@ -7,10 +7,10 @@ AAA
     :show-inheritance:
 
 
-    .. automodule:: trainer.BaseContinualFramework
+    .. automodule:: BaseContinualFramework
         :members:
 
 
-    .. automodule:: trainer.BaseIncrementalBenchmark
+    .. automodule:: BaseIncrementalBenchmark
         :members:
 

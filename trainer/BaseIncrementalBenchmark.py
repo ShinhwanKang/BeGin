@@ -1,4 +1,5 @@
-class BaseIncrementalBenchmark(BaseContinualFramework):
+# class BaseIncrementalBenchmark(BaseContinualFramework):
+class BaseIncrementalBenchmark:
     """
     Base framework under node-level problems22
 
@@ -10,6 +11,9 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
     :param int,optional kwargs: ...
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+        :returns int: a+b
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
