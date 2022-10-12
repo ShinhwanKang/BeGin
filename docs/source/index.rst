@@ -47,10 +47,7 @@ Contents
    :maxdepth: 2
    :caption: Trainer
 
-   040/common
-   040/node
-   040/link
-   040/graph
+   040trainer
 
 .. toctree::
    :maxdepth: 2
