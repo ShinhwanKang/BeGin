@@ -4,7 +4,7 @@
 
 class BaseContinualFramework:
     """
-    Base framework for graph continual learning77
+    Base framework for graph continual learning66
 
     :param int model: ...
     :param int scenario: ...
@@ -14,6 +14,9 @@ class BaseContinualFramework:
     :param int,optional kwargs: ...
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
+        """
+        :returns int: a+b
+        """
         self.args = kwargs['args']
         if self.args.benchmark:
             dgl.seed(self.args.seed)

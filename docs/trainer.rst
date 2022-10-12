@@ -33,31 +33,3 @@ kkkk
     .. automodule:: trainer.BaseLinkIncrementalBenchmark
         :members:
 
-
-kkkk
------
-
-.. automodule:: trainer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-    .. modules
-    .. -------
-
-
-    bbbb
-    ~~~~~~
-    .. automodule:: trainer.BaseGraphIncrementalBenchmark
-        :members:
-
-
-iiiii
------
-
-
-bbbb
-~~~~~~
-.. automodule:: trainer.BaseIncrementalBenchmark
-    :members:
-
