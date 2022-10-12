@@ -1,3 +1,6 @@
+Trainer
+========
+
 .. automodule:: trainer
     :members:
     :undoc-members:
