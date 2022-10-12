@@ -1,6 +1,6 @@
 class BaseIncrementalBenchmark(BaseContinualFramework):
     """
-    Base framework under node-level problems
+    Base framework under node-level problems22
 
     :param int model: ...
     :param int scenario: ...

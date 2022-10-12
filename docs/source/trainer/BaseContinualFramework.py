@@ -1,6 +1,6 @@
 class BaseContinualFramework:
     """
-    Base framework for graph continual learning
+    Base framework for graph continual learning3
 
     :param int model: ...
     :param int scenario: ...
