@@ -2,22 +2,25 @@ BaseContinualFramework
 ======
 
 
-bbsdsdbb
-~~~~~~
 .. automodule:: trainer.BaseContinualFramework
     :undoc-members:
     :members:
 
 
--------
 
-
-BaseContinualFramework
+BaseGraphIncrementalBenchmark
 ======
 
 
-bbsdasdasdbb34
-~~~~~~
-.. automodule:: trainer.BaseIncrementalBenchmark
+.. automodule:: trainer.BaseGraphIncrementalBenchmark
+    :undoc-members:
+    :members:
+
+
+BaseLinkIncrementalBenchmark
+======
+
+
+.. automodule:: trainer.BaseLinkIncrementalBenchmark
     :undoc-members:
     :members:

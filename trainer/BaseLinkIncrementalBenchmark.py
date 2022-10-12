@@ -15,6 +15,9 @@ class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
     :param int,optional kwargs: ...
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+        :returns int: a+b
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
