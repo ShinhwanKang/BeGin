@@ -57,6 +57,9 @@ class BaseContinualFramework:
         
     @property
     def curr_task(self):
+        """
+        :returns int: a+b
+        """
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):

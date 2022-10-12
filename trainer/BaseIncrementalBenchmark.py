@@ -1,3 +1,9 @@
+"""
+    bib
+"""
+
+
+
 class BaseIncrementalBenchmark(BaseContinualFramework):
     """
     Base framework under node-level problems22
@@ -23,6 +29,9 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
         return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+        :returns int: a+b
+        """
         curr_batch, mask = _curr_batch
         optimizer.zero_grad()
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
