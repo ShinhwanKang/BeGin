@@ -1,3 +1,7 @@
+"""
+    My Module
+    ~~~~~~~~~~~~~~
+"""
 class BaseContinualFramework:
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
         self.args = kwargs['args']
