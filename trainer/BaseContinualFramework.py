@@ -1,3 +1,7 @@
+"""
+    bcf
+"""
+
 class BaseContinualFramework:
     """
     Base framework for graph continual learning77
