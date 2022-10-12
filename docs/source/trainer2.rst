@@ -1,0 +1,2 @@
+.. automodule:: trainer.BaseIncrementalBenchmark
+    :members:
