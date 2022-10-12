@@ -1,12 +1,10 @@
 """
-    bib
+    sdsds
 """
 
-
-
-class BaseIncrementalBenchmark(BaseContinualFramework):
+class BaseIncrementalBenchmark:
     """
-    Base framework under node-level problems22
+    Base framework for graph continual learning111
 
     :param int model: ...
     :param int scenario: ...
@@ -15,100 +13,239 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
     :param int,optional device: ...
     :param int,optional kwargs: ...
     """
-    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+    def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
         """
         :returns int: a+b
         """
-        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.scheduler_fn = kwargs['scheduler_fn']
+        self.args = kwargs['args']
+        if self.args.benchmark:
+            dgl.seed(self.args.seed)
+            dgl.random.seed(self.args.seed)
+            
+        self.__scenario = scenario
+        self.__timestamp = str(time.time()).replace('.', '')
+        self.__model = model
+        self.__optimizer = optimizer_fn(self.__model.parameters())
         
-    def prepareLoader(self, curr_dataset, curr_training_states):
-        """
-        :returns int: a+b
-        """
-        return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]
-    
-    def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
-        """
-        :returns int: a+b
-        """
-        curr_batch, mask = _curr_batch
-        optimizer.zero_grad()
-        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
-        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
-        loss.backward()
-        optimizer.step()
-        return {'loss': loss.item(), 'acc': self.eval_fn(preds.argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
+        self.tmp_path = kwargs.get('tmp_save_path', 'results/22-graph-continual/tmp')
+        self.result_path = kwargs.get('tmp_save_path', 'results/22-graph-continual/results')
+        self.save_file_name = f'{self.args.dataset_name}_{self.__scenario.incr_type}_{self.args.seed}_{self.args.shuffle}_{self.args.algo_type}_{self.args.lr}_{self.args.weight_decay}_{self.args.dropout_rate}_{self.args.num_layers}_{self.args.hidden_dim}'
         
-    def processEvalIteration(self, model, _curr_batch):
+        self.__model_weight_path = f'{self.tmp_path}/{self.save_file_name}_model.pkt'
+        self.__optim_weight_path = f'{self.tmp_path}/{self.save_file_name}_optimizer.pkt'
+        # self.__model_weight_path = f'tmp/tmp_model.pkt'
+        # self.__optim_weight_path = f'tmp/tmp_optimizer.pkt'
+        torch.save(self.__model.state_dict(), self.__model_weight_path)
+        torch.save(self.__optimizer.state_dict(), self.__optim_weight_path)
+        
+        self.__base_model = copy.deepcopy(model)
+        self.__base_optimizer = optimizer_fn(self.__base_model.parameters())
+        self._reset_model(self.__base_model)
+        self._reset_optimizer(self.__base_optimizer)
+        
+        self.__accum_model = copy.deepcopy(model)
+        self.__accum_optimizer = optimizer_fn(self.__accum_model.parameters())
+        self._reset_model(self.__accum_model)
+        self._reset_optimizer(self.__accum_optimizer)
+    
+        self.loss_fn = loss_fn if loss_fn is not None else (lambda x: None)
+        self.device = device
+        
+        self.num_tasks = scenario.num_tasks
+        self.eval_fn = lambda x, y: scenario.get_simple_eval_result(x, y)
+        self.full_mode = kwargs.get('full_mode', False)
+
+    @property
+    def incr_type(self):
         """
         :returns int: a+b
         """
-        curr_batch, mask = _curr_batch
-        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
-        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
-        return torch.argmax(preds, dim=-1), {'loss': loss.item()}
-    
-    def _processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
-            """
+        return self.__scenario.incr_type
+        
+    @property
+    def curr_task(self):
+        """
         :returns int: a+b
         """
-        if epoch_cnt % 10 == 0: print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
-        pass
+        return self.__scenario._curr_task
     
-    def _initTrainingStates(self, scenario, model, optimizer):
+    def _reset_model(self, target_model):
+        """
+        :returns int: a+b
+        """
+        target_model.load_state_dict(torch.load(self.__model_weight_path))
+        
+    def _reset_optimizer(self, target_optimizer):
+        target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
+        
+    def fit(self, epoch_per_task = 1):
+        """
+        :returns int: a+b
+        """
+        base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
+        initial_training_state = self._initTrainingStates(self.__scenario, self.__model, self.__optimizer)
+        training_states = {'exp': copy.deepcopy(initial_training_state), 'base': None, 'accum': None}
+        initial_results = {'val': None, 'test': None}
+        
+        while True:
+            curr_dataset = self.__scenario.get_current_dataset()
+            accumulated_dataset = self.__scenario.get_accumulated_dataset()
+            
+            if curr_dataset is None: # overall training is done!
+                break
+            
+            # re-initialize base (control) experiment
+            training_states['base'] = copy.deepcopy(initial_training_state)
+            self._reset_model(self.__base_model)
+            self._reset_optimizer(self.__base_optimizer)
+            
+            training_states['accum'] = copy.deepcopy(initial_training_state)
+            self._reset_model(self.__accum_model)
+            self._reset_optimizer(self.__accum_optimizer)
+            
+            models = {'exp': self.__model, 'base': self.__base_model, 'accum': self.__accum_model}
+            optims = {'exp': self.__optimizer, 'base': self.__base_optimizer, 'accum': self.__accum_optimizer}
+            stop_training = {'exp': False, 'base': False, 'accum': False}
+            dataloaders = {}
+            for exp_name in ['exp', 'base']:
+                dataloaders[exp_name] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(curr_dataset, training_states[exp_name]))}
+                self._processBeforeTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+            
+            dataloaders['accum'] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(accumulated_dataset, training_states['accum']))}
+            self._processBeforeTraining(self.__scenario._curr_task, accumulated_dataset, models['accum'], optims['accum'], training_states['accum'])    
+            
+            if self.__scenario._curr_task == 0:
+                with torch.no_grad():
+                    self.__base_model.eval()
+                    curr_observed_mask = self.__base_model.classifier.observed.clone()
+                    self.__base_model.classifier.observed.fill_(True)
+                    for split in ['val', 'test']:
+                        initial_stats = {}
+                        initial_test_predictions = []
+                        for curr_batch in iter(dataloaders['base'][split]):
+                            initial_test_predictions.append(self.__evalWrapper(models['base'], curr_batch, initial_stats))
+                        initial_results[split] = self.__scenario.get_eval_result(torch.cat(initial_test_predictions, dim=0), target_split=split)
+                    print(initial_results)
+                    self.__base_model.classifier.observed.copy_(curr_observed_mask)
+                    
+            for epoch_cnt in range(epoch_per_task):
+                for exp_name in ['exp', 'base', 'accum'] if self.full_mode else ['exp']:
+                    if stop_training[exp_name]: continue
+                    train_stats = {}
+                    models[exp_name].train()
+                    for curr_batch in iter(dataloaders[exp_name]['train']):
+                        self.__trainWrapper(models[exp_name], optims[exp_name], curr_batch, training_states[exp_name], train_stats)
+                    reduced_train_stats = self._reduceTrainingStats(train_stats)
+                
+                    models[exp_name].eval()
+                    val_stats, val_predictions = {}, []
+                    for curr_batch in iter(dataloaders[exp_name]['val']):
+                        val_predictions.append(self.__evalWrapper(models[exp_name], curr_batch, val_stats))
+                    reduced_val_stats = self._reduceEvalStats(val_stats)
+                    if exp_name == 'accum':
+                        val_metric_result = self.__scenario.get_accum_eval_result(torch.cat(val_predictions, dim=0), target_split='val')[-1].item()
+                    else:
+                        val_metric_result = self.__scenario.get_eval_result(torch.cat(val_predictions, dim=0), target_split='val')[self.__scenario._curr_task].item()
+                    
+                    if exp_name == 'exp':
+                        self._processTrainingLogs(self.__scenario._curr_task, epoch_cnt, val_metric_result, reduced_train_stats, reduced_val_stats)
+                    
+                    curr_iter_results = {'val_metric': val_metric_result, 'train_stats': reduced_train_stats, 'val_stats': reduced_val_stats}
+                    if not self._processAfterEachIteration(models[exp_name], optims[exp_name], training_states[exp_name], curr_iter_results):
+                        stop_training[exp_name] = True
+                        sys.stderr.write(exp_name + ": TRAINING_STOPPED\n")
+            
+            for exp_name in ['base', 'accum', 'exp'] if self.full_mode else ['exp']:
+                models[exp_name].eval()
+                self._processAfterTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+                    
+            for split in ['val', 'test']:
+                for exp_name in ['base', 'accum', 'exp'] if self.full_mode else ['exp']:
+                    models[exp_name].eval()
+                    test_predictions, test_stats = [], {}
+                    for curr_batch in iter(dataloaders['accum'][split]):
+                        test_predictions.append(self.__evalWrapper(models[exp_name], curr_batch, test_stats))
+
+                    test_predictions = torch.cat(test_predictions, dim=0)
+                    if exp_name == 'exp' and split == 'test':
+                        eval_results = self.__scenario.next_task(test_predictions)
+                    elif split == 'val':
+                        base_eval_results[exp_name][split].append(self.__scenario.get_accum_eval_result(test_predictions, target_split=split))
+                    else:
+                        base_eval_results[exp_name][split].append(self.__scenario.get_eval_result(test_predictions, target_split=split))
+                
+        if self.full_mode:
+            return {'init_val': initial_results['val'],
+                    'init_test': initial_results['test'],
+                    'exp_val': torch.stack(base_eval_results['exp']['val'], dim=0),
+                    'exp_test': torch.stack(eval_results, dim=0),
+                    'base_val': torch.stack(base_eval_results['base']['val'], dim=0),
+                    'base_test': torch.stack(base_eval_results['base']['test'], dim=0),
+                    'accum_val': torch.stack(base_eval_results['accum']['val'], dim=0),
+                    'accum_test': torch.stack(base_eval_results['accum']['test'], dim=0),
+                   }
+        else:
+            return {'init_val': initial_results['val'],
+                    'init_test': initial_results['test'],
+                    'exp_val': torch.stack(base_eval_results['exp']['val'], dim=0),
+                    'exp_test': torch.stack(eval_results, dim=0),
+                   }
+    
+    def _initTrainingStates(self, dataset, model, optimizer):
         return {}
     
+    def prepareLoader(self, curr_dataset, curr_training_states):
+        raise NotImplementedError
+        
     def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
-        curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
-        curr_training_states['best_val_acc'] = -1.
-        curr_training_states['best_val_loss'] = 1e10
-        curr_model.observe_labels(curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']])
-        self._reset_optimizer(curr_optimizer)
-        
+        pass
+    
+    def processTrainIteration(self, model, optimizer, curr_batch, training_states):
+        raise NotImplementedError
+    
+    def __trainWrapper(self, model, optimizer, curr_batch, training_states, curr_stats):
+        new_stats = self.processTrainIteration(model, optimizer, curr_batch, training_states)
+        if new_stats is not None:
+            for k, v in new_stats.items():
+                if k not in curr_stats:
+                    curr_stats[k] = []
+                curr_stats[k].append(v)
+                
+    def _reduceTrainingStats(self, curr_stats):
+        if '_num_items' not in curr_stats:
+            reduced_stats = {k: sum(v) / len(v) for k, v in curr_stats.items()}
+        else:
+            weights = np.array(curr_stats.pop('_num_items'))
+            total = weights.sum()
+            reduced_stats = {k: (np.array(v) * weights).sum() / total for k, v in curr_stats.items()}
+        return reduced_stats
+    
+    def processEvalIteration(self, model, curr_batch):
+        raise NotImplementedError
+    
+    def __evalWrapper(self, model, curr_batch, curr_stats):
+        preds, new_stats = self.processEvalIteration(model, curr_batch)
+        if new_stats is not None:
+            for k, v in new_stats.items():
+                if k not in curr_stats:
+                    curr_stats[k] = []
+                curr_stats[k].append(v)
+        return preds
+    
+    def _reduceEvalStats(self, curr_stats):
+        if '_num_items' not in curr_stats:
+            reduced_stats = {k: sum(v) / len(v) for k, v in curr_stats.items()}
+        else:
+            weights = np.array(curr_stats.pop('_num_items'))
+            total = weights.sum()
+            reduced_stats = {k: (np.array(v) * weights).sum() / total for k, v in curr_stats.items()}
+        return reduced_stats
+    
+    def _processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
+        pass
+    
     def _processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
-        scheduler = curr_training_states['scheduler']
-        val_acc = curr_iter_results['val_metric']
-        val_loss = curr_iter_results['val_stats']['loss']
-        if val_acc > curr_training_states['best_val_acc']:
-            curr_training_states['best_val_acc'] = val_acc
-        # print((curr_training_states['best_val_loss'] - val_loss) / curr_training_states['best_val_loss'], curr_training_states['best_val_loss'], val_loss)
-        if val_loss < curr_training_states['best_val_loss']:
-            curr_training_states['best_val_loss'] = val_loss
-            curr_training_states['best_weights'] = copy.deepcopy(curr_model.state_dict())
-        scheduler.step(val_loss)
-        
-        # scheduler.step(val_acc)
-        if -1e-9 < (curr_optimizer.param_groups[0]['lr'] - scheduler.min_lrs[0]) < 1e-9:
-            # earlystopping!
-            return False
         return True
     
     def _processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
-        curr_model.load_state_dict(curr_training_states['best_weights'])
-    
-    def computeFinalMetrics(self, epoch_per_task=1):
-        """
-        :returns int: a+b
-        """
-        results = self.fit(epoch_per_task=epoch_per_task)
-        
-        with open(f'{self.result_path}/{self.save_file_name}.pkl', 'wb') as f:
-            pickle.dump({k: v.detach().cpu().numpy() for k, v in results.items()}, f)
-        if self.full_mode:
-            init_acc, accum_acc_mat, base_acc_mat, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'accum_test', 'base_test', 'exp_test'))
-        else:
-            init_acc, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'exp_test'))
-            
-        print('init_acc:', init_acc)
-        print('algo_acc_mat:', algo_acc_mat)
-        print('abs_avg_precision_last:', round(algo_acc_mat[self.num_tasks - 1][:-1].sum() / self.num_tasks, 4))
-        print('abs_avg_precision_diag:', round(algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)].sum() / self.num_tasks, 4))
-        print('abs_avg_forgetting_last:', round((algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - algo_acc_mat[self.num_tasks - 1, :self.num_tasks]).sum() / (self.num_tasks - 1), 4))
-        if self.full_mode:
-            print('base_acc_mat:', base_acc_mat)
-            print('joint_acc_mat:', accum_acc_mat)
-            print('abs_avg_intransigence_base:', round((base_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
-            print('abs_avg_intransigence_joint:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
-            print('rel_upstream_transfer_diag:', round((((algo_acc_mat - base_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)]) / (base_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - init_acc[:self.num_tasks])).mean(), 4))
-          
+        pass
