@@ -10,8 +10,8 @@ BaseContinualFramework
     .. -------
 
 
-    .. bbbb
-    .. ~~~~~~
+    bbbb
+    ~~~~~~
     .. automodule:: trainer.BaseContinualFramework
         :members:
 

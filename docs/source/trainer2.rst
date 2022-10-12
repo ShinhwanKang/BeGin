@@ -10,8 +10,8 @@ BaseIncrementalBenchmark
     .. -------
 
 
-    .. bbbb
-    .. ~~~~~~
+    bbbb
+    ~~~~~~
     .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
