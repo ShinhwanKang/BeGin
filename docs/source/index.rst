@@ -48,7 +48,7 @@ Contents
    :caption: Trainer
 
    trainer
-   trainer2
+   .. trainer2
    
 .. toctree::
    :maxdepth: 2
