@@ -3,7 +3,22 @@
     ~~~~~~~~~~~~~~
 """
 class BaseContinualFramework:
+    """
+    aaa
+
+    :param int a: a
+    :param int b: b
+    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
+        """
+        aaa
+
+        :return: bbb
+
+        Example:
+            >>> Test(1, 2).is_same()
+            False
+        """
         self.args = kwargs['args']
         if self.args.benchmark:
             dgl.seed(self.args.seed)
