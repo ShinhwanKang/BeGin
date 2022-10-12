@@ -1,6 +1,9 @@
 BaseContinualFramework
 ======
 
+kkkk
+-----
+
 .. automodule:: trainer
     :members:
     :undoc-members:
@@ -16,6 +19,9 @@ BaseContinualFramework
         :members:
 
 
+kkkk
+-----
+
 .. automodule:: trainer
     :members:
     :undoc-members:
@@ -30,26 +36,12 @@ BaseContinualFramework
     .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
-    .. bbbb
-    .. ~~~~~~
-    .. .. automodule:: trainer.BaseIncrementalBenchmark
-    ..     :members:
+iiiii
+-----
 
 
-.. .. automodule:: trainer.BaseContinualFramework
-..     :members:
+bbbb
+~~~~~~
+.. automodule:: trainer.BaseIncrementalBenchmark
+    :members:
 
-
-.. .. automodule:: trainer.BaseIncrementalBenchmark
-..     :members:
-
-
-.. kkkkk
-.. ~~~~~~
-.. .. automodule:: trainer.BaseContinualFramework
-..     :members:
-
-.. llllll
-.. ~~~~~~
-.. .. automodule:: trainer.BaseIncrementalBenchmark
-..     :members:
