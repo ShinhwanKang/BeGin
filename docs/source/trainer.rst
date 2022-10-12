@@ -2,23 +2,19 @@ AAA
 ======
 
 .. automodule:: trainer
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 
-    BBB
-
-    ------
-
-    .. automodule:: trainer.BaseContinualFramework
-       :members:
+   .. automodule:: trainer.BaseContinualFramework
+   :members:
 
 
     CCC
     
     ------
 
-    .. automodule:: trainer.BaseIncrementalBenchmark
-       :members:
+   .. automodule:: trainer.BaseIncrementalBenchmark
+   :members:
 
