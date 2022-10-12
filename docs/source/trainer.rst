@@ -1,5 +1,4 @@
 aaa
-
 ======
 
 .. automodule:: trainer
@@ -8,8 +7,7 @@ aaa
     :show-inheritance:
 
     modules
-    
-    ------
+    -------
 
 
     bbbb
@@ -22,3 +20,21 @@ aaa
     .. automodule:: trainer.BaseIncrementalBenchmark
         :members:
 
+
+.. automodule:: trainer.BaseContinualFramework
+    :members:
+
+
+.. automodule:: trainer.BaseIncrementalBenchmark
+    :members:
+
+
+kkkkk
+~~~~~~
+.. automodule:: trainer.BaseContinualFramework
+    :members:
+
+llllll
+~~~~~~
+.. automodule:: trainer.BaseIncrementalBenchmark
+    :members:

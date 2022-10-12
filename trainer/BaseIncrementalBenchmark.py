@@ -1,5 +1,4 @@
-# class BaseIncrementalBenchmark(BaseContinualFramework):
-class BaseIncrementalBenchmark:
+class BaseIncrementalBenchmark(BaseContinualFramework):
     """
     Base framework under node-level problems22
 
