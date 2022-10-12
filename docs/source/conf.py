@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.append(os.path.abspath('.'))
+sys.path.append(os.path.abspath('..'))
 
 # Configuration file for the Sphinx documentation builder.
 
@@ -18,10 +18,22 @@ version = '0.1.0'
 
 extensions = [
     'sphinx.ext.duration',
-    'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'sphinx.ext.coverage',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.napoleon',
+    "sphinx_rtd_theme",
+    'sphinx.ext.autodoc',
+    'sphinx.ext.imgmath',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
+    'recommonmark'
 ]
 
 intersphinx_mapping = {

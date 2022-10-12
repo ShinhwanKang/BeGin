@@ -1,19 +1,17 @@
 class DGLBasicIL:
     """
-    두 개의 int 값을 입력받아 다양한 연산을 할 수 있도록 하는 클래스.
+    aaa
 
-    :param int a: a 값
-    :param int b: b 값
+    :param int a: a
+    :param int b: b
     """
     def __init__(self, dataset_name=None, save_path='/mnt/d/graph_dataset', num_tasks=1, incr_type='class', cover_unseen=True, minimize=True, metric=None, **kwargs):
         """
-        미리 입력받은 a와 b값이 같은지 확인하여 결과를 반환합니다.
+        aaa
 
-        :return: boolean True or False에 대한 결과, a와 b가 값으면 True, 다르면 False
+        :return: bbb
 
-        예제:
-            다음과 같이 사용하세요:
-
+        Example:
             >>> Test(1, 2).is_same()
             False
 
