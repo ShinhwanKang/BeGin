@@ -4,49 +4,50 @@ BaseContinualFramework
 kkkk
 -----
 
-.. automodule:: trainer
-    :members:
-    :undoc-members:
-    .. :show-inheritance:
+.. .. automodule:: trainer
+..     :members:
+..     :undoc-members:
+..     .. :show-inheritance:
 
 
-    bbbb
-    ~~~~~~
-    .. automodule:: trainer.BaseContinualFramework
-        :undoc-members:
-        :members:
+..     bbbb
+..     ~~~~~~
+..     .. automodule:: trainer.BaseContinualFramework
+..         :undoc-members:
+..         :members:
 
----------
+.. ---------
 
-    bbbb
-    ~~~~~~
-    .. automodule:: trainer.BaseGraphIncrementalBenchmark
-        :undoc-members:
-        :members:
+..     bbbb
+..     ~~~~~~
+..     .. automodule:: trainer.BaseGraphIncrementalBenchmark
+..         :undoc-members:
+..         :members:
 
----------
+.. ---------
 
-    bbbb
-    ~~~~~~
-    .. automodule:: trainer.BaseIncrementalBenchmark
-        :undoc-members:
-        :members:
+..     bbbb
+..     ~~~~~~
+..     .. automodule:: trainer.BaseIncrementalBenchmark
+..         :undoc-members:
+..         :members:
 
----------
+.. ---------
 
-    bbbb
-    ~~~~~~
-    .. automodule:: trainer.BaseLinkIncrementalBenchmark
-        :undoc-members:
-        :members:
+..     bbbb
+..     ~~~~~~
+..     .. automodule:: trainer.BaseLinkIncrementalBenchmark
+..         :undoc-members:
+..         :members:
 
----------
+.. ---------
 
 bbsdsdbb
 ~~~~~~
 .. automodule:: trainer.BaseContinualFramework
     :undoc-members:
     :members:
+
 
 bbsdasdasdbb34
 ~~~~~~

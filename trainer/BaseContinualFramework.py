@@ -195,7 +195,6 @@ class BaseContinualFramework:
         return {}
     
     def prepareLoader(self, curr_dataset, curr_training_states):
-        # define train / val / test loader
         raise NotImplementedError
         
     def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
