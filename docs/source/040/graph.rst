@@ -1,2 +1,6 @@
-Graph
+BaseGraphIncrementalBenchmark
 ==================
+
+
+.. automodule:: trainer.BaseGraphIncrementalBenchmark
+   :members:

@@ -2,4 +2,4 @@ DGLLinkPredictionIL
 ==================
 
 .. automodule:: scenarios.DGLLinkPredictionIL
-    :members:
+   :members:

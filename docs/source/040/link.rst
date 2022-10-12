@@ -1,2 +1,6 @@
-Link
+BaseLinkIncrementalBenchmark
 ==================
+
+
+.. automodule:: trainer.BaseLinkIncrementalBenchmark
+   :members:

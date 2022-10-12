@@ -2,4 +2,4 @@ DGLGraphClassificationIL
 ==================
 
 .. automodule:: scenarios.DGLGraphClassificationIL
-    :members:
+   :members:
