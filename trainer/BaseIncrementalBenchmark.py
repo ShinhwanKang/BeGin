@@ -41,12 +41,18 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
         return {'loss': loss.item(), 'acc': self.eval_fn(preds.argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
         
     def processEvalIteration(self, model, _curr_batch):
+        """
+        :returns int: a+b
+        """
         curr_batch, mask = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
         loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
         return torch.argmax(preds, dim=-1), {'loss': loss.item()}
     
     def _processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
+            """
+        :returns int: a+b
+        """
         if epoch_cnt % 10 == 0: print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
         pass
     
@@ -82,6 +88,9 @@ class BaseIncrementalBenchmark(BaseContinualFramework):
         curr_model.load_state_dict(curr_training_states['best_weights'])
     
     def computeFinalMetrics(self, epoch_per_task=1):
+        """
+        :returns int: a+b
+        """
         results = self.fit(epoch_per_task=epoch_per_task)
         
         with open(f'{self.result_path}/{self.save_file_name}.pkl', 'wb') as f:
