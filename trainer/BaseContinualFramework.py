@@ -1,14 +1,6 @@
-import torch
-import numpy as np
-import pickle
-import copy
-import dgl
-import random
-
 class BaseContinualFramework:
     """
         aaa
-
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
         """ 

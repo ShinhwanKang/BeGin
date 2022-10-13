@@ -25,23 +25,10 @@ Contents
    010/link_dataset
    010/graph_dataset
 
-.. .. toctree::
-..    :maxdepth: 2
-..    :caption: Dataset Loader
-
-..    020/base
-..    020/load_node_dataset
-..    020/load_link_dataset
-..    020/load_graph_dataset
-
 .. toctree::
    :maxdepth: 2
    :caption: Scenarios
 
-   .. 030/base
-   .. 030/node_cls
-   .. 030/link_pred
-   .. 030/graph_cls
    scenario
    scenario2
    scenario3
