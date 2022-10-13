@@ -1,3 +1,5 @@
+import torch
+
 class DGLBasicIL:
     r"""Base framework for implementing scenario module
 
@@ -46,14 +48,14 @@ class DGLBasicIL:
     def __len__(self):
         return self.num_tasks
     
-    def next_task(self, preds=torch.empty(1)):
-        """ 
-            aaaa
-        """
-        self._curr_task += 1
-        if self._curr_task < self.num_tasks:
-            self._update_target_dataset()
-            self._update_accumulated_dataset()
+    # def next_task(self, preds=torch.empty(1)):
+    #     """ 
+    #         aaaa
+    #     """
+    #     self._curr_task += 1
+    #     if self._curr_task < self.num_tasks:
+    #         self._update_target_dataset()
+    #         self._update_accumulated_dataset()
             
     # def get_current_dataset(self):
     #     if self._curr_task >= self.num_tasks: return None
