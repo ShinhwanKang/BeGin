@@ -1,4 +1,4 @@
-from .DGLBasicIL import DGLBasicIL
+from .common import DGLBasicIL
 
 class DGLGraphClassificationIL(DGLBasicIL):
     """ 

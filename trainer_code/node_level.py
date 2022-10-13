@@ -1,4 +1,4 @@
-from .base import BaseContinualFramework
+from .common import BaseContinualFramework
 class BaseIncrementalBenchmark(BaseContinualFramework):
     """ 
         aaaa

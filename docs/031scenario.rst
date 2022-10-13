@@ -6,5 +6,5 @@ Classification
 ------
 
 
-.. automodule:: scenarios.DGLNodeClassificationIL
+.. automodule:: scenario_code.node_cls
    :members:

@@ -5,5 +5,5 @@ Graph-level problems
 Classification
 ------
 
-.. automodule:: scenarios.DGLGraphClassificationIL
+.. automodule:: scenario_code.graph_cls
    :members:
