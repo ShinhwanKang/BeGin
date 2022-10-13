@@ -5,4 +5,4 @@ Common
     :undoc-members:
     :members:
     :private-members:
-    :special-members:
+    .. :special-members:
