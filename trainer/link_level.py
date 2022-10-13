@@ -1,11 +1,3 @@
-import torch
-import numpy as np
-import pickle
-import copy
-import dgl
-import random
-
-
 from .node_level import BaseIncrementalBenchmark
 class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
     """ 
