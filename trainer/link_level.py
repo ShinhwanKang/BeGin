@@ -6,8 +6,7 @@ import dgl
 import random
 
 
-from .BaseIncrementalBenchmark import BaseIncrementalBenchmark
-
+from .node_level import BaseIncrementalBenchmark
 class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
     """ 
         aaaa

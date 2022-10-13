@@ -1,5 +1,3 @@
-from .BaseContinualFramework import BaseContinualFramework
-
 import torch
 import numpy as np
 import pickle
@@ -7,6 +5,7 @@ import copy
 import dgl
 import random
 
+from .base import BaseContinualFramework
 class BaseIncrementalBenchmark(BaseContinualFramework):
     """ 
         aaaa

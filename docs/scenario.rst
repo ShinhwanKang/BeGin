@@ -1,4 +1,4 @@
-DGLBasicIL
+Common module
 ==================
 
 .. automodule:: scenarios.DGLBasicIL
