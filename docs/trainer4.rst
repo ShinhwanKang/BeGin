@@ -6,6 +6,6 @@ bbb
 -----
 
 
-.. automodule:: trainer.BaseGraphIncrementalBenchmark
+.. automodule:: trainer.graph_level
     :undoc-members:
     :members:

@@ -4,6 +4,6 @@ BaseIncrementalBenchmark
 bbb
 -----
 
-.. automodule:: trainer.BaseIncrementalBenchmark
+.. automodule:: trainer.node_level
     :undoc-members:
     :members:

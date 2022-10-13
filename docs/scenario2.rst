@@ -1,5 +1,10 @@
-Incremental settings for node-level problems
+Node-level problems
 ==================
+
+
+Classification
+------
+
 
 .. automodule:: scenarios.DGLNodeClassificationIL
    :members:

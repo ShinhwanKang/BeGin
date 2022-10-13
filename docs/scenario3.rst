@@ -1,5 +1,10 @@
-Incremental settings for link-level problems
+Link-level problems
 ==================
+
+
+Prediction
+------
+
 
 .. automodule:: scenarios.DGLLinkPredictionIL
    :members:
