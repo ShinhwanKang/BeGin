@@ -1,11 +1,7 @@
 BaseGraphIncrementalBenchmark
 ======
 
-
-bbb
------
-
-
-.. automodule:: trainer.graph_level
+.. autoclass:: trainer.graph_level.BaseGraphIncrementalBenchmark
     :undoc-members:
     :members:
+    
