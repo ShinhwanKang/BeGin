@@ -34,21 +34,27 @@ Contents
 ..    020/load_link_dataset
 ..    020/load_graph_dataset
 
-.. .. toctree::
-..    :maxdepth: 2
-..    :caption: Scenarios
+.. toctree::
+   :maxdepth: 2
+   :caption: Scenarios
 
-..    030/base
-..    030/node_cls
-..    030/link_pred
-..    030/graph_cls
-
+   .. 030/base
+   .. 030/node_cls
+   .. 030/link_pred
+   .. 030/graph_cls
+   scenario
+   scenario2
+   scenario3
+   scenario4
+   
 .. toctree::
    :maxdepth: 2
    :caption: Trainer
 
    trainer
-   .. trainer2
+   trainer2
+   trainer3
+   trainer4
    
 .. toctree::
    :maxdepth: 2
