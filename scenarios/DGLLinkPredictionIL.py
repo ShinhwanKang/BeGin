@@ -1,6 +1,9 @@
 from .DGLBasicIL import DGLBasicIL
 
 class DGLLinkPredictionIL(DGLBasicIL):
+    """
+        aaa
+    """
     def _init_continual_scenario(self):
         self.num_feats, self.__graph, self.__neg_edges = load_link_dataset(self.dataset_name, self.save_path)
         self.num_classes = 1
@@ -134,6 +137,9 @@ class DGLLinkPredictionIL(DGLBasicIL):
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):
+        """
+            aaa
+        """
         self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
         super().next_task(preds)
         if self._curr_task == self.num_tasks: return self.__test_results

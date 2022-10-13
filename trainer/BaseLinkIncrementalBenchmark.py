@@ -9,19 +9,12 @@ import random
 from .BaseIncrementalBenchmark import BaseIncrementalBenchmark
 
 class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
-    """
-    Base framework under link-level problems
-
-    :param int model: ...
-    :param int scenario: ...
-    :param int optimizer_fn: ...
-    :param int loss_fn: ...
-    :param int,optional device: ...
-    :param int,optional kwargs: ...
+    """ 
+        aaaa
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
@@ -33,8 +26,8 @@ class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
         self._dataloader_seed_worker = seed_worker
         
     def prepareLoader(self, curr_dataset, curr_training_states):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         graph = curr_dataset['graph'].clone()
         node_feats = graph.ndata.pop('feat')

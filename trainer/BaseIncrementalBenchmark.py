@@ -1,3 +1,5 @@
+from .BaseContinualFramework import BaseContinualFramework
+
 import torch
 import numpy as np
 import pickle
@@ -5,25 +7,18 @@ import copy
 import dgl
 import random
 
-
-from .BaseContinualFramework import BaseContinualFramework
-
 class BaseIncrementalBenchmark(BaseContinualFramework):
-    """
-    Base framework for graph continual learning111
-
-    :param int model: ...
-    :param int scenario: ...
-    :param int optimizer_fn: ...
-    :param int loss_fn: ...
-    :param int,optional device: ...
-    :param int,optional kwargs: ...
+    """ 
+        aaaa
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """ 
+            aaaa
+        """
         return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):

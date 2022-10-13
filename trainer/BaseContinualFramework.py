@@ -6,56 +6,13 @@ import dgl
 import random
 
 class BaseContinualFramework:
-    r''' Node embedding optimizer using the Adagrad algorithm.
+    """
+        aaa
 
-    This optimizer implements a sparse version of Adagrad algorithm for
-    optimizing :class:`dgl.nn.NodeEmbedding`. Being sparse means it only updates
-    the embeddings whose gradients have updates, which are usually a very
-    small portion of the total embeddings.
-
-    Adagrad maintains a :math:`G_{t,i,j}` for every parameter in the embeddings, where
-    :math:`G_{t,i,j}=G_{t-1,i,j} + g_{t,i,j}^2` and :math:`g_{t,i,j}` is the gradient of
-    the dimension :math:`j` of embedding :math:`i` at step :math:`t`.
-
-    NOTE: The support of sparse Adagrad optimizer is experimental.
-
-    Parameters
-    ----------
-    params : list[dgl.nn.NodeEmbedding]
-        The list of dgl.nn.NodeEmbedding.
-    lr : float
-        The learning rate.
-    eps : float, Optional
-        The term added to the denominator to improve numerical stability
-        Default: 1e-10
-
-    Examples
-    --------
-    >>> def initializer(emb):
-            th.nn.init.xavier_uniform_(emb)
-            return emb
-    >>> emb = dgl.nn.NodeEmbedding(g.number_of_nodes(), 10, 'emb', init_func=initializer)
-    >>> optimizer = dgl.optim.SparseAdagrad([emb], lr=0.001)
-    >>> for blocks in dataloader:
-    ...     ...
-    ...     feats = emb(nids, gpu_0)
-    ...     loss = F.sum(feats + 1, 0)
-    ...     loss.backward()
-    ...     optimizer.step()
-    '''
+    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
-        """ Update embeddings in a sparse manner
-        Sparse embeddings are updated in mini batches. We maintain gradient states for
-        each embedding so they can be updated separately.
-
-        Parameters
-        ----------
-        idx : tensor
-            Index of the embeddings to be updated.
-        grad : tensor
-            Gradient of each embedding.
-        emb : dgl.nn.NodeEmbedding
-            Sparse embedding to update.
+        """ 
+            aaaa
         """
         self.args = kwargs['args']
         if self.args.benchmark:
@@ -97,31 +54,21 @@ class BaseContinualFramework:
 
     @property
     def incr_type(self):
-        """ Update embeddings in a sparse manner
-        Sparse embeddings are updated in mini batches. We maintain gradient states for
-        each embedding so they can be updated separately.
-
-        Parameters
-        ----------
-        idx : tensor
-            Index of the embeddings to be updated.
-        grad : tensor
-            Gradient of each embedding.
-        emb : dgl.nn.NodeEmbedding
-            Sparse embedding to update.
+        """ 
+            aaaa
         """
         return self.__scenario.incr_type
         
     @property
     def curr_task(self):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
@@ -129,8 +76,8 @@ class BaseContinualFramework:
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
         
     def fit(self, epoch_per_task = 1):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
         initial_training_state = self._initTrainingStates(self.__scenario, self.__model, self.__optimizer)

@@ -8,19 +8,12 @@ import random
 from .BaseIncrementalBenchmark import BaseIncrementalBenchmark
 
 class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
-    """
-    Base framework under graph-level problems
-
-    :param int model: ...
-    :param int scenario: ...
-    :param int optimizer_fn: ...
-    :param int loss_fn: ...
-    :param int,optional device: ...
-    :param int,optional kwargs: ...
+    """ 
+        aaaa
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
@@ -34,8 +27,8 @@ class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
 
         
     def prepareLoader(self, curr_dataset, curr_training_states):
-        """
-        :returns int: a+b
+        """ 
+            aaaa
         """
         g_train = torch.Generator()
         g_train.manual_seed(0)
