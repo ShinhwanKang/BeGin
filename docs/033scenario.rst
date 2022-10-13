@@ -1,10 +1,10 @@
 Graph-level problems
-==================
+======
 
 Classification
 ------
 
 .. automodule:: scenario_code.graph_cls
-   :members:
-   :undoc-members:
-   :private-members:
+    :members:
+    :undoc-members:
+    :private-members:
