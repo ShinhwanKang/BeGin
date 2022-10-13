@@ -2,6 +2,6 @@ Common
 ======
 
 .. autoclass:: scenario_code.common.DGLBasicIL
-    :undoc-members:
     :members:
+    :undoc-members:
     :private-members:
