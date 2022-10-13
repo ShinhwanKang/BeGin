@@ -1,4 +1,5 @@
 from .common import DGLBasicIL
+import torch
 
 class DGLNodeClassificationIL(DGLBasicIL):
     """
