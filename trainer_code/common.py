@@ -1,14 +1,13 @@
 class BaseContinualFramework:
-    r"""
-    Base framework for implementing trainer module
+    r""" Base framework for implementing trainer module
 
     Arguments:
-        model (float): .. 
-        scenario (float): ... 
-        optimizer_fn (float): .. 
-        loss_fn (float): ... 
-        device (float): .. (DEFALUT : None)
-        kwargs (float): ... 
+        model (float): model
+        scenario (float): scenario 
+        optimizer_fn (float): optimizer_fn 
+        loss_fn (float): loss_fn
+        device (float): device (DEFALUT : None)
+        kwargs (float): kwargs 
         
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):

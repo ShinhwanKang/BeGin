@@ -26,7 +26,8 @@ Contents
    010/graph_dataset
 
 .. toctree::
-   :maxdepth: 2
+   :hidden:
+   .. :maxdepth: 2
    :caption: Scenarios
 
    030scenario
@@ -35,7 +36,8 @@ Contents
    033scenario
    
 .. toctree::
-   :maxdepth: 2
+   :hidden:
+   .. :maxdepth: 2
    :caption: Trainer
 
    040trainer

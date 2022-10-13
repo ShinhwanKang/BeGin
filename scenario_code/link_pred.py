@@ -6,7 +6,7 @@ class DGLLinkPredictionIL(DGLBasicIL):
     """
     def _init_continual_scenario(self):
         """ 
-            aaaa
+            aaaaddd
         """
         self.num_feats, self.__graph, self.__neg_edges = load_link_dataset(self.dataset_name, self.save_path)
         self.num_classes = 1

@@ -1,21 +1,20 @@
 class DGLBasicIL:
-    r"""
-    Base framework for implementing scenario module
+    r"""Base framework for implementing scenario module
 
     Arguments:
-        dataset_name (float): .. 
-        save_path (float): ... 
-        num_tasks (float): .. 
-        incr_type (float): ... 
-        cover_unseen (float): .. (DEFALUT : None)
-        minimize (float): ... 
-        metric (float): ...
-        kwargs: (float): ...
-        
+        dataset_name (float): aa 
+        save_path (float): aa 
+        num_tasks (float): aa 
+        incr_type (float): aa 
+        cover_unseen (float): aa (DEFALUT : None)
+        minimize (float): aa 
+        metric (float): aa
+        kwargs: (float): aa
+
     """
     def __init__(self, dataset_name=None, save_path='/mnt/d/graph_dataset', num_tasks=1, incr_type='class', cover_unseen=True, minimize=True, metric=None, **kwargs):
         """ 
-            aaaa
+            aaaadddd
         """
         self.dataset_name = dataset_name
         self.save_path = save_path
