@@ -27,7 +27,6 @@ Contents
 
 .. toctree::
    :hidden:
-   .. :maxdepth: 2
    :caption: Scenarios
 
    030scenario
@@ -37,7 +36,6 @@ Contents
    
 .. toctree::
    :hidden:
-   .. :maxdepth: 2
    :caption: Trainer
 
    040trainer
