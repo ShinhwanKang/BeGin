@@ -1,9 +1,14 @@
-"""
-    blib
-"""
+import torch
+import numpy as np
+import pickle
+import copy
+import dgl
+import random
 
 
-class BaseLinkIncrementalBenchmark:
+from .BaseIncrementalBenchmark import BaseIncrementalBenchmark
+
+class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
     """
     Base framework under link-level problems
 
