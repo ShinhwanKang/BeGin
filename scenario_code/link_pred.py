@@ -1,5 +1,6 @@
 from .common import DGLBasicIL
 import torch
+import dgl
 
 class DGLLinkPredictionIL(DGLBasicIL):
     """
