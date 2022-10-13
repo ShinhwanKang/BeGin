@@ -7,6 +7,7 @@ Prediction
 
 .. automodule:: scenario_code.link_pred
    :members:
+   :undoc-members:
 
 
 Classification
@@ -14,3 +15,4 @@ Classification
 
 .. automodule:: scenario_code.link_pred
    :members:
+   :undoc-members:
