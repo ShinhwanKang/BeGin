@@ -30,9 +30,9 @@ class DGLBasicIL:
         self._curr_task = 0
         self._target_dataset = None
         
-    #     self._init_continual_scenario()
-    #     self._update_target_dataset()
-    #     self._update_accumulated_dataset()
+        self._init_continual_scenario()
+        self._update_target_dataset()
+        self._update_accumulated_dataset()
         
     # def _init_continual_scenario(self):
     #     raise NotImplementedError
