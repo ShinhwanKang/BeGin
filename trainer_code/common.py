@@ -1,10 +1,19 @@
 class BaseContinualFramework:
+    r"""
+    Base framework for implementing trainer module
+
+    Arguments:
+        model (float): .. 
+        scenario (float): ... 
+        optimizer_fn (float): .. 
+        loss_fn (float): ... 
+        device (float): .. (DEFALUT : None)
+        kwargs (float): ... 
+        
     """
-        aaa
-    """
-    def __init__(self, model, scenario, optimizer_fn, loss_fn=None, device=None, **kwargs):
+    def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
         """ 
-            aaaa
+            Initialize a base framework
         """
         self.args = kwargs['args']
         if self.args.benchmark:
@@ -47,30 +56,34 @@ class BaseContinualFramework:
     @property
     def incr_type(self):
         """ 
-            aaaa
+            Returns
+            -------- 
+            the incremental setting (e.g., task, class, domain, and time) 
         """
         return self.__scenario.incr_type
         
     @property
     def curr_task(self):
         """ 
-            aaaa
+            Returns
+            -------- 
+            the id of a current task :math:`0~T` 
         """
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):
         """ 
-            aaaa
+            Reinitialize a target model
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
     def _reset_optimizer(self, target_optimizer):
+        """ 
+            Reinitialize a target optimizer
+        """
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
         
     def fit(self, epoch_per_task = 1):
-        """ 
-            aaaa
-        """
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
         initial_training_state = self._initTrainingStates(self.__scenario, self.__model, self.__optimizer)
         training_states = {'exp': copy.deepcopy(initial_training_state), 'base': None, 'accum': None}
