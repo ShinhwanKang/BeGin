@@ -37,20 +37,32 @@ class DGLBasicIL:
         self._update_accumulated_dataset()
         
     def _init_continual_scenario(self):
+        """ 
+            aaaadddd
+        """
         raise NotImplementedError
     
     def _update_target_dataset(self):
+        """ 
+            aaaadddd
+        """
         raise NotImplementedError
     
     def _update_accumulated_dataset(self):
+        """ 
+            aaaadddd
+        """
         raise NotImplementedError
     
     def __len__(self):
+        """ 
+            Return the number of tasks
+        """
         return self.num_tasks
     
     def next_task(self, preds=torch.empty(1)):
         """ 
-            aaaa
+            Return data of the next task
         """
         self._curr_task += 1
         if self._curr_task < self.num_tasks:

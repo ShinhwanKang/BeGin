@@ -3,8 +3,18 @@ import torch
 import dgl
 
 class DGLLinkPredictionIL(DGLBasicIL):
-    """
-        aaa
+    r"""Base framework for implementing scenario module
+
+    Arguments:
+        dataset_name (float): aa 
+        save_path (float): aa 
+        num_tasks (float): aa 
+        incr_type (float): aa 
+        cover_unseen (float): aa (DEFALUT : None)
+        minimize (float): aa 
+        metric (float): aa
+        kwargs: (float): aa
+
     """
     def _init_continual_scenario(self):
         """ 
