@@ -7,8 +7,6 @@ The basic evaluator can easily be extended by users for additional basic metrics
 
 Returns a performance matrix :math:`\mathrm{M}\in\mathbb{R}^{N\times N}``
 
-Returns a performance matrix :math:`\sigma_\mathrm{mean} = \frac{\sigma}{\sqrt{N}}`
-
 Accuracy
 --------
 
