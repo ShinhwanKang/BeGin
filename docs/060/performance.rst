@@ -5,6 +5,8 @@ Our framework ``BeGin`` provides the evaluator, which computes basic metrics (sp
 The basic evaluator can easily be extended by users for additional basic metrics. 
 
 
+Returns a performance matrix :math:`\mathrm{mathbf{M}}\in\mathbb^{N\times N}` ...
+
 Accuracy
 -----
 
