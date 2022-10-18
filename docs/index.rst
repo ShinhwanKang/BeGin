@@ -29,26 +29,26 @@ Contents
    :maxdepth: 1
    :caption: Scenarios
 
-   030scenario
-   031scenario
-   032scenario
-   033scenario
+   030/common
+   030/node
+   030/link
+   030/graph
    
 .. toctree::
    :maxdepth: 1
    :caption: Trainer
 
-   040trainer
-   041trainer
-   042trainer
-   043trainer
+   040/common
+   040/node
+   040/link
+   040/graph
 
 .. toctree::
    :maxdepth: 1
    :caption: Benchmarks
 
-   050bare
-   051ewc
+   050/bare
+   050/ewc
    .. 046trainer
    .. 047trainer
    

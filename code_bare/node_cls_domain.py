@@ -1,6 +1,6 @@
 import sys
 sys.path.append("..")
-from trainer_code.node_level import BaseNodeIncrementalBenchmark
+from code_trainer.node_level import BaseNodeIncrementalBenchmark
 class BaseNodeDomainIncrementalBenchmark(BaseNodeIncrementalBenchmark):
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         curr_batch, mask = _curr_batch

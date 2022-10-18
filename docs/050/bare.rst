@@ -1,5 +1,9 @@
-Bare Model: Lower Bound of Graph Continual Learning
+Bare Model
 ======
+
+Bare Model: Lower Bound of Graph Continual Learning
+
+
 
 Node Classification
 -----

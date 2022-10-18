@@ -1,6 +1,8 @@
 `EWC <https://www.naver.com>`_: Elastic Weight Consolidation
 ======
 
+The `EWC <https://www.naver.com>`_: Elastic Weight Consolidation
+
 Task-Incremental
 -----
 
