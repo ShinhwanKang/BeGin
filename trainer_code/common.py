@@ -24,10 +24,12 @@ class BaseContinualFramework:
         TODOTDO
 
     Raises:
-        예외명: 예외의 설명 (예 : 인수가 지정되지 않은 경우에 발생 )
+        AttributeError: The ``Raises`` section is a list of all exceptions
+            that are relevant to the interface.
+        ValueError: If `param2` is equal to `param1`.
 
     Yields:
-        리턴값의 데이터형: 리턴값에 대한 설명
+        int: The next number in the range of 0 to `n` - 1.
 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
