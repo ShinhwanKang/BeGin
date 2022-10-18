@@ -15,7 +15,7 @@ Average Performance (AP)
 Average Forgetting (AF)
 --------
 
-
+.. math:: \sigma_\mathrm{mean} = \frac{\sigma}{\sqrt{N}}
 
 --------------------
 
