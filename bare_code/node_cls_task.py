@@ -1,4 +1,4 @@
-from ..trainer_code.node_level import BaseNodeIncrementalBenchmark
+from .trainer_code.node_level import BaseNodeIncrementalBenchmark
 class BaseNodeTaskIncrementalBenchmark(BaseNodeIncrementalBenchmark):
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         curr_batch, mask = _curr_batch
