@@ -1,11 +1,17 @@
-Benchmark: `EWC <www.naver.com>`_ 
+`EWC <https://www.naver.com>`_: Elastic Weight Consolidation
 ======
 
+Task-Incremental
+-----
 
 .. automodule:: bare_code.node_cls_task
     :undoc-members:
     :members:
     :private-members:
+
+
+Class-Incremental
+-----
 
 
 .. automodule:: bare_code.node_cls_class
@@ -14,10 +20,18 @@ Benchmark: `EWC <www.naver.com>`_
     :private-members:
 
 
+Domain-Incremental
+-----
+
+
 .. automodule:: bare_code.node_cls_domain
     :undoc-members:
     :members:
     :private-members:
+
+
+Time-Incremental
+-----
 
 
 .. automodule:: bare_code.node_cls_time
