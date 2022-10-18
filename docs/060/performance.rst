@@ -13,11 +13,13 @@ Examples
 
 .. code-block:: python
     from evaluator import *
+    def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
+            return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
+    
     scenario = DGLNodeClassificationIL(dataset_name=args.dataset_name, num_tasks=args.num_tasks, metric=args.metric, save_path=args.save_path, incr_type='class', task_shuffle=(args.shuffle > 0))
     evaluator_map = {'accuracy': AccuracyEvaluator, 'rocauc': ROCAUCEvaluator, 'hits': HitsEvaluator}
     self.__evaluator = evaluator_map[self.metric](self.num_tasks, self.__task_ids)
-    def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
-            return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
+
     self.eval_fn = lambda x, y: scenario.get_simple_eval_result(x, y)
     
 
