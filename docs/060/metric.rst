@@ -7,7 +7,7 @@ Average Performance (AP)
 
 .. math::
 
-    \mathbf{AP}=\frac{\sum\limits_{i=1}^{N}\mathrm{\mathbf{M}}_{N,i}}{N}
+    \mathbf{AP}=\frac{\sum_{i=1}^{N}\mathrm{\mathbf{M}}_{N,i}}{N}
 
 
 
@@ -19,7 +19,7 @@ Average Forgetting (AF)
 
 .. math::
 
-    \mathbf{AF}=\frac{\sum\limits^{N-1}_{i=1}(\mathrm{\mathbf{M}}_{N,i}-\mathrm{\mathbf{M}}_{i,i})}{N-1}
+    AF=\frac{\sum^{N-1}_{i=1}(\mathrm{\mathbf{M}}_{N,i}-\mathrm{\mathbf{M}}_{i,i})}{N-1}
 
 
 

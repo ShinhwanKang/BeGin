@@ -8,25 +8,25 @@ Bare Model: Lower Bound of Graph Continual Learning
 Node Classification
 -----
 
-.. automodule:: bare_code.node_cls_task
+.. automodule:: code_bare.node_cls_task
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_class
+.. automodule:: code_bare.node_cls_class
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_domain
+.. automodule:: code_bare.node_cls_domain
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_time
+.. automodule:: code_bare.node_cls_time
     :undoc-members:
     :members:
     :private-members:
@@ -35,25 +35,25 @@ Node Classification
 Link Classification
 -----
 
-.. automodule:: bare_code.node_cls_task
+.. automodule:: code_bare.node_cls_task
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_class
+.. automodule:: code_bare.node_cls_class
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_domain
+.. automodule:: code_bare.node_cls_domain
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: bare_code.node_cls_time
+.. automodule:: code_bare.node_cls_time
     :undoc-members:
     :members:
     :private-members:
