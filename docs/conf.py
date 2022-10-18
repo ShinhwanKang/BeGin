@@ -16,6 +16,26 @@ version = '0.1.0'
 
 # -- General configuration
 
+# extensions = [
+#     'sphinx.ext.duration',
+#     'sphinx.ext.autodoc',
+#     'sphinx.ext.autosummary',
+#     'sphinx.ext.doctest',
+#     'sphinx.ext.intersphinx',
+#     'sphinx.ext.todo',
+#     'sphinx.ext.coverage',
+#     'sphinx.ext.mathjax',
+#     'sphinx.ext.ifconfig',
+#     'sphinx.ext.napoleon',
+#     "sphinx_rtd_theme",
+#     'sphinx.ext.imgmath',
+#     'sphinx.ext.ifconfig',
+#     'sphinx.ext.viewcode',
+#     'sphinx.ext.githubpages',
+#     'sphinx.ext.todo',
+#     'recommonmark'
+# ]
+
 extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc',
@@ -28,7 +48,6 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.napoleon',
     "sphinx_rtd_theme",
-    'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
