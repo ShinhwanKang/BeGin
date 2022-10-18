@@ -16,7 +16,7 @@ Contents
    :caption: Get Started   
 
    000/install
-   000/tutorials
+   000/tutorial
 
 .. toctree::
    :caption: Datasets
