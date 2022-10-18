@@ -2,13 +2,27 @@ class BaseContinualFramework:
     r""" Base framework for implementing trainer module
 
     Arguments:
-        model (float): model
-        scenario (float): scenario 
-        optimizer_fn (float): optimizer_fn 
-        loss_fn (float): loss_fn
-        device (float): device (DEFALUT : None)
-        kwargs (float): kwargs 
-        
+        model (torch.nn.Module): Pytorch model for graph continual learning
+        scenario (DGLBasicIL): a scenario which gives you tasks
+        optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function
+        loss_fn (torch.nn): Pytorch loss function
+        device (str): GPU device you uses
+        kwargs (dict): Other arguments for graph contiual learning
+    
+    Examples:
+        TODO
+
+        >>> a=1
+        >>> b=2
+        >>> sum(a, b)
+        ... out = 3
+
+    Note:
+        Note Test
+
+    Todo:
+        TODOTDO
+
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
         """ 

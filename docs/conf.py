@@ -32,6 +32,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.todo',
     'recommonmark'
 ]
 
@@ -58,4 +59,5 @@ autodoc_mock_imports = ["torch", "dgl"]
 epub_show_urls = 'footnote'
 
 add_module_names = False
+todo_include_todos = True
 

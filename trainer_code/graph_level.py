@@ -1,12 +1,19 @@
 from .node_level import BaseIncrementalBenchmark
+import torch
+
 class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
-    """ 
-        aaaa
+    r""" Base framework for implementing trainer module
+
+    Arguments:
+        model (torch.nn.Module): Pytorch model for graph continual learning
+        scenario (DGLBasicIL): a scenario which gives you tasks
+        optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function
+        loss_fn (torch.nn): Pytorch loss function
+        device (str): GPU device you uses
+        kwargs (dict): Other arguments for graph contiual learning
+        
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """ 
-            aaaa
-        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
@@ -19,9 +26,6 @@ class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
 
         
     def prepareLoader(self, curr_dataset, curr_training_states):
-        """ 
-            aaaa
-        """
         g_train = torch.Generator()
         g_train.manual_seed(0)
         train_loader = dgl.dataloading.GraphDataLoader(curr_dataset['train'], batch_size=128, shuffle=True, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_train)
