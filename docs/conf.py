@@ -53,7 +53,7 @@ source_suffix = ['.rst', '.md']
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle"]
+autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb"]
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
@@ -61,3 +61,11 @@ epub_show_urls = 'footnote'
 add_module_names = False
 todo_include_todos = True
 
+
+# import torch
+# from torch import nn
+# from torch_scatter import scatter
+# import numpy as np
+# from sklearn.metrics import roc_auc_score, average_precision_score
+# from ogb.linkproppred import Evaluator as EEvaluator
+# from ogb.nodeproppred import Evaluator as NEvaluator

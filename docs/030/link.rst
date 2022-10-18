@@ -4,7 +4,7 @@ Link-level problems
 Prediction
 ------
 
-.. automodule:: scenario_code.link_pred
+.. automodule:: code_scenario.link_pred
     :members:
     :undoc-members:
     :private-members:
@@ -13,7 +13,7 @@ Prediction
 Classification
 ------
 
-.. automodule:: scenario_code.link_pred
+.. automodule:: code_scenario.link_pred
     :members:
     :undoc-members:
     :private-members:

@@ -1,7 +1,7 @@
 Graph-level problems
 ======
 
-.. automodule:: trainer_code.graph_level
+.. automodule:: code_trainer.graph_level
     :undoc-members:
     :members:
     :private-members:

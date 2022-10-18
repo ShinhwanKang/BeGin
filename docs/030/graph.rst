@@ -4,7 +4,7 @@ Graph-level problems
 Classification
 ------
 
-.. automodule:: scenario_code.graph_cls
+.. automodule:: code_scenario.graph_cls
     :members:
     :undoc-members:
     :private-members:

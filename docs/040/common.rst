@@ -1,7 +1,7 @@
 Common
 ======
 
-.. automodule:: trainer_code.common
+.. automodule:: code_trainer.common
     :undoc-members:
     :members:
     :private-members:

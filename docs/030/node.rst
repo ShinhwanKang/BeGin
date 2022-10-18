@@ -1,7 +1,7 @@
 Node-level problems
 ======
 
-.. automodule:: scenario_code.node_cls
+.. automodule:: code_scenario.node_cls
     :members:
     :undoc-members:
     :private-members:

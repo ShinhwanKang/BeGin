@@ -9,7 +9,7 @@ We prov...
 The `DGLBasicIL` ...
 
 
-.. autoclass:: scenario_code.common.DGLBasicIL
+.. autoclass:: code_scenario.common.DGLBasicIL
     :members:
     :undoc-members:
     :private-members:

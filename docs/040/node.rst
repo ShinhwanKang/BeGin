@@ -1,7 +1,7 @@
 Node-level problems
 ======
 
-.. automodule:: trainer_code.node_level
+.. automodule:: code_trainer.node_level
     :undoc-members:
     :members:
     :private-members:
