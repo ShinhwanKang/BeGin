@@ -5,7 +5,7 @@ Metric
 Average Performance (AP)
 -----
 
-.. math:: \mathrm{AP}=\frac{\sum\limits_{i=1}^{N}\mathrm{\mathrm{M}}_{N,i}}{N}
+.. math:: \mathrm{AP}=\frac{\sum_{i=1}^{N}\mathrm{M}_{N,i}}{N}
 
 
 
