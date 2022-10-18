@@ -5,7 +5,22 @@ Our framework ``BeGin`` provides the evaluator, which computes basic metrics (sp
 The basic evaluator can easily be extended by users for additional basic metrics. 
 
 
-Returns a performance matrix :math:`\mathrm{M}\in\mathbb{R}^{N\times N}``
+Returns a performance matrix :math:`\mathrm{M}\in\mathbb{R}^{N\times N}`
+
+
+Examples
+--------
+
+.. code-block:: python
+
+    from evaluator import *
+    evaluator_map = {'accuracy': AccuracyEvaluator, 'rocauc': ROCAUCEvaluator, 'hits': HitsEvaluator}
+    evaluator = evaluator_map[metric](num_tasks, task_ids)
+    
+
+Details are ...
+
+
 
 Accuracy
 --------
