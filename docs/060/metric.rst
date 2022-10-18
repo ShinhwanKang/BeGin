@@ -3,7 +3,7 @@ Metric
 
 
 Average Performance (AP)
------
+--------
 
 .. math:: \mathrm{AP}=\frac{\sum_{i=1}^{N}\mathrm{M}_{N,i}}{N}
 
@@ -12,35 +12,25 @@ Average Performance (AP)
 --------------------
 
 
-.. Average Forgetting (AF)
-.. -----
-
-.. .. math::
-
-..     AF=\frac{\sum^{N-1}_{i=1}(\mathrm{\mathbf{M}}_{N,i}-\mathrm{\mathbf{M}}_{i,i})}{N-1}
+Average Forgetting (AF)
+--------
 
 
 
-.. --------------------
+--------------------
 
 
-.. `Intransigence <https://www.naver.com>`_ (INT)
-.. -----
-
-.. .. math::
-
-..     \mathbf{INT}=\frac{\sum\limits_{i=1}^{N}(\mathrm{\mathbf{M}}^{\text{Joint}}_{i, i} - \mathrm{\mathbf{M}}_{i, i})}{N}
+`Intransigence <https://www.naver.com>`_ (INT)
+--------
 
 
 
-.. --------------------
-
-.. `Forward Transfer <https://www.naver.com>`_ (FWT)
-.. -----
-
-.. .. math::
-
-..     \mathbf{FWT}=\frac{\sum\limits^{N}_{i=2}(\mathrm{\mathbf{M}}_{i-1,i}-r_i)}{N-1}
+--------------------
 
 
-.. --------------------
+`Forward Transfer <https://www.naver.com>`_ (FWT)
+--------
+
+
+
+--------------------

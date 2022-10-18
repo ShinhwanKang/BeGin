@@ -5,10 +5,10 @@ Our framework ``BeGin`` provides the evaluator, which computes basic metrics (sp
 The basic evaluator can easily be extended by users for additional basic metrics. 
 
 
-Returns a performance matrix :math:`\matrm{M}\in\mathbb^{N\times N}` 
+Returns a performance matrix :math:`\mathrm{M}\in\mathbb{R}^{N\times N}` 
 
 Accuracy
------
+--------
 
 .. autoclass:: code_evaluator.evaluator.AccuracyEvaluator
     :undoc-members:
@@ -20,7 +20,7 @@ Accuracy
 
 
 ROCAUC
------
+--------
 
 .. autoclass:: code_evaluator.evaluator.ROCAUCEvaluator
     :undoc-members:
@@ -33,7 +33,7 @@ ROCAUC
 
 
 HITS@K
------
+--------
 
 .. autoclass:: code_evaluator.evaluator.HitsEvaluator
     :undoc-members:
