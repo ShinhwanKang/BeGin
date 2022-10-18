@@ -1,5 +1,5 @@
-from .common import BaseContinualFramework
-class BaseIncrementalBenchmark(BaseContinualFramework):
+from .common import BaseIncrementalBenchmark
+class BaseNodeIncrementalBenchmark(BaseIncrementalBenchmark):
     """ 
         aaaa
     """

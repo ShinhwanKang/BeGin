@@ -1,4 +1,4 @@
-from .node_level import BaseIncrementalBenchmark
+from .common import BaseIncrementalBenchmark
 import torch
 
 class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):

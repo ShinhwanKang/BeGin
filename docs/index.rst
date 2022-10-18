@@ -36,15 +36,24 @@ Contents
    
 .. toctree::
    :maxdepth: 1
-   :caption: Trainer
+   :caption: Trainer (Base Code)
 
    040trainer
    041trainer
    042trainer
    043trainer
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Trainer (Implemented)
+
+   044bare
+   .. 045trainer
+   .. 046trainer
+   .. 047trainer
    
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Evaluator
 
    050/performance

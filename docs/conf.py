@@ -53,7 +53,7 @@ source_suffix = ['.rst', '.md']
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ["torch", "dgl"]
+autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle"]
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'

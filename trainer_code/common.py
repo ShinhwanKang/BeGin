@@ -1,4 +1,4 @@
-class BaseContinualFramework:
+class BaseIncrementalBenchmark:
     r""" Base framework for implementing trainer module
 
     Arguments:
