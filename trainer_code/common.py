@@ -7,7 +7,7 @@ class BaseContinualFramework:
         optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function
         loss_fn (torch.nn): Pytorch loss function
         device (str): GPU device you uses
-        kwargs (dict): Other arguments for graph contiual learning
+        kwargs (dict, optional): Other arguments for graph contiual learning
     
     Examples:
         TODO
@@ -22,6 +22,12 @@ class BaseContinualFramework:
 
     Todo:
         TODOTDO
+
+    Raises:
+        예외명: 예외의 설명 (예 : 인수가 지정되지 않은 경우에 발생 )
+
+    Yields:
+        리턴값의 데이터형: 리턴값에 대한 설명
 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
