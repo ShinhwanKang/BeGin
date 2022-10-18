@@ -17,6 +17,7 @@ Average Forgetting (AF)
 
 .. math:: \mathrm{AF}=\frac{\sum_{i=1}^{N-1}\mathrm{M}_{N,i}-\mathrm{M}_{i,i}}{N}
 
+
 --------------------
 
 
@@ -24,7 +25,9 @@ Average Forgetting (AF)
 --------
 
 .. math:: \mathrm{INT}=\frac{\sum_{i=1}^{N}\mathrm{M}^{Joint}_{i,i}-\mathrm{M}_{i,i}}{N}
-    , where \mathrm{M}^{Joint} is a basic performance matrix of the Joint model.
+
+    , \text{where}\ \mathrm{M}^{Joint}\ \text{is a basic performance matrix of the Joint model.}
+
 
 --------------------
 
@@ -32,9 +35,8 @@ Average Forgetting (AF)
 `Forward Transfer <https://www.naver.com>`_ (FWT)
 --------
 
-.. math:: 
-    
-    \mathrm{FWT}=\frac{\sum_{i=2}^{N}\mathrm{M}_{i-1,i}-r_{i}}{N}
-    , \text{where} r_{i} \text{denotes the performance of the initialized model on} T_{i}.
+.. math:: \mathrm{FWT}=\frac{\sum_{i=2}^{N}\mathrm{M}_{i-1,i}-r_{i}}{N}
+
+    , \text{where}\ r_{i}\ \text{denotes the performance of the initialized model on}\ T_{i}.
 
 --------------------
