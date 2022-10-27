@@ -37,10 +37,14 @@ For usability, BeGin provides the trainer, which users can extend when implement
 Currently, BeGin supports the following event functions. Note that implementing each event function is optional. If the user-defined functions is not provided, Trainer performs training and evaluation with the corresponding basic pre-implemented operations. See :ref:`CCC` for the detailed arguments and role of the event functions.
 
 - :func:`initTraining`: This function is called only once, when the training procedure begins. 
-- :func:`prepareLoader': This function is called once for each task when generating dataloaders for train/validation/test.
-- :func:`processBeforeTraining': This function is called once for each task, right after .
-- :func:`processTrainIteration`: This function is called once for every training iteration.
-- :func:`processEvalIteration`: This function is called once for every training iteration.
+- :func:`prepareLoader': This function is called once for each task when generating dataloaders for train/validation/test. Given dataset for each task, it should return dataloaders for training, validation, and test.
+- :func:`processBeforeTraining': This function is called once for each task, right after the :func:`prepareLoader' event function.
+- :func:`processTrainIteration`: This function is called once for every training iteration. When the current batched inputs, model, and optimizer are given, it should perform single training iteration and return the information or outcome during the iteration.  
+  - :func:`_model_inference`: This function is called for every inference step in the training procedure. 
+  - :func:`_before_inference`: This function is called right after the :func:`_model_inference`.
+  - :func:`_after_inference`: This function is called right after the :func:`_model_inference`.
+  
+- :func:`processEvalIteration`: This function is called once for every evaulation iteration.
 
 
 
