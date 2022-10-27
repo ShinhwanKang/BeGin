@@ -39,12 +39,15 @@ Currently, BeGin supports the following event functions. Note that implementing 
 - :func:`initTraining`: This function is called only once, when the training procedure begins. 
 - :func:`prepareLoader': This function is called once for each task when generating dataloaders for train/validation/test. Given dataset for each task, it should return dataloaders for training, validation, and test.
 - :func:`processBeforeTraining': This function is called once for each task, right after the :func:`prepareLoader' event function.
-- :func:`processTrainIteration`: This function is called once for every training iteration. When the current batched inputs, model, and optimizer are given, it should perform single training iteration and return the information or outcome during the iteration.  
-  - :func:`_model_inference`: This function is called for every inference step in the training procedure. 
-  - :func:`_before_inference`: This function is called right after the :func:`_model_inference`.
-  - :func:`_after_inference`: This function is called right after the :func:`_model_inference`.
-  
-- :func:`processEvalIteration`: This function is called once for every evaulation iteration.
+- :func:`processTrainIteration`: This function is called for every training iteration. When the current batched inputs, model, and optimizer are given, it should perform single training iteration and return the information or outcome during the iteration.  
+- :func:`processEvalIteration`: This function is called for every evaluation iteration. When the current batched inputs and trained model are given, it should perform single evaluation iteration and return the information or outcome during the iteration.
+- :func:`inference`: This function is called for every inference step in the training procedure. 
+- :func:`beforeInference`: This function is called right after the :func:`_model_inference`.
+- :func:`afterInference`: This function is called right after the :func:`_model_inference`.
+- :func:`reduceTrainingStats`: This function is called at the end of every training step. Given the returned values of the :func:`processTrainIteration` event function, it should returns overall and reduced statistics of the current training step.
+- :func:`reduceEvalStats`: This function is called at the end of every evaluation step. Given the returned values of the :func:`processEvalIteration` event function, it should returns overall and reduced statistics of the current evaluation step.
+- :func:`processTrainingLogs`: This function is called right after the :func:`reduceTrainingStats` event function. It should generates training logs for the current training iteration.
+- :func:`procssAfterEachIteration`: This function is called at the end of the training iteration. When the outcome from :func:`reduceTrainingStats` and :func:`reduceEvalStats` are given, it should determine whether the trainer should stop training for the current task or not.
 
-
+Suppose we need to implement EWC algorithm using BeGin from scratch.
 
