@@ -13,5 +13,7 @@ BeGin provides various benchmark scenarios based on graph-related problems and i
 
 - Class-incremental (Class-IL): In this incremental setting, the set of classes grows over tasks. In addition, for each query at evaluation, the corresponding task is NOT provided, and thus its answer is predicted among all classes seen so far. This setting is applied to NC and GC tasks, where the sets of classes can vary with tasks, and for NC and LC tasks, the input graph is fixed.
 
-- Domain-incremental (Domain-IL): 
+- Domain-incremental (Domain-IL): In this incremental setting, we divided entities (i.e., nodes, edges, and graphs) over tasks according to their domains, which are additionally given. 
+
 - Time-incremental (Time-IL): 
+
