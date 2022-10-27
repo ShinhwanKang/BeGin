@@ -13,10 +13,12 @@ Step 0. Prepare CL Scenarios and Evaluation Metrics
 
 In order to evaluate graph CL methods, we need to prepare (1) graph datasets with multi-class, domain, or timestamps, (2) incremental settings, and (3) proper evaluation metric for the settings. To reduce such efforts, BeGin provides various benchmark scenarios based on graph-related problems and incremental settings for continual learning, and built-in evaluation metrics. For example, using BeGin, user can load the task-incremental node classification scenario on cora dataset in just one line of code.
 
-.. code::
-    NodeClassificationIL(dataset_name='cora', num_tasks=3, metric='accuracy', save_path='/data', incr_type='task')
+.. code-block::
 
-Currently, BeGin supports Node Classification (NC), Link Classification (LC), Link Prediction (LP), Graph Classification (GC) scenarios with the following incremental settings for continual learning with graph data.
+  from begin.scenarios import NodeClassificationIL
+  NodeClassificationIL(dataset_name='cora', num_tasks=3, metric='accuracy', save_path='/data', incr_type='task')
+
+Currently, BeGin supports 19 Node Classification (NC), Link Classification (LC), Link Prediction (LP), Graph Classification (GC) scenarios with the following incremental settings for continual learning with graph data. (For the provided scenarios with real-world datasets and evaluation metrics, see AAA and BBB, respectively.)
 
 - Task-incremental (Task-IL): In this incremental setting, the set of classes consisting each task varies with tasks, and they are often disjoint. In addition, for each query at evaluation, the corresponding task information is provided, and thus its answer is predicted among the classes considered in the task. This setting is applied to NC and GC tasks, where the sets of classes can vary with tasks, and for NC and LC tasks, the input graph is fixed.
 
@@ -26,5 +28,6 @@ Currently, BeGin supports Node Classification (NC), Link Classification (LC), Li
 
 - Time-incremental (Time-IL): In this incremental setting except for GC, we consider a dynamic graph evolving over time, and the set of classes may or may not vary across tasks. For NC, LC, and LP, the input graph of i-th task is the i-th snapshot of the dynamic graph. For GC, the snapshots of the dynamic graph are grouped and assigned to tasks in chronological order.
 
-For evaluation metrics, BeGin currently supports accuracy, AUCROC, and HITS@K.
 
+Step 1. Prepare CL Scenarios and Evaluation Metrics
+--------
