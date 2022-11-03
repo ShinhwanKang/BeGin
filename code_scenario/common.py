@@ -1,7 +1,7 @@
 import torch
 
 class DGLBasicIL:
-    r"""Base framework for implementing scenario module
+    r"""Base framework for implementing scenario module.
 
     Arguments:
         dataset_name (str): The name of the dataset.
@@ -10,6 +10,7 @@ class DGLBasicIL:
         incr_type (str): The incremental setting of graph continual learning (spec. task, class, domain, and time).
         metric (str): Basic metric to measure performance (spec., accuracy, AUROC, and HITS@K).
         kwargs: (dict, optional): Key-word arguments to be passed to the scenario module (e.g., task_shuffle (bool): If true, fixed order, else random order)
+    
     """
     # def __init__(self, dataset_name=None, save_path='/mnt/d/graph_dataset', num_tasks=1, incr_type='class', cover_unseen=True, minimize=True, metric=None, **kwargs):
     def __init__(self, dataset_name, save_path, num_tasks, incr_type, metric, cover_unseen=True, minimize=True, **kwargs):
@@ -43,7 +44,7 @@ class DGLBasicIL:
             According to the ``incr_type``, the information updated is different.
 
             Note:
-                Note that the implemented model can only process the training data in the current task.
+                The implemented model can only process the training data in the current task.
         """
         raise NotImplementedError
     
@@ -53,7 +54,7 @@ class DGLBasicIL:
             According to the ``incr_type``, the information updated is different.
 
             Note:
-                Note that the joint model can process all of training data in previous tasks including the current task.
+                The joint model can process all of training data in previous tasks including the current task.
         """
         raise NotImplementedError
     

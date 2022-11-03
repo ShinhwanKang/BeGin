@@ -1,5 +1,5 @@
 class BaseIncrementalBenchmark:
-    r""" Base framework for implementing trainer module
+    r""" Base framework for implementing trainer module, which users can extend when implementing new methods
 
     Arguments:
         model (torch.nn.Module): Pytorch model for graph continual learning

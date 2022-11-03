@@ -3,6 +3,16 @@ import torch
 import dgl
 
 class DGLNodeClassificationIL(DGLBasicIL):
+    """
+        The sceanario loader for node classification problems.
+
+        Usage example:
+
+            >>> scenario = DGLNodeClassificationIL(dataset_name="cora", num_tasks=3, metric=:"accuracy", 
+            ...             save_path="/data", incr_type="task", task_shuffle=True)
+
+        Bases: ``DGLBasicIL``
+    """
     def _init_continual_scenario(self):    
         self.num_classes, self.num_feats, self.__graph, self.__cover_rule = load_node_dataset(self.dataset_name, self.save_path)
         
