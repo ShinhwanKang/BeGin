@@ -2,6 +2,11 @@ from .common import DGLBasicIL
 import torch
 
 class DGLGraphClassificationIL(DGLBasicIL):
+    """
+        The sceanario loader for graph classification problems.
+
+        Bases: ``DGLBasicIL``
+    """
     def _init_continual_scenario(self):
         self.num_classes, self.num_feats, self.__dataset = load_graph_dataset(self.dataset_name, self.save_path)
         
