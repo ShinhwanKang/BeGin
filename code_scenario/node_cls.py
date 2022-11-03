@@ -3,23 +3,7 @@ import torch
 import dgl
 
 class DGLNodeClassificationIL(DGLBasicIL):
-    r"""Base framework for implementing scenario module
-
-    Arguments:
-        dataset_name (float): aa 
-        save_path (float): aa 
-        num_tasks (float): aa 
-        incr_type (float): aa 
-        cover_unseen (float): aa (DEFALUT : None)
-        minimize (float): aa 
-        metric (float): aa
-        kwargs: (float): aa
-
-    """
     def _init_continual_scenario(self):    
-        """ 
-            Initialize according the type of the incremental setting
-        """
         self.num_classes, self.num_feats, self.__graph, self.__cover_rule = load_node_dataset(self.dataset_name, self.save_path)
         
         if self.incr_type in ['class', 'task']:
@@ -174,9 +158,6 @@ class DGLNodeClassificationIL(DGLBasicIL):
         return self.__evaluator(preds, gt, torch.arange(self._accumulated_dataset.num_nodes())[self._accumulated_dataset.ndata[target_split + '_mask']])
     
     def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
-        """
-            aaa
-        """
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):
