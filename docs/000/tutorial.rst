@@ -3,6 +3,7 @@ Tutorial
 ===================================
 
 BeGin is a framework containing the following core components:
+
 - ScenarioLoader: This module provides built-in continual learning scenarios to evaluate the performances of graph continual learning methods.
 - Evaluator: This module provides the evaluator, which computes basic metrics based on the ground-truth and predicted answers.
 - Trainer: This module manages the overall training procedure of user-defined continual learning algorithms, including preparing the dataloader, training, and validation, so that users only have to implement novel parts of their methods.
@@ -51,7 +52,7 @@ Currently, BeGin supports the following event functions. Note that implementing 
 - :func:`processTrainingLogs`: This function is called right after the :func:`reduceTrainingStats` event function. It should generates training logs for the current training iteration.
 - :func:`procssAfterEachIteration`: This function is called at the end of the training iteration. When the outcome from :func:`reduceTrainingStats` and :func:`reduceEvalStats` are given, it should determine whether the trainer should stop training for the current task or not.
 
-Suppose we need to implement Elastic Weight Consolidation (EWC) algorithm for task-IL node classification using BeGin. EWC algorithm is a regularization-based CL algorithm for generic data. Specifically, it uses weighted L2 penalty term which is determined by the learned weights from the previous tasks as in the following equation:
+Suppose we need to implement Elastic Weight Consolidation (EWC) algorithm for class-IL node classification using BeGin. EWC algorithm is a regularization-based CL algorithm for generic data. Specifically, it uses weighted L2 penalty term which is determined by the learned weights from the previous tasks as in the following equation:
 
 .. math::
 
@@ -67,17 +68,25 @@ BeGin provides basic implementation of trainer for each graph-related problem. E
 
 .. code-block::
 
-from begin.trainers import NCTrainer
-class EWCTaskILNCTrainer(NCTrainer):
-    pass
+  from begin.trainers import NCTrainer
+  class EWCTaskILNCTrainer(NCTrainer):
+      pass
 
 Step 2. Setting initial states for the algorithm (:func:`initTraining`)
 =============
 
-As in the aformentioned equation, EWC algorithm requires to store learned weights and Fisher information matrices from the previous tasks to compute the regualarization term. However, but they cannot be obtained on the current task. In order to resolve this issue, the trainer provides a dictionary called :func:`training_states` where intermediate results can be stored and shared by events as the parameter of the event function.
+As in the aformentioned equation, EWC algorithm requires to store learned weights and Fisher information matrices from the previous tasks to compute the regualarization term. However, but they cannot be obtained on the current task. In order to resolve this issue, the trainer provides a dictionary called :func:`training_states` which can store intermediate results and be shared by events as the parameter of the event functions. To set the initial states, BeGin provides :func:`initTraining` event function, and the trainer set the initial states to the returned dictionary from the event function. In this example, we assigned :func:`fishers` to store the fisher information matrices of each task and :func:`params` to store the learned weights of each task, as shown in the code below.
 
+.. code-block::
+
+  from begin.trainers import NCTrainer
+  class EWCTaskILNCTrainer(NCTrainer):
+      def initTraining(self, model, optimizer):
+          return {'fishers': [], 'params': []}
+      
 Step 3. Storing previous weights and Fisher matrix (:func:`processAfterTraining`)
 =============
+
 
 Step 4. Storing previous weights and Fisher matrix (:func:`processTrainIteration` and :func:`after_inference`)
 =============
