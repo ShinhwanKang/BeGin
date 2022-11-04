@@ -6,5 +6,5 @@ Classification
 
 .. automodule:: code_scenario.graph_cls
     :members:
-    :undoc-members:
+    .. :undoc-members:
     :private-members:

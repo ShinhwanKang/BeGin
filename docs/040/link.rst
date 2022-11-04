@@ -2,6 +2,6 @@ Link-level problems
 ======
 
 .. automodule:: code_trainer.link_level
-    :undoc-members:
+    .. :undoc-members:
     :members:
     :private-members:
