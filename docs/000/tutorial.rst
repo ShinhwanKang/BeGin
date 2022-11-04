@@ -1,3 +1,4 @@
+===================================
 Tutorial
 ===================================
 
@@ -8,8 +9,9 @@ BeGin is a framework containing the following core components:
 
 In this material, we briefly describe how to perform graph continual learning with those components using some examples.
 
+------------------------
 ScenarioLoader and Evaluation Metric
---------
+------------------------
 
 In order to evaluate graph CL methods, we need to prepare (1) graph datasets with multi-class, domain, or timestamps, (2) incremental settings, and (3) proper evaluation metric for the settings. To reduce such efforts, BeGin provides various benchmark scenarios based on graph-related problems and incremental settings for continual learning, and built-in evaluation metrics. For example, using BeGin, user can load the task-incremental node classification scenario on cora dataset in just one line of code.
 
@@ -28,7 +30,7 @@ Currently, BeGin supports 19 Node Classification (NC), Link Classification (LC),
 
 - Time-incremental (Time-IL): In this incremental setting except for GC, we consider a dynamic graph evolving over time, and the set of classes may or may not vary across tasks. For NC, LC, and LP, the input graph of i-th task is the i-th snapshot of the dynamic graph. For GC, the snapshots of the dynamic graph are grouped and assigned to tasks in chronological order.
 
-
+--------
 Trainer
 --------
 
@@ -57,8 +59,9 @@ Suppose we need to implement Elastic Weight Consolidation (EWC) algorithm for ta
 
 where :math:`\theta` is current weights of the model, :math:`\theta^*_j` is learned weights until the :math:`j`-th task, :math:`\lambda > 0` is a hyperparameter, and :math:`F_j` is the diagonal part of the Fisher information matrix until the :math:`j`-th task computed as square of the first derivatives.
 
+
 Step 1. Extending the base 
-\`````````````
+=============
 
 BeGin provides basic implementation of trainer for each graph-related problem. Each basic trainer follows the incremental learning schemes, but no CL technique is applied. For example, if we want to implement CL algorithm for NC task, you need to extend :func:`NCTrainer` to reduce your efforts for implementing user-defined functions on managing the overall procedure.
 
@@ -69,16 +72,16 @@ class EWCTaskILNCTrainer(NCTrainer):
     pass
 
 Step 2. Setting initial states for the algorithm (:func:`initTraining`)
-\`````````````
+=============
 
 As in the aformentioned equation, EWC algorithm requires to store learned weights and Fisher information matrices from the previous tasks to compute the regualarization term. However, but they cannot be obtained on the current task. In order to resolve this issue, the trainer provides a dictionary called :func:`training_states` where intermediate results can be stored and shared by events as the parameter of the event function.
 
 Step 3. Storing previous weights and Fisher matrix (:func:`processAfterTraining`)
-\`````````````
+=============
 
 Step 4. Storing previous weights and Fisher matrix (:func:`processTrainIteration` and :func:`after_inference`)
-\`````````````
+=============
 
-
+--------
 Combining ScenarioLoader, Evaluator, Trainer
 --------
