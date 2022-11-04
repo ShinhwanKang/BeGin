@@ -45,12 +45,13 @@ Currently, BeGin supports the following event functions. Note that implementing 
 - :func:`processTrainIteration`: This function is called for every training iteration. When the current batched inputs, model, and optimizer are given, it should perform single training iteration and return the information or outcome during the iteration.  
 - :func:`processEvalIteration`: This function is called for every evaluation iteration. When the current batched inputs and trained model are given, it should perform single evaluation iteration and return the information or outcome during the iteration.
 - :func:`inference`: This function is called for every inference step in the training procedure. 
-- :func:`beforeInference`: This function is called right after the :func:`_model_inference`.
-- :func:`afterInference`: This function is called right after the :func:`_model_inference`.
+- :func:`beforeInference`: This function is called right after the :func:`inference`.
+- :func:`afterInference`: This function is called right after the :func:`inference`.
 - :func:`reduceTrainingStats`: This function is called at the end of every training step. Given the returned values of the :func:`processTrainIteration` event function, it should returns overall and reduced statistics of the current training step.
 - :func:`reduceEvalStats`: This function is called at the end of every evaluation step. Given the returned values of the :func:`processEvalIteration` event function, it should returns overall and reduced statistics of the current evaluation step.
 - :func:`processTrainingLogs`: This function is called right after the :func:`reduceTrainingStats` event function. It should generates training logs for the current training iteration.
 - :func:`procssAfterEachIteration`: This function is called at the end of the training iteration. When the outcome from :func:`reduceTrainingStats` and :func:`reduceEvalStats` are given, it should determine whether the trainer should stop training for the current task or not.
+- :func:`processAfterTraining': This function is called once for each task, when the trainer ends raining for the current task.
 
 Suppose we need to implement Elastic Weight Consolidation (EWC) algorithm for class-IL node classification using BeGin. EWC algorithm is a regularization-based CL algorithm for generic data. Specifically, it uses weighted L2 penalty term which is determined by the learned weights from the previous tasks as in the following equation:
 
@@ -69,7 +70,7 @@ BeGin provides basic implementation of trainer for each graph-related problem. E
 .. code-block::
 
   from begin.trainers import NCTrainer
-  class EWCTaskILNCTrainer(NCTrainer):
+  class EWCClassILNCTrainer(NCTrainer):
       pass
 
 Step 2. Setting initial states for the algorithm (:func:`initTraining`)
@@ -80,14 +81,54 @@ As in the aformentioned equation, EWC algorithm requires to store learned weight
 .. code-block::
 
   from begin.trainers import NCTrainer
-  class EWCTaskILNCTrainer(NCTrainer):
+  class EWCClassILNCTrainer(NCTrainer):
       def initTraining(self, model, optimizer):
           return {'fishers': [], 'params': []}
       
 Step 3. Storing previous weights and Fisher matrix (:func:`processAfterTraining`)
 =============
+
+To compute the fisher matrices and learned weights, we need to collect them at the end of training for every task. So, we need to handle such process in :func:`processAfterTraining`. First, we should prepare loader for training data. Then we should retreive the learned weights and calculate the square of the gradients to compute the fisher matrix.
+
+.. code-block::
+
   from begin.trainers import NCTrainer
-  class EWCTaskILNCTrainer(NCTrainer):
+  class EWCClassILNCTrainer(NCTrainer):
+      def initTraining(self, model, optimizer):
+          return {'fishers': [], 'params': []}
+          
+      def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+          super()._processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+          params = {name: torch.zeros_like(p) for name, p in curr_model.named_parameters()}
+          fishers = {name: torch.zeros_like(p) for name, p in curr_model.named_parameters()}
+          train_loader = self.prepareLoader(curr_dataset, curr_training_states)[0]
+        
+          total_num_items = 0
+          for i, _curr_batch in enumerate(iter(train_loader)):
+              curr_model.zero_grad()
+              curr_results = self.inference(curr_model, _curr_batch, curr_training_states)
+              curr_results['loss'].backward()
+              curr_num_items =_curr_batch[1].shape[0]
+              total_num_items += curr_num_items
+              for name, p in curr_model.named_parameters():
+                  params[name] = p.data.clone().detach()
+                  fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
+                    
+          for name, p in curr_model.named_parameters():
+              fishers[name] /= total_num_items
+                
+          curr_training_states['fishers'].append(fishers)
+          curr_training_states['params'].append(params)
+          
+Step 4. Computing penalty term and Performing regularization (:func:`processTrainIteration` and :func:`afterInference`)
+=============
+
+To compute the penalty term and perform regularization with backpropagation, we need to implement them at the end of training for every task. So, we should handle such process in :func:`afterInference`.
+
+.. code-block::
+
+  from begin.trainers import NCTrainer
+  class EWCClassILNCTrainer(NCTrainer):
       def initTraining(self, model, optimizer):
           return {'fishers': [], 'params': []}
           
@@ -113,9 +154,20 @@ Step 3. Storing previous weights and Fisher matrix (:func:`processAfterTraining`
                 
           curr_training_states['fishers'].append(fishers)
           curr_training_states['params'].append(params)
-          
-Step 4. Storing previous weights and Fisher matrix (:func:`processTrainIteration` and :func:`after_inference`)
-=============
+      
+      def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+          loss_reg = 0
+          for _param, _fisher in zip(training_states['params'], training_states['fishers']):
+              for name, p in model.named_parameters():
+                  l = self.lamb * _fisher[name]
+                  l = l * ((p - _param[name]) ** 2)
+                  loss_reg = loss_reg + l.sum()
+          total_loss = results['loss'] + loss_reg
+          total_loss.backward()
+          optimizer.step()
+          return {'loss': total_loss.item(),
+                  'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+
 
 --------
 Combining ScenarioLoader, Evaluator, Trainer
