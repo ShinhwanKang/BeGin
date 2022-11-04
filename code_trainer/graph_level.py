@@ -2,17 +2,6 @@ from .common import BaseIncrementalBenchmark
 import torch
 
 class BaseGraphIncrementalBenchmark(BaseIncrementalBenchmark):
-    r""" Base framework for implementing trainer module
-
-    Arguments:
-        model (torch.nn.Module): Pytorch model for graph continual learning
-        scenario (DGLBasicIL): a scenario which gives you tasks
-        optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function
-        loss_fn (torch.nn): Pytorch loss function
-        device (str): GPU device you uses
-        kwargs (dict): Other arguments for graph contiual learning
-        
-    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']

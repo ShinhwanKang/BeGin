@@ -1,41 +1,30 @@
 class BaseIncrementalBenchmark:
-    r""" Base framework for implementing trainer module, which users can extend when implementing new methods
+    r""" Base framework for implementing trainer module.
 
     Arguments:
-        model (torch.nn.Module): Pytorch model for graph continual learning
-        scenario (DGLBasicIL): a scenario which gives you tasks
-        optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function
-        loss_fn (torch.nn): Pytorch loss function
-        device (str): GPU device you uses
-        kwargs (dict, optional): Other arguments for graph contiual learning
-    
-    Examples:
-        TODO
-
-        >>> a=1
-        >>> b=2
-        >>> sum(a, b)
-        ... out = 3
+        model (torch.nn.Module): Pytorch model for graph continual learning.
+        scenario (DGLBasicIL): The scenario module.
+        optimizer_fn (torch.optim.Optimizer): Pytorch optimizer function.
+        loss_fn (torch.nn): Pytorch loss function.
+        device (str): GPU device users use.
+        kwargs (dict, optional): Key-word arguments to be passed to the trainer module.
 
     Note:
-        Note Test
+        For instance, by kwargs, users can pass hyperparameters the implemented method needs or a scheduler function (torch.nn) for tranining.  
 
-    Todo:
-        TODOTDO
+    # Todo:
+    #     TODOTDO
 
-    Raises:
-        AttributeError: The ``Raises`` section is a list of all exceptions
-            that are relevant to the interface.
-        ValueError: If `param2` is equal to `param1`.
+    # Raises:
+    #     AttributeError: The ``Raises`` section is a list of all exceptions
+    #         that are relevant to the interface.
+    #     ValueError: If `param2` is equal to `param1`.
 
-    Yields:
-        int: The next number in the range of 0 to `n` - 1.
+    # Yields:
+    #     int: The next number in the range of 0 to `n` - 1.
 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
-        """ 
-            Initialize a base framework
-        """
         self.args = kwargs['args']
         if self.args.benchmark:
             dgl.seed(self.args.seed)
@@ -77,34 +66,35 @@ class BaseIncrementalBenchmark:
     @property
     def incr_type(self):
         """ 
-            Returns
-            -------- 
-            the incremental setting (e.g., task, class, domain, and time) 
+            Returns:
+                The incremental setting (e.g., task, class, domain, or time).
         """
         return self.__scenario.incr_type
         
     @property
     def curr_task(self):
         """ 
-            Returns
-            -------- 
-            the id of a current task :math:`0~T` 
+            Returns: 
+                The id of a current task :math:`[0,T-1]`.
         """
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):
         """ 
-            Reinitialize a target model
+            Reinitialize a model.
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
     def _reset_optimizer(self, target_optimizer):
         """ 
-            Reinitialize a target optimizer
+            Reinitialize an optimizer.
         """
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
         
     def fit(self, epoch_per_task = 1):
+        """
+            Run the overall process of graph continual learning optimization. 
+        """
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
         initial_training_state = self._initTrainingStates(self.__scenario, self.__model, self.__optimizer)
         training_states = {'exp': copy.deepcopy(initial_training_state), 'base': None, 'accum': None}
@@ -215,15 +205,35 @@ class BaseIncrementalBenchmark:
                    }
     
     def _initTrainingStates(self, dataset, model, optimizer):
+        """
+            Initialize the dictionary for storing training states (i.e., intermedeiate results).
+
+            Returns:
+                Initialized training state (dict).
+        """
         return {}
     
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+            Returns:
+                Train, valid, and test Dataloaders according to graph problems.
+        """
         raise NotImplementedError
         
     def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            Execute some processes before training.
+
+            Note:
+                For example, user computes the intermediate statistics for training.
+
+        """
         pass
     
     def processTrainIteration(self, model, optimizer, curr_batch, training_states):
+        """
+            Train a model according to graph problems.
+        """
         raise NotImplementedError
     
     def __trainWrapper(self, model, optimizer, curr_batch, training_states, curr_stats):
@@ -244,6 +254,9 @@ class BaseIncrementalBenchmark:
         return reduced_stats
     
     def processEvalIteration(self, model, curr_batch):
+        """
+            Evaluate a model.
+        """
         raise NotImplementedError
     
     def __evalWrapper(self, model, curr_batch, curr_stats):
@@ -265,10 +278,23 @@ class BaseIncrementalBenchmark:
         return reduced_stats
     
     def _processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
+        """
+            Log the intermediate results.
+        """
         pass
     
     def _processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
+        """
+            Execute some processes after each training iteration.
+        """
         return True
     
     def _processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            Execute some processes after training a task.
+
+            Note:
+                Users need to tell apart this function and ``_processAfterEachIteration``.
+                
+        """
         pass

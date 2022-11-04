@@ -1,16 +1,10 @@
 from .common import BaseIncrementalBenchmark
 class BaseNodeIncrementalBenchmark(BaseIncrementalBenchmark):
-    """ 
-        aaaa
-    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
     def prepareLoader(self, curr_dataset, curr_training_states):
-        """ 
-            aaaa
-        """
         return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):

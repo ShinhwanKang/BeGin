@@ -1,12 +1,6 @@
 from .common import BaseIncrementalBenchmark
 class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
-    """ 
-        aaaa
-    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """ 
-            aaaa
-        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']
         
@@ -17,9 +11,6 @@ class BaseLinkIncrementalBenchmark(BaseIncrementalBenchmark):
         self._dataloader_seed_worker = seed_worker
         
     def prepareLoader(self, curr_dataset, curr_training_states):
-        """ 
-            aaaa
-        """
         graph = curr_dataset['graph'].clone()
         node_feats = graph.ndata.pop('feat')
         curr_training_states['graph'] = (graph, node_feats)
