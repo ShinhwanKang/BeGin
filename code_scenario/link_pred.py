@@ -6,6 +6,11 @@ class DGLLinkPredictionIL(DGLBasicIL):
     """
         The sceanario loader for link prediction problems.
 
+        **Usage example:**
+
+            >>> scenario = DGLLinkPredictionIL(dataset_name="ogbl-collab", num_tasks=3, metric="hits@50", 
+            ...             save_path="/data", incr_type="time", task_shuffle=True)
+
         Bases: ``DGLBasicIL``
     """
     def _init_continual_scenario(self):

@@ -6,9 +6,9 @@ class DGLNodeClassificationIL(DGLBasicIL):
     """
         The sceanario loader for node classification problems.
 
-        Usage example:
+        **Usage example:**
 
-            >>> scenario = DGLNodeClassificationIL(dataset_name="cora", num_tasks=3, metric=:"accuracy", 
+            >>> scenario = DGLNodeClassificationIL(dataset_name="cora", num_tasks=3, metric="accuracy", 
             ...             save_path="/data", incr_type="task", task_shuffle=True)
 
         Bases: ``DGLBasicIL``

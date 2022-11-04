@@ -5,6 +5,12 @@ class DGLGraphClassificationIL(DGLBasicIL):
     """
         The sceanario loader for graph classification problems.
 
+        **Usage example:**
+
+            >>> scenario = DGLGraphClassificationIL(dataset_name="ogbg-molhiv", num_tasks=10, metric="rocauc", 
+            ...             save_path="/data", incr_type="domain", task_shuffle=True)
+
+        
         Bases: ``DGLBasicIL``
     """
     def _init_continual_scenario(self):
