@@ -86,8 +86,34 @@ As in the aformentioned equation, EWC algorithm requires to store learned weight
       
 Step 3. Storing previous weights and Fisher matrix (:func:`processAfterTraining`)
 =============
-
-
+  from begin.trainers import NCTrainer
+  class EWCTaskILNCTrainer(NCTrainer):
+      def initTraining(self, model, optimizer):
+          return {'fishers': [], 'params': []}
+          
+      def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+          super()._processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+          params = {name: torch.zeros_like(p) for name, p in curr_model.named_parameters()}
+          fishers = {name: torch.zeros_like(p) for name, p in curr_model.named_parameters()}
+          train_loader = self.prepareLoader(curr_dataset, curr_training_states)[0]
+        
+          total_num_items = 0
+          for i, _curr_batch in enumerate(iter(train_loader)):
+              curr_model.zero_grad()
+              curr_results = self._model_inference(curr_model, _curr_batch, curr_training_states)
+              curr_results['loss'].backward()
+              curr_num_items =_curr_batch[1].shape[0]
+              total_num_items += curr_num_items
+              for name, p in curr_model.named_parameters():
+                  params[name] = p.data.clone().detach()
+                  fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
+                    
+          for name, p in curr_model.named_parameters():
+              fishers[name] /= total_num_items
+                
+          curr_training_states['fishers'].append(fishers)
+          curr_training_states['params'].append(params)
+          
 Step 4. Storing previous weights and Fisher matrix (:func:`processTrainIteration` and :func:`after_inference`)
 =============
 
