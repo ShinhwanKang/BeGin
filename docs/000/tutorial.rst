@@ -173,3 +173,22 @@ The above code shows the full implementation of the EWC algorithm for class-IL n
 --------
 Combining ScenarioLoader, Evaluator, Trainer
 --------
+
+We have loaded the scenarios and the CL algorithm running on the scenario. The last step is to combine the components to perform the experiments under the prepared scenario and trainer, and this process also takes just a few lines of code.
+
+.. code-block::
+
+  from begin.scenarios import NodeClassificationScenarioLoader
+  
+  scenario = NodeClassificationScenarioLoader(dataset_name='ogbn-arxiv', num_tasks=8, metric='accuracy', save_path='/data', incr_type='class')
+  benchmark = EWCClassILNCTrainer(model = GCN(scenario.num_feats, scenario.num_classes, args.hidden_dim, dropout=args.dropout_rate),
+                                  scenario = scenario,
+                                  optimizer_fn = lambda x: torch.optim.Adam(x, lr=args.lr, weight_decay=args.weight_decay),
+                                  loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1),
+                                  device = torch.device('cuda:' + args.gpu),
+                                  scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='min', patience=20, min_lr=args.lr * 0.001 * 2., verbose=True),
+                                  args = args)
+  results = benchmark.run(epoch_per_task = args.num_steps)
+  
+To run the experiment, trainer object in BeGin requires a learnable model, a CL scenraio, a proper loss function to train the model, a function to generate optimizer and scheduler, and the other auxilary arguments to customize the trainer. After creating the object, users can start the experiment by calling the member function :func:`results` of the trainer object.
+
