@@ -14,12 +14,12 @@ In this material, we briefly describe how to perform graph continual learning wi
 ScenarioLoader and Evaluation Metric
 ------------------------
 
-In order to evaluate graph CL methods, we need to prepare (1) graph datasets with multi-class, domain, or timestamps, (2) incremental settings, and (3) proper evaluation metric for the settings. To reduce such efforts, BeGin provides various benchmark scenarios based on graph-related problems and incremental settings for continual learning, and built-in evaluation metrics. For example, using BeGin, user can load the task-incremental node classification scenario on cora dataset in just one line of code.
+In order to evaluate graph CL methods, we need to prepare (1) graph datasets with multi-class, domain, or timestamps, (2) incremental settings, and (3) proper evaluation metric for the settings. To reduce such efforts, BeGin provides various benchmark scenarios based on graph-related problems and incremental settings for continual learning, and built-in evaluation metrics. For example, using BeGin, users can load the class-incremental node classification scenario on ogbn-arxiv dataset in just one line of code.
 
 .. code-block::
 
   from begin.scenarios import NodeClassificationScenarioLoader
-  NodeClassificationScenarioLoader(dataset_name='cora', num_tasks=3, metric='accuracy', save_path='/data', incr_type='task')
+  NodeClassificationScenarioLoader(dataset_name='ogbn-arxiv', num_tasks=8, metric='accuracy', save_path='/data', incr_type='class')
 
 Currently, BeGin supports 19 Node Classification (NC), Link Classification (LC), Link Prediction (LP), Graph Classification (GC) scenarios with the following incremental settings for continual learning with graph data. (For the provided scenarios with real-world datasets and evaluation metrics, see :ref:`AAA` and :ref:`BBB`, respectively.)
 
