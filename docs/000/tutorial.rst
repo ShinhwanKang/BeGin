@@ -174,7 +174,7 @@ The above code shows the full implementation of the EWC algorithm for class-IL n
 Combining ScenarioLoader, Evaluator, Trainer
 --------
 
-We have loaded the scenarios and the CL algorithm running on the scenario. The last step is to combine the components to perform the experiments under the prepared scenario and trainer, and this process also takes just a few lines of code.
+So far we have learned how to load each component of BeGin. The last step is to combine the components to perform the experiments under the prepared scenario and trainer, and this process also takes just a few lines of code.
 
 .. code-block::
 
@@ -192,3 +192,9 @@ We have loaded the scenarios and the CL algorithm running on the scenario. The l
   
 To run the experiment, trainer object in BeGin requires a learnable model, a CL scenraio, a proper loss function to train the model, a function to generate optimizer and scheduler, and the other auxilary arguments to customize the trainer. After creating the object, users can start the experiment by calling the member function :func:`results` of the trainer object.
 
+In BeGin, at the end of each task, the trainer measures the performance of all tasks. When the procedure is completed, the trainer returns the evaluation results, which is in the form of a matrix. In the matrix, the (i,j)-th entry contains the performance evaluated using the test data of task j when the training of task i has just ended. In addition, BeGin supports the following final evaluation metrics designed for continual learning:
+
+- Average Performance (AP): Average performance on all tasks after learning all tasks.
+- Average Forgetting (AF): Average forgetting on all tasks. We measure the forgetting on task i by the difference between the performance on task i after learning all  tasks and the performance on task i right after learning task i
+- Forward Transfer (FWT) : Average forward transfer on tasks. We measure the forward transfer on task i by the difference between the performance on task i after learning task (i-1) and the performance of initialized model on task i.
+- Intransigence (INT): Average intransigence on all tasks. We measure the intransigence on task i by the difference between the performances of the Joint model and the the target mode on task i after learning task i. BeGin provides this metric only if :func:`full_mode`, which simultaneously runs the bare model and the joint model, is enabled.
