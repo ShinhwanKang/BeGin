@@ -123,7 +123,7 @@ To compute the fisher matrices and learned weights, we need to collect them at t
 Step 4. Computing penalty term and Performing regularization (:func:`processTrainIteration` and :func:`afterInference`)
 =============
 
-To compute the penalty term and perform regularization with backpropagation, we need to implement them at the end of training for every task. So, we should handle such process in :func:`afterInference`.
+To compute the penalty term and perform regularization with backpropagation, we need to implement them at the end of training for every task. So, we should handle such process in :func:`afterInference`. In the event function, the parameter :func:`results` contains the prediction result and loss of the current model computed in the :func:`inference` function. So, the overall loss including penalty term can be computed as the summation of :func:`results['loss']` and :func:`loss_reg` obtained by the fisher information matrices and the previously learned weights stored in :func:`training_states`.
 
 .. code-block::
 
@@ -141,7 +141,7 @@ To compute the penalty term and perform regularization with backpropagation, we 
           total_num_items = 0
           for i, _curr_batch in enumerate(iter(train_loader)):
               curr_model.zero_grad()
-              curr_results = self._model_inference(curr_model, _curr_batch, curr_training_states)
+              curr_results = self.inference(curr_model, _curr_batch, curr_training_states)
               curr_results['loss'].backward()
               curr_num_items =_curr_batch[1].shape[0]
               total_num_items += curr_num_items
@@ -168,6 +168,7 @@ To compute the penalty term and perform regularization with backpropagation, we 
           return {'loss': total_loss.item(),
                   'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
 
+The above code shows the full implementation of the EWC algorithm for class-IL node classification setting. Similar to the EWC algorithm, existing continual learning algorithms can be implemented by just modifying several event functions without considering the overall training and evaulation procedure. For the detailed explanation about the event functions and their parameters, please refer :ref:`CCC`.
 
 --------
 Combining ScenarioLoader, Evaluator, Trainer
