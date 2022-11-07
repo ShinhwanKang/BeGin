@@ -36,5 +36,4 @@ The base framework is as follows:
 
 .. autoclass:: code_scenario.common.DGLBasicIL
     :members:
-    .. :undoc-members:
     :private-members:
