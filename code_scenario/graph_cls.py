@@ -2,23 +2,18 @@ from .common import DGLBasicIL
 import torch
 
 class DGLGraphClassificationIL(DGLBasicIL):
-    r"""Base framework for implementing scenario module
+    """
+        The sceanario loader for graph classification problems.
 
-    Arguments:
-        dataset_name (float): aa 
-        save_path (float): aa 
-        num_tasks (float): aa 
-        incr_type (float): aa 
-        cover_unseen (float): aa (DEFALUT : None)
-        minimize (float): aa 
-        metric (float): aa
-        kwargs: (float): aa
+        **Usage example:**
 
+            >>> scenario = DGLGraphClassificationIL(dataset_name="ogbg-molhiv", num_tasks=10, metric="rocauc", 
+            ...             save_path="/data", incr_type="domain", task_shuffle=True)
+
+        
+        Bases: ``DGLBasicIL``
     """
     def _init_continual_scenario(self):
-        """ 
-            aaaaddd
-        """
         self.num_classes, self.num_feats, self.__dataset = load_graph_dataset(self.dataset_name, self.save_path)
         
         if self.incr_type in ['class', 'task']:

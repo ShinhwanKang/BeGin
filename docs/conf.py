@@ -8,8 +8,11 @@ sys.path.append(os.path.abspath('..'))
 # -- Project information
 
 project = 'BeGin'
-copyright = '2022, Data Mining Lab'
-author = 'Jihoon Ko*, Shinhwan Kang*, and Kijung Shin'
+# copyright = '2022, Data Mining Lab'
+# author = 'Jihoon Ko*, Shinhwan Kang*, and Kijung Shin'
+copyright = 'Anonymous'
+author = 'Anonymous'
+
 
 release = '0.1'
 version = '0.1.0'
