@@ -23,6 +23,6 @@ According to the graph problems (e.g., node-, link-, and graph-level), codes of 
 
 Then, the above three codes is inherited a base code as follows:
 
-.. automodule:: code_trainer.common
+.. automodule:: begin.trainer.common.BaseTrainer
     :members:
     :private-members:
