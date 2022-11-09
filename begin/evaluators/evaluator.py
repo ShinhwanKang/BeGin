@@ -3,23 +3,50 @@ from torch import nn
 from torch_scatter import scatter
 import numpy as np
 from sklearn.metrics import roc_auc_score, average_precision_score
-from ogb.linkproppred import Evaluator as EEvaluator
-from ogb.nodeproppred import Evaluator as NEvaluator
-
 import time
 
-class Evaluator:
+class BaseEvaluator:
+    r"""
+        Base class for evaluating the performance.
+        Users can create their own evaluator by extending this class.
+        
+        Arguments:
+            num_tasks (int): The number of tasks in the target scenario.
+            task_ids (torch.Tensor): task ids of each instance.
+    """
+    
     def __init__(self, num_tasks, task_ids):
         self.num_tasks = num_tasks
         self._task_ids = task_ids
 
     def __call__(self, prediction, answer, indices):
+        r"""
+            WIP
+
+            Args:
+                prediction (torch.Tensor): predicted output of the current model
+                answer (torch.Tensor): ground-truth answer
+                indices (torch.Tensor): indexes of the chosen instances for evaluation
+        """
         raise NotImplementedError
         
     def simple_eval(self, prediction, answer):
+        r"""
+            Compute performance for the given batch when we ignore task configuration.
+            During the training procedure, this function is called by the function get_simple_eval_result implemented in ScenarioLoaders.
+            
+            Args:
+                prediction (torch.Tensor): predicted output of the current model
+                answer (torch.Tensor): ground-truth answer
+        """
         raise NotImplementedError
         
 class AccuracyEvaluator(Evaluator):
+    r"""
+        The evaluator for computing accuracy.
+        
+        Bases: ``BaseEvaluator``
+    """
     def __call__(self, _prediction, _answer, indices):
         prediction = _prediction.squeeze().to(_answer.device)
         answer = _answer.squeeze()
@@ -32,6 +59,11 @@ class AccuracyEvaluator(Evaluator):
         return ((prediction.squeeze().to(answer.device) == answer.squeeze()).float().sum() / answer.shape[0]).item()
 
 class ROCAUCEvaluator(Evaluator):
+    r"""
+        The evaluator for computing ROCAUC score.
+        
+        Bases: ``BaseEvaluator``
+    """
     def __call__(self, _prediction, answer, indices):
         prediction = _prediction.to(answer.device)
         target_ids = self._task_ids[indices]
@@ -42,16 +74,6 @@ class ROCAUCEvaluator(Evaluator):
         retval[self.num_tasks] = self.simple_eval(prediction, answer)
 
         return retval
-    
-    def simple_eval_sklearn(self, prediction, answer):
-        num_items, num_qs = answer.shape
-        valid_cols = (answer.sum(0) < num_items) & (answer.sum(0) > 0)
-        prediction, answer = prediction[..., valid_cols], answer[..., valid_cols]
-        score_sum = []
-        num_valid_qs = valid_cols.long().sum().item()
-        for i in range(num_valid_qs):
-            score_sum.append(roc_auc_score(answer[:, i].detach().cpu().numpy(), prediction[:, i].detach().cpu().numpy()))
-        return sum(score_sum) / len(score_sum)
     
     def simple_eval(self, prediction, answer):
         num_items, num_qs = answer.shape
@@ -66,6 +88,11 @@ class ROCAUCEvaluator(Evaluator):
         return rocauc_scores.mean().item()
 
 class HitsEvaluator(Evaluator):
+    r"""
+        The evaluator for computing Hits@K. This module inputs K, instead of task_ids as the second parameter.
+        
+        Bases: ``BaseEvaluator``
+    """
     def __init__(self, num_tasks, k):
         super().__init__(num_tasks, None)
         self.k = k

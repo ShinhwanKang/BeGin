@@ -32,7 +32,7 @@ Details are ...
 Accuracy
 --------
 
-.. autoclass:: code_evaluator.evaluator.AccuracyEvaluator
+.. autoclass:: begin.evaluators.evaluator.AccuracyEvaluator
     :undoc-members:
     :members:
     :private-members:
@@ -44,7 +44,7 @@ Accuracy
 ROCAUC
 --------
 
-.. autoclass:: code_evaluator.evaluator.ROCAUCEvaluator
+.. autoclass:: begin.evaluators.evaluator.ROCAUCEvaluator
     :undoc-members:
     :members:
     :private-members:
@@ -57,7 +57,7 @@ ROCAUC
 HITS@K
 --------
 
-.. autoclass:: code_evaluator.evaluator.HitsEvaluator
+.. autoclass:: begin.evaluators.evaluator.HitsEvaluator
     :undoc-members:
     :members:
     :private-members:

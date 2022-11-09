@@ -1,6 +1,6 @@
 import torch
 
-class DGLBasicIL:
+class BaseScenarioLoader:
     r"""Base framework for implementing scenario module.
 
     Arguments:
@@ -8,20 +8,17 @@ class DGLBasicIL:
         save_path (str): The path where the dataset file is saved.
         num_tasks (int): The number of tasks in graph continual learning.
         incr_type (str): The incremental setting of graph continual learning (spec. task, class, domain, and time).
-        metric (str): Basic metric to measure performance (spec., accuracy, AUROC, and HITS@K).
-        kwargs: (dict, optional): Key-word arguments to be passed to the scenario module (e.g., task_shuffle (bool): If true, fixed order, else random order)
+        metric (str): Basic metric to measure performance (spec., accuracy, AUCROC, and HITS@K).
+        kwargs: (dict, optional): Keyword arguments to be passed to the scenario module (e.g., task_shuffle (bool): If true, fixed order, else random order)
     
     """
-    # def __init__(self, dataset_name=None, save_path='/mnt/d/graph_dataset', num_tasks=1, incr_type='class', cover_unseen=True, minimize=True, metric=None, **kwargs):
-    def __init__(self, dataset_name, save_path, num_tasks, incr_type, metric, cover_unseen=True, minimize=True, **kwargs):
+    def __init__(self, dataset_name, save_path, num_tasks, incr_type, metric, **kwargs):
         self.dataset_name = dataset_name
         self.save_path = save_path
         self.num_classes = None
         self.num_feats = None
         self.num_tasks = num_tasks
         self.incr_type = incr_type
-        self.cover_unseen = cover_unseen
-        self.minimize = minimize
         self.metric = metric
         self.kwargs = kwargs
         
@@ -65,16 +62,13 @@ class DGLBasicIL:
         """
         return self.num_tasks
     
-    def next_task(self, preds=torch.empty(1)):
+    def next_task(self, preds):
         """ 
             Update graph datasets used in graph continual learning. 
             Specifically, the ``target`` denotes a dataset the implemented model uses and the ``accumulated`` denotes a dataset the joint model uses.
 
             Args:
                 preds (torch.Tensor): Predicted output of the models
-            
-            Note:
-                The argument ``preds`` is used in other classes.
         """
         self._curr_task += 1
         if self._curr_task < self.num_tasks:

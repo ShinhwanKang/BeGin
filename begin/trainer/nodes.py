@@ -1,5 +1,6 @@
-from .common import BaseIncrementalBenchmark
-class BaseNodeIncrementalBenchmark(BaseIncrementalBenchmark):
+from .common import BaseTrainer
+
+class NCTrainer(BaseTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.scheduler_fn = kwargs['scheduler_fn']

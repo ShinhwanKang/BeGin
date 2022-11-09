@@ -1,4 +1,4 @@
-class BaseIncrementalBenchmark:
+class BaseTrainer:
     r""" Base framework for implementing trainer module.
 
     Arguments:
@@ -11,18 +11,6 @@ class BaseIncrementalBenchmark:
 
     Note:
         For instance, by kwargs, users can pass hyperparameters the implemented method needs or a scheduler function (torch.nn) for tranining.  
-
-    # Todo:
-    #     TODOTDO
-
-    # Raises:
-    #     AttributeError: The ``Raises`` section is a list of all exceptions
-    #         that are relevant to the interface.
-    #     ValueError: If `param2` is equal to `param1`.
-
-    # Yields:
-    #     int: The next number in the range of 0 to `n` - 1.
-
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
         self.args = kwargs['args']
