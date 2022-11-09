@@ -41,7 +41,7 @@ class BaseEvaluator:
         """
         raise NotImplementedError
         
-class AccuracyEvaluator(Evaluator):
+class AccuracyEvaluator(BaseEvaluator):
     r"""
         The evaluator for computing accuracy.
         
@@ -58,7 +58,7 @@ class AccuracyEvaluator(Evaluator):
     def simple_eval(self, prediction, answer):
         return ((prediction.squeeze().to(answer.device) == answer.squeeze()).float().sum() / answer.shape[0]).item()
 
-class ROCAUCEvaluator(Evaluator):
+class ROCAUCEvaluator(BaseEvaluator):
     r"""
         The evaluator for computing ROCAUC score.
         
@@ -87,7 +87,7 @@ class ROCAUCEvaluator(Evaluator):
         rocauc_scores = 1. - ((num_pos * (ordered_answer == 0)).sum(0) / (num_pos[-1] * num_neg[-1]))
         return rocauc_scores.mean().item()
 
-class HitsEvaluator(Evaluator):
+class HitsEvaluator(BaseEvaluator):
     r"""
         The evaluator for computing Hits@K. This module inputs K, instead of task_ids as the second parameter.
         

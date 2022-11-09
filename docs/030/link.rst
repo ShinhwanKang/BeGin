@@ -1,17 +1,17 @@
 Link-level problems
-======
+========================
 
 Prediction
-------
+------------
 
-.. automodule:: code_scenario.link_pred
+.. automodule:: begin.scenarios.links.LPScenarioLoader
     :members:
     :private-members:
 
 
 Classification
-------
+----------------
 
-.. automodule:: code_scenario.link_pred
+.. automodule:: begin.scenarios.links.LCScenarioLoader
     :members:
     :private-members:

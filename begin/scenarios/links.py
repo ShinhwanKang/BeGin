@@ -235,3 +235,141 @@ class LPScenarioLoader(BaseScenarioLoader):
         self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
         super().next_task(preds)
         if self._curr_task == self.num_tasks: return self.__test_results
+    
+class LCScenarioLoader(BaseScenarioLoader):
+    def _init_continual_scenario(self):
+        self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_classes = 1
+        
+        pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_allIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_allIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        self.__inner_tvt_splits = metadata['inner_tvt_split'] % 10
+        
+        if self.incr_type in ['domain']:
+            raise NotImplementedError
+        elif self.incr_type == 'time':
+            self.num_classes = 1
+            self.num_tasks = 7
+            counts = torch.cumsum(torch.bincount(self.__graph.edata['time']), dim=-1)
+            self.__task_ids = (counts / ((self.__graph.num_edges() + 1.) / self.num_tasks)).long()
+            self.__task_ids = self.__task_ids[self.__graph.edata['time']]
+            self.__graph.edata.pop('time')
+            self.__graph.edata['label'] = (self.__graph.edata.pop('label') < 0).long()
+        elif self.incr_type in ['class', 'task']:
+            self.label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5])
+            # self.label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 3, 5, 5, 5, 5, 5])
+            self.num_classes = 7
+            self.num_tasks = 3
+            if self.kwargs is not None and 'task_orders' in self.kwargs:
+                self.__splits = tuple([torch.LongTensor(class_ids) for class_ids in self.kwargs['task_orders']])
+            elif self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
+                self.__splits = torch.split(torch.randperm(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
+            else:
+                self.__splits = torch.split(torch.arange(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
+            print('class split information:', self.__splits)
+            id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
+            for i in range(self.num_tasks):
+                id_to_task[self.__splits[i]] = i
+            self.__graph.edata['label'] = self.label_to_class[self.__graph.edata.pop('label').squeeze(-1) + 10]
+            self.__graph.edata.pop('time')
+            self.__task_ids = id_to_task[self.__graph.edata['label']]
+        
+        if self.incr_type == 'task':
+            self.__task_masks = torch.zeros(self.num_tasks + 1, self.num_classes).bool()
+            for i in range(self.num_tasks):
+                self.__task_masks[i, self.__splits[i]] = True
+        
+        if self.metric is not None:
+            if '@' in self.metric:
+                metric_name, metric_k = self.metric.split('@')
+                self.__evaluator = evaluator_map[metric_name](self.num_tasks, int(metric_k))
+            else:
+                self.__evaluator = evaluator_map[self.metric](self.num_tasks, self.__task_ids)
+        self.__test_results = []
+        
+    def _update_target_dataset(self):
+        target_dataset = copy.deepcopy(self.__graph)
+        target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids == self._curr_task)
+        target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids == self._curr_task)
+        target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        target_dataset.edata['label'][target_dataset.edata['test_mask'] | (self.__task_ids != self._curr_task)] = -1
+        if self.incr_type == 'class':
+            self._target_dataset = target_dataset
+        elif self.incr_type == 'task':
+            self._target_dataset = target_dataset
+            self._target_dataset.edata['task_specific_mask'] = self.__task_masks[self.__task_ids]
+        elif self.incr_type == 'time':
+            srcs, dsts = target_dataset.edges()
+            edges_ready = (self.__task_ids <= self._curr_task)
+            self._target_dataset = dgl.graph((srcs[edges_ready], dsts[edges_ready]), num_nodes=self.__graph.num_nodes())
+            for k in target_dataset.ndata.keys():
+                self._target_dataset.ndata[k] = target_dataset.ndata[k]
+            for k in target_dataset.edata.keys():
+                self._target_dataset.edata[k] = target_dataset.edata[k][edges_ready]
+        elif self.incr_type == 'domain':
+            pass
+        
+    def _update_accumulated_dataset(self):
+        target_dataset = copy.deepcopy(self.__graph)
+        target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids <= self._curr_task)
+        target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids <= self._curr_task)
+        target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        target_dataset.edata['label'] = self.__graph.edata['label'].clone()
+        target_dataset.edata['label'][target_dataset.edata['test_mask'] | (self.__task_ids > self._curr_task)] = -1
+        if self.incr_type == 'class':
+            self._accumulated_dataset = target_dataset
+        elif self.incr_type == 'task':
+            self._accumulated_dataset = target_dataset
+            self._accumulated_dataset.edata['task_specific_mask'] = self.__task_masks[self.__task_ids]
+        elif self.incr_type == 'time':
+            srcs, dsts = target_dataset.edges()
+            edges_ready = (self.__task_ids <= self._curr_task)
+            self._accumulated_dataset = dgl.graph((srcs[edges_ready], dsts[edges_ready]), num_nodes=self.__graph.num_nodes())
+            for k in target_dataset.ndata.keys():
+                self._accumulated_dataset.ndata[k] = target_dataset.ndata[k]
+            for k in target_dataset.edata.keys():
+                self._accumulated_dataset.edata[k] = target_dataset.edata[k][edges_ready]
+        elif self.incr_type == 'domain':
+            pass
+            
+    def _get_eval_result_inner(self, preds, target_split):
+        if self.incr_type == 'time':
+            gt = self.__graph.edata['label'][self.__task_ids <= self._curr_task][self._target_dataset.edata[target_split + '_mask']]
+            assert preds.shape == gt.shape, "shape mismatch"
+            return self.__evaluator(preds, gt, torch.arange(self.__graph.num_edges())[self.__task_ids <= self._curr_task][self._target_dataset.edata[target_split + '_mask']])
+        else:
+            gt = self.__graph.edata['label'][self._target_dataset.edata[target_split + '_mask']]
+            assert preds.shape == gt.shape, "shape mismatch"
+            return self.__evaluator(preds, gt, torch.arange(self._target_dataset.num_edges())[self._target_dataset.edata[target_split + '_mask']])
+    
+    def get_eval_result(self, preds, target_split='test'):
+        return self._get_eval_result_inner(preds, target_split)
+    
+    def get_accum_eval_result(self, preds, target_split='test'):
+        if self.incr_type == 'time':
+            gt = self.__graph.edata['label'][self.__task_ids <= self._curr_task][self._accumulated_dataset.edata[target_split + '_mask']]
+            assert preds.shape == gt.shape, "shape mismatch"
+            return self.__evaluator(preds, gt, torch.arange(self.__graph.num_edges())[self.__task_ids <= self._curr_task][self._accumulated_dataset.edata[target_split + '_mask']])
+        else:
+            gt = self.__graph.edata['label'][self._accumulated_dataset.edata[target_split + '_mask']]
+            assert preds.shape == gt.shape, "shape mismatch"
+            return self.__evaluator(preds, gt, torch.arange(self._target_dataset.num_edges())[self._accumulated_dataset.edata[target_split + '_mask']])
+        # return self._get_eval_result_inner(preds, target_split)
+    
+    def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
+        return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
+    
+    def next_task(self, preds=torch.empty(1)):
+        self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
+        super().next_task(preds)
+        if self._curr_task == self.num_tasks:
+            scores = torch.stack(self.__test_results, dim=0)
+            scores_np = scores.detach().cpu().numpy()
+            ap = scores_np[-1, :-1].mean().item()
+            af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
+            if self.initial_test_result is not None:
+                fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
+            else:
+                fwt = None
+            return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}

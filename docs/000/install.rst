@@ -1,8 +1,8 @@
 Install and Setup
-===================================
+====================
 
 Requirements
---------
+----------------
 
 BeGin works with the following Python packages:
 
@@ -19,7 +19,7 @@ For running some examples, you may need the following additional packages:
 - qpth
 
 Installation
---------
+----------------
 
 You can install BeGin using pip with the following command:
 

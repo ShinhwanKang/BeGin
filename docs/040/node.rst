@@ -1,6 +1,6 @@
 Node-level problems
-======
+========================
 
-.. automodule:: code_trainer.node_level
+.. automodule:: begin.trainers.nodes
     :members:
     :private-members:

@@ -1,7 +1,7 @@
 import sys
-sys.path.append("..")
-from code_trainer.node_level import BaseNodeIncrementalBenchmark
-class BaseNodeTaskIncrementalBenchmark(BaseNodeIncrementalBenchmark):
+from begin.trainers.nodes import NCTrainer
+
+class NCTaskILBareTrainer(NCTrainer):
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         curr_batch, mask = _curr_batch
         optimizer.zero_grad()

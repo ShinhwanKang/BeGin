@@ -1,5 +1,5 @@
 import sys
-sys.path.append("..")
-from code_trainer.node_level import BaseNodeIncrementalBenchmark
-class BaseNodeTimeIncrementalBenchmark(BaseNodeIncrementalBenchmark):
+from begin.trainers.nodes import NCTrainer
+
+class NCTimeILBareTrainer(NCTrainer):
     pass

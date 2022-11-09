@@ -1,1 +1,1 @@
-from evaluator import *
+from .evaluator import *
