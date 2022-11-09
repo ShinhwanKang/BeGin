@@ -25,7 +25,7 @@ def load_graph_dataset(dataset_name, incr_type, save_path):
         
     return num_classes, num_feats, dataset
 
-class GCScenarioLoader(BaseScenraioLoader):
+class GCScenarioLoader(BaseScenarioLoader):
     """
         The sceanario loader for graph classification problems.
 

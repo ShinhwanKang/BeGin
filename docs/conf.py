@@ -70,12 +70,13 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 source_suffix = ['.rst', '.md']
+exclude_patterns = ['.ipynb_checkpoints/*.rst', '0*0*/.ipynb_checkpoints/*.rst']
 
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb"]
+autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy"]
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'

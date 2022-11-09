@@ -1,6 +1,6 @@
 Link-level problems
-======
+========================
 
-.. automodule:: code_trainer.link_level
+.. automodule:: begin.trainers.links
     :members:
     :private-members:

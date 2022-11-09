@@ -1,5 +1,5 @@
 Common framework
-======
+====================
 
 Our framework ``BeGin`` provides a sceanrio loader responsible for communicating with user code (i.e., the training part) to perform a benchmark under a sesired incremental setting.
 
@@ -34,6 +34,6 @@ We provides the implemented scenario loaders as follows:
 
 The base framework is as follows:
 
-.. autoclass:: code_scenario.common.DGLBasicIL
+.. autoclass:: begin.scenarios.common.BaseScenarioLoader
     :members:
     :private-members:

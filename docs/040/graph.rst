@@ -1,6 +1,6 @@
 Graph-level problems
-======
+========================
 
-.. automodule:: code_trainer.graph_level
+.. automodule:: begin.trainers.graphs
     :members:
     :private-members:

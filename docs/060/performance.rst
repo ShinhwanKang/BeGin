@@ -9,9 +9,10 @@ Returns a performance matrix :math:`\mathrm{M}\in\mathbb{R}^{N\times N}`
 
 
 Examples
---------
+----------------
 
 .. code-block:: python
+
     from evaluator import *
     def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
             return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
@@ -30,9 +31,9 @@ Details are ...
 
 
 Accuracy
---------
+----------------
 
-.. autoclass:: begin.evaluators.evaluator.AccuracyEvaluator
+.. autoclass:: begin.evaluators.AccuracyEvaluator
     :undoc-members:
     :members:
     :private-members:
@@ -42,9 +43,9 @@ Accuracy
 
 
 ROCAUC
---------
+----------------
 
-.. autoclass:: begin.evaluators.evaluator.ROCAUCEvaluator
+.. autoclass:: begin.evaluators.ROCAUCEvaluator
     :undoc-members:
     :members:
     :private-members:
@@ -55,14 +56,11 @@ ROCAUC
 
 
 HITS@K
---------
+----------------
 
-.. autoclass:: begin.evaluators.evaluator.HitsEvaluator
+.. autoclass:: begin.evaluators.HitsEvaluator
     :undoc-members:
     :members:
     :private-members:
 
-
-
---------------------
 

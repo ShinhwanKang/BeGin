@@ -1,9 +1,9 @@
 Graph-level problems
-======
+========================
 
 Classification
-------
+----------------
 
-.. automodule:: code_scenario.graph_cls
+.. automodule:: begin.scenarios.graphs.GCScenarioLoader
     :members:
     :private-members:
