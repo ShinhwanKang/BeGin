@@ -8,8 +8,6 @@ sys.path.append(os.path.abspath('..'))
 # -- Project information
 
 project = 'BeGin'
-# copyright = '2022, Data Mining Lab'
-# author = 'Jihoon Ko*, Shinhwan Kang*, and Kijung Shin'
 copyright = 'Anonymous'
 author = 'Anonymous'
 
@@ -76,7 +74,7 @@ exclude_patterns = ['.ipynb_checkpoints/*.rst', '0*0*/.ipynb_checkpoints/*.rst']
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy"]
+autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy", "networkx"]
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
