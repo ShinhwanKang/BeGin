@@ -56,7 +56,7 @@ def load_linkc_dataset(dataset_name, incr_type, save_path):
 
 class LPScenarioLoader(BaseScenarioLoader):
     """
-        The sceanario loader for link prediction problems.
+        The sceanario loader for link prediction.
 
         **Usage example:**
 
@@ -237,10 +237,22 @@ class LPScenarioLoader(BaseScenarioLoader):
         if self._curr_task == self.num_tasks: return self.__test_results
     
 class LCScenarioLoader(BaseScenarioLoader):
+    """
+        The sceanario loader for link classification.
+
+        **Usage example:**
+
+            >>> scenario = LCScenarioLoader(dataset_name="bitcoin", num_tasks=3, metric="accuracy", 
+            ...             save_path="/data", incr_type="task", task_shuffle=True)
+            
+            >>> scenario = LCScenarioLoader(dataset_name="bitcoin", num_tasks=7, metric="aucroc", 
+            ...             save_path="/data", incr_type="time")
+
+        Bases: ``BaseScenarioLoader``
+    """
     def _init_continual_scenario(self):
         self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.incr_type, self.save_path)
         self.num_classes = 1
-        
         pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_allIL.pkl')
         download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
@@ -249,25 +261,30 @@ class LCScenarioLoader(BaseScenarioLoader):
         if self.incr_type in ['domain']:
             raise NotImplementedError
         elif self.incr_type == 'time':
+            # binary classification problem
             self.num_classes = 1
             self.num_tasks = 7
+            # split into tasks using timestamp
             counts = torch.cumsum(torch.bincount(self.__graph.edata['time']), dim=-1)
             self.__task_ids = (counts / ((self.__graph.num_edges() + 1.) / self.num_tasks)).long()
             self.__task_ids = self.__task_ids[self.__graph.edata['time']]
             self.__graph.edata.pop('time')
             self.__graph.edata['label'] = (self.__graph.edata.pop('label') < 0).long()
         elif self.incr_type in ['class', 'task']:
+            # multi-class classifcation problem
             self.label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5])
-            # self.label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 3, 5, 5, 5, 5, 5])
             self.num_classes = 7
             self.num_tasks = 3
+            
+            # determine task configuration
             if self.kwargs is not None and 'task_orders' in self.kwargs:
                 self.__splits = tuple([torch.LongTensor(class_ids) for class_ids in self.kwargs['task_orders']])
             elif self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
                 self.__splits = torch.split(torch.randperm(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
             else:
                 self.__splits = torch.split(torch.arange(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
-            print('class split information:', self.__splits)
+            
+            # compute task ids for each instance and remove time information (since it is unnecessary)
             id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
             for i in range(self.num_tasks):
                 id_to_task[self.__splits[i]] = i
@@ -275,31 +292,38 @@ class LCScenarioLoader(BaseScenarioLoader):
             self.__graph.edata.pop('time')
             self.__task_ids = id_to_task[self.__graph.edata['label']]
         
+        # we need to provide task information (only for task-IL)
         if self.incr_type == 'task':
             self.__task_masks = torch.zeros(self.num_tasks + 1, self.num_classes).bool()
             for i in range(self.num_tasks):
                 self.__task_masks[i, self.__splits[i]] = True
         
+        # set evaluator for the target scenario
         if self.metric is not None:
-            if '@' in self.metric:
-                metric_name, metric_k = self.metric.split('@')
-                self.__evaluator = evaluator_map[metric_name](self.num_tasks, int(metric_k))
-            else:
-                self.__evaluator = evaluator_map[self.metric](self.num_tasks, self.__task_ids)
+            self.__evaluator = evaluator_map[self.metric](self.num_tasks, self.__task_ids)
         self.__test_results = []
         
     def _update_target_dataset(self):
         target_dataset = copy.deepcopy(self.__graph)
+        
+        # set train/val/test split for the current task
         target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids == self._curr_task)
         target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids == self._curr_task)
         target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        
+        # hide labels of test nodes
+        target_dataset.edata['label'] = self.__graph.edata['label'].clone()
         target_dataset.edata['label'][target_dataset.edata['test_mask'] | (self.__task_ids != self._curr_task)] = -1
+        
         if self.incr_type == 'class':
+            # for class-IL, no need to change
             self._target_dataset = target_dataset
         elif self.incr_type == 'task':
+            # for task-IL, we need task information. BeGin provide the information with 'task_specific_mask'
             self._target_dataset = target_dataset
             self._target_dataset.edata['task_specific_mask'] = self.__task_masks[self.__task_ids]
         elif self.incr_type == 'time':
+            # for time-IL, we need to hide unseen nodes and information at the current timestamp
             srcs, dsts = target_dataset.edges()
             edges_ready = (self.__task_ids <= self._curr_task)
             self._target_dataset = dgl.graph((srcs[edges_ready], dsts[edges_ready]), num_nodes=self.__graph.num_nodes())
@@ -312,17 +336,25 @@ class LCScenarioLoader(BaseScenarioLoader):
         
     def _update_accumulated_dataset(self):
         target_dataset = copy.deepcopy(self.__graph)
+        
+        # set train/val/test split for the current task
         target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids <= self._curr_task)
         target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids <= self._curr_task)
         target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        
+        # hide labels of test nodes
         target_dataset.edata['label'] = self.__graph.edata['label'].clone()
         target_dataset.edata['label'][target_dataset.edata['test_mask'] | (self.__task_ids > self._curr_task)] = -1
+        
         if self.incr_type == 'class':
+            # for class-IL, no need to change
             self._accumulated_dataset = target_dataset
         elif self.incr_type == 'task':
+            # for task-IL, we need task information. BeGin provide the information with 'task_specific_mask'
             self._accumulated_dataset = target_dataset
             self._accumulated_dataset.edata['task_specific_mask'] = self.__task_masks[self.__task_ids]
         elif self.incr_type == 'time':
+            # for time-IL, we need to hide unseen nodes and information at the current timestamp
             srcs, dsts = target_dataset.edges()
             edges_ready = (self.__task_ids <= self._curr_task)
             self._accumulated_dataset = dgl.graph((srcs[edges_ready], dsts[edges_ready]), num_nodes=self.__graph.num_nodes())
@@ -334,7 +366,15 @@ class LCScenarioLoader(BaseScenarioLoader):
             pass
             
     def _get_eval_result_inner(self, preds, target_split):
+        """
+            The inner function of get_eval_result.
+            
+            Args:
+                preds (torch.Tensor): predicted output of the current model
+                target_split (str): target split to measure the performance (spec., 'val' or 'test')
+        """
         if self.incr_type == 'time':
+            # for Time-IL we evaluate the performance only with currently seen nodes
             gt = self.__graph.edata['label'][self.__task_ids <= self._curr_task][self._target_dataset.edata[target_split + '_mask']]
             assert preds.shape == gt.shape, "shape mismatch"
             return self.__evaluator(preds, gt, torch.arange(self.__graph.num_edges())[self.__task_ids <= self._curr_task][self._target_dataset.edata[target_split + '_mask']])
@@ -347,7 +387,16 @@ class LCScenarioLoader(BaseScenarioLoader):
         return self._get_eval_result_inner(preds, target_split)
     
     def get_accum_eval_result(self, preds, target_split='test'):
+        """ 
+            Compute performance on the accumulated dataset for the given target split.
+            It can be used to compute train/val performance during training.
+            
+            Args:
+                preds (torch.Tensor): predicted output of the current model
+                target_split (str): target split to measure the performance (spec., 'val' or 'test')
+        """
         if self.incr_type == 'time':
+            # for Time-IL we evaluate the performance only with currently seen nodes
             gt = self.__graph.edata['label'][self.__task_ids <= self._curr_task][self._accumulated_dataset.edata[target_split + '_mask']]
             assert preds.shape == gt.shape, "shape mismatch"
             return self.__evaluator(preds, gt, torch.arange(self.__graph.num_edges())[self.__task_ids <= self._curr_task][self._accumulated_dataset.edata[target_split + '_mask']])
@@ -355,9 +404,16 @@ class LCScenarioLoader(BaseScenarioLoader):
             gt = self.__graph.edata['label'][self._accumulated_dataset.edata[target_split + '_mask']]
             assert preds.shape == gt.shape, "shape mismatch"
             return self.__evaluator(preds, gt, torch.arange(self._target_dataset.num_edges())[self._accumulated_dataset.edata[target_split + '_mask']])
-        # return self._get_eval_result_inner(preds, target_split)
-    
+        
     def get_simple_eval_result(self, curr_batch_preds, curr_batch_gts):
+        """ 
+            Compute performance for the given batch when we ignore task configuration.
+            It can be used to compute train/val performance during training.
+            
+            Args:
+                curr_batch_preds (torch.Tensor): predicted output of the current model
+                curr_batch_gts (torch.Tensor): ground-truth labels
+        """
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):

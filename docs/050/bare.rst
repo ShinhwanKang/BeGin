@@ -8,25 +8,25 @@ Bare Model: Lower Bound of Graph Continual Learning
 Node Classification
 -------------------------
 
-.. automodule:: begin.code_bare.node_cls_task
+.. automodule:: begin.algorithms.bare.nc_task
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: begin.code_bare.node_cls_class
+.. automodule:: begin.algorithms.bare.nc_class
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: begin.code_bare.node_cls_domain
+.. automodule:: begin.algorithms.bare.nc_domain
     :undoc-members:
     :members:
     :private-members:
 
 
-.. automodule:: begin.code_bare.node_cls_time
+.. automodule:: begin.algorithms.bare.nc_time
     :undoc-members:
     :members:
     :private-members:

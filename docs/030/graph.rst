@@ -1,9 +1,6 @@
 Graph-level problems
 ========================
 
-Classification
-----------------
-
-.. automodule:: begin.scenarios.graphs.GCScenarioLoader
+.. automodule:: begin.scenarios.graphs
     :members:
     :private-members:

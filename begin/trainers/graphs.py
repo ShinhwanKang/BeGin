@@ -12,50 +12,105 @@ class GCTrainer(BaseTrainer):
             np.random.seed(worker_seed)
             random.seed(worker_seed)
         self._dataloader_seed_worker = seed_worker
-
         
+    def initTrainingStates(self, scenario, model, optimizer):
+        return {}
+    
     def prepareLoader(self, curr_dataset, curr_training_states):
+        # dataloader for training dataset
         g_train = torch.Generator()
         g_train.manual_seed(0)
         train_loader = dgl.dataloading.GraphDataLoader(curr_dataset['train'], batch_size=128, shuffle=True, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_train)
         
+        # dataloader for validation dataset
         g_val = torch.Generator()
         g_val.manual_seed(0)
         val_loader = dgl.dataloading.GraphDataLoader(curr_dataset['val'], batch_size=128, shuffle=False, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_val)
         
+        # dataloader for test dataset
         g_test = torch.Generator()
         g_test.manual_seed(0)
         test_loader = dgl.dataloading.GraphDataLoader(curr_dataset['test'], batch_size=128, shuffle=False, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_test)
         return train_loader, val_loader, test_loader
     
-    def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
-        graphs, labels = _curr_batch
-        optimizer.zero_grad()
-        preds = model(graphs.to(self.device),
-                      graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
-                      edge_attr = graphs.edata['feat'].to(self.device) if 'feat' in graphs.edata else None,
-                      edge_weight = graphs.edata['weight'].to(self.device) if 'weight' in graphs.edata else None)
-        loss = self.loss_fn(preds, labels.to(self.device))
-        loss.backward()
-        optimizer.step()
-        return {'_num_items': preds.shape[0], 'loss': loss.item(), 'acc': self.eval_fn(preds.argmax(-1), labels.to(self.device))}
-        
-    def processEvalIteration(self, model, _curr_batch):
-        graphs, labels = _curr_batch
-        preds = model(graphs.to(self.device),
-                      graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
-                      edge_attr = graphs.edata['feat'].to(self.device) if 'feat' in graphs.edata else None,
-                      edge_weight = graphs.edata['weight'].to(self.device) if 'weight' in graphs.edata else None)
-        loss = self.loss_fn(preds, labels.to(self.device))
-        return torch.argmax(preds, dim=-1), {'_num_items': preds.shape[0], 'loss': loss.item(), 'acc': self.eval_fn(preds.argmax(-1), labels.to(self.device))}
-    
-    def _processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
-        print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
-        
-    def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10
         
         curr_model.observe_labels(torch.LongTensor([curr_dataset['train'][i][1] for i in range(len(curr_dataset['train']))]))
         self._reset_optimizer(curr_optimizer)
+    
+    def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        pass
+    
+    def inference(self, model, _curr_batch, training_states):
+        graphs, labels = _curr_batch
+        preds = model(graphs.to(self.device),
+                      graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
+                      edge_attr = graphs.edata['feat'].to(self.device) if 'feat' in graphs.edata else None,
+                      edge_weight = graphs.edata['weight'].to(self.device) if 'weight' in graphs.edata else None)
+        loss = self.loss_fn(preds, labels.to(self.device))
+        return {'preds': preds, 'loss': loss}
+    
+    def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        results['loss'].backward()
+        optimizer.step()
+        return {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
+    
+    def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        optimizer.zero_grad()
+        self._before_inference(model, optimizer, _curr_batch, training_states)
+        inference_results = self._model_inference(model, _curr_batch, training_states)
+        return self._after_inference(inference_results, model, optimizer, _curr_batch, training_states)
+        
+    def processEvalIteration(self, model, _curr_batch):
+        results = self._model_inference(model, _curr_batch, None)
+        return torch.argmax(results['preds'], dim=-1), {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(),
+                                                        'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
+    
+    def processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
+        print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
+    
+    def processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
+        val_loss = curr_iter_results['val_stats']['loss']
+        # maintain the best parameter
+        if val_loss < curr_training_states['best_val_loss']:
+            curr_training_states['best_val_loss'] = val_loss
+            curr_training_states['best_weights'] = copy.deepcopy(curr_model.state_dict())
+        
+        # integration with scheduler
+        scheduler = curr_training_states['scheduler']
+        scheduler.step(val_loss)
+        # stopping criteria for training
+        if -1e-9 < (curr_optimizer.param_groups[0]['lr'] - scheduler.min_lrs[0]) < 1e-9:
+            # earlystopping!
+            return False
+        return True
+    
+    def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        # before measuring the test performance, we need to set the best parameters
+        curr_model.load_state_dict(curr_training_states['best_weights'])
+    
+    def run(self, epoch_per_task=1):
+        results = super().run(epoch_per_task)
+        
+        # dump the results as pickle
+        with open(f'{self.result_path}/output.pkl', 'wb') as f:
+            pickle.dump({k: v.detach().cpu().numpy() for k, v in results.items()}, f)
+        if self.full_mode:
+            init_acc, accum_acc_mat, base_acc_mat, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'accum_test', 'base_test', 'exp_test'))
+        else:
+            init_acc, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'exp_test'))
+            
+        print('init_acc:', init_acc)
+        print('algo_acc_mat:', algo_acc_mat)
+        print('abs_avg_precision_last:', round(algo_acc_mat[self.num_tasks - 1][:-1].sum() / self.num_tasks, 4))
+        print('abs_avg_precision_diag:', round(algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)].sum() / self.num_tasks, 4))
+        print('abs_avg_forgetting_last:', round((algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - algo_acc_mat[self.num_tasks - 1, :self.num_tasks]).sum() / (self.num_tasks - 1), 4))
+        if self.full_mode:
+            print('base_acc_mat:', base_acc_mat)
+            print('joint_acc_mat:', accum_acc_mat)
+            print('abs_avg_intransigence_base:', round((base_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
+            print('abs_avg_intransigence_joint:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
+            print('rel_upstream_transfer_diag:', round((((algo_acc_mat - base_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)]) / (base_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - init_acc[:self.num_tasks])).mean(), 4))
