@@ -1,8 +1,12 @@
 from .common import BaseScenarioLoader
 from .datasets import *
+from ogb.nodeproppred import DglNodePropPredDataset
+from ..evaluators import *
 
 import torch
 import dgl
+
+evaluator_map = {'accuracy': AccuracyEvaluator, 'rocauc': ROCAUCEvaluator, 'hits': HitsEvaluator}
 
 def load_node_dataset(dataset_name, incr_type, save_path):
     """
