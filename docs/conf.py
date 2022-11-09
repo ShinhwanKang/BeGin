@@ -74,7 +74,7 @@ exclude_patterns = ['.ipynb_checkpoints/*.rst', '0*0*/.ipynb_checkpoints/*.rst']
 
 html_theme = 'sphinx_rtd_theme'
 
-autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy", "networkx"]
+autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy", "networkx", "tqdm"]
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
