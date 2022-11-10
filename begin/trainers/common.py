@@ -1,3 +1,11 @@
+import time
+import copy
+import torch
+from torch import nn
+import numpy as np
+import sys
+import dgl
+
 class BaseTrainer:
     r""" Base framework for implementing trainer module.
 
@@ -13,8 +21,6 @@ class BaseTrainer:
         For instance, by kwargs, users can pass hyperparameters the implemented method needs or a scheduler function (torch.nn) for tranining.  
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
-        self.args = kwargs['args']
-        
         # set random seed for DGL
         if kwargs.get('benchmark', False):
             fixed_seed = kwargs.get('seed', 0)
@@ -27,10 +33,11 @@ class BaseTrainer:
         self.__optimizer = optimizer_fn(self.__model.parameters())
         
         # set path for storing initial parameters of model and optimizer
-        self.tmp_path = kwargs.get('tmp_save_path', 'tmp/')
-        self.result_path = kwargs.get('tmp_save_path', 'results/')
+        self.tmp_path = kwargs.get('tmp_save_path', 'tmp')
+        self.result_path = kwargs.get('tmp_save_path', 'results')
         self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
         self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
+        
         torch.save(self.__model.state_dict(), self.__model_weight_path)
         torch.save(self.__optimizer.state_dict(), self.__optim_weight_path)
         
@@ -136,7 +143,7 @@ class BaseTrainer:
                         initial_test_predictions = []
                         # collect predicted results on current val/test data
                         for curr_batch in iter(dataloaders['base'][split]):
-                            initial_test_predictions.append(self.__evalWrapper(models['base'], curr_batch, initial_stats))
+                            initial_test_predictions.append(self._evalWrapper(models['base'], curr_batch, initial_stats))
                         # compute the initial performances
                         initial_results[split] = self.__scenario.get_eval_result(torch.cat(initial_test_predictions, dim=0), target_split=split)
                     
@@ -180,13 +187,13 @@ class BaseTrainer:
                     curr_iter_results = {'val_metric': val_metric_result, 'train_stats': reduced_train_stats, 'val_stats': reduced_val_stats}
                     
                     # handle procedure for after each itearation and determine whether to continue training or not
-                    if not self._processAfterEachIteration(models[exp_name], optims[exp_name], training_states[exp_name], curr_iter_results):
+                    if not self.processAfterEachIteration(models[exp_name], optims[exp_name], training_states[exp_name], curr_iter_results):
                         stop_training[exp_name] = True
             
             # handle procedure for right after the training ends
             for exp_name in ['base', 'accum', 'exp'] if self.full_mode else ['exp']:
                 models[exp_name].eval()
-                self._processAfterTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+                self.processAfterTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
                     
             # measure the performance on (accumulated) validation/test dataset
             for split in ['val', 'test']:
@@ -195,7 +202,7 @@ class BaseTrainer:
                     test_predictions, test_stats = [], {}
                     for curr_batch in iter(dataloaders['accum'][split]):
                         # handle each minibatch
-                        test_predictions.append(self.__evalWrapper(models[exp_name], curr_batch, test_stats))
+                        test_predictions.append(self._evalWrapper(models[exp_name], curr_batch, test_stats))
                         
                     # measure the performance using the collected prediction results
                     test_predictions = torch.cat(test_predictions, dim=0)

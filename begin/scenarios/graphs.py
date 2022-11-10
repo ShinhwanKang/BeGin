@@ -1,8 +1,14 @@
-from .common import BaseScenarioLoader
-from .datasets import *
-
 import torch
 import dgl
+import os
+import pickle
+import copy
+from dgl.data.utils import download, Subset
+from ogb.graphproppred import DglGraphPropPredDatasetWithTaskMask as DglGraphPropPredDataset
+
+from .common import BaseScenarioLoader
+from .datasets import *
+from . import evaluator_map
 
 def load_graph_dataset(dataset_name, incr_type, save_path):
     if dataset_name in ['mnist', 'cifar10'] and incr_type in ['task', 'class']:

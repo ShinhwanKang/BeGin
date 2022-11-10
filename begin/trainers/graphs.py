@@ -1,5 +1,10 @@
-from .common import BaseTrainer
 import torch
+import numpy as np
+import pickle
+import copy
+import dgl
+import random
+from .common import BaseTrainer
 
 class GCTrainer(BaseTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
@@ -60,12 +65,12 @@ class GCTrainer(BaseTrainer):
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         optimizer.zero_grad()
-        self._before_inference(model, optimizer, _curr_batch, training_states)
-        inference_results = self._model_inference(model, _curr_batch, training_states)
-        return self._after_inference(inference_results, model, optimizer, _curr_batch, training_states)
+        self.beforeInference(model, optimizer, _curr_batch, training_states)
+        inference_results = self.inference(model, _curr_batch, training_states)
+        return self.afterInference(inference_results, model, optimizer, _curr_batch, training_states)
         
     def processEvalIteration(self, model, _curr_batch):
-        results = self._model_inference(model, _curr_batch, None)
+        results = self.inference(model, _curr_batch, None)
         return torch.argmax(results['preds'], dim=-1), {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(),
                                                         'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
     
@@ -105,12 +110,10 @@ class GCTrainer(BaseTrainer):
             
         print('init_acc:', init_acc)
         print('algo_acc_mat:', algo_acc_mat)
-        print('abs_avg_precision_last:', round(algo_acc_mat[self.num_tasks - 1][:-1].sum() / self.num_tasks, 4))
-        print('abs_avg_precision_diag:', round(algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)].sum() / self.num_tasks, 4))
-        print('abs_avg_forgetting_last:', round((algo_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - algo_acc_mat[self.num_tasks - 1, :self.num_tasks]).sum() / (self.num_tasks - 1), 4))
+        print('AP:', round(results['exp_AP'], 4))
+        print('AF:', round(results['exp_AF'], 4))
+        print('FWT:', round(results['exp_FWT'], 4))
         if self.full_mode:
             print('base_acc_mat:', base_acc_mat)
             print('joint_acc_mat:', accum_acc_mat)
-            print('abs_avg_intransigence_base:', round((base_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
-            print('abs_avg_intransigence_joint:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
-            print('rel_upstream_transfer_diag:', round((((algo_acc_mat - base_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)]) / (base_acc_mat[np.arange(self.num_tasks), np.arange(self.num_tasks)] - init_acc[:self.num_tasks])).mean(), 4))
+            print('intransigence:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))

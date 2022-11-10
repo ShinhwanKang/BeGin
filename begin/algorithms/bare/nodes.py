@@ -1,6 +1,16 @@
 import sys
 from begin.trainers.nodes import NCTrainer
 
+class NCTaskILBareTrainer(NCTrainer):
+    def inference(self, model, _curr_batch, training_states):
+        curr_batch, mask = _curr_batch
+        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))[mask]
+        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
+        return {'preds': preds, 'loss': loss}
+    
+class NCClassILBareTrainer(NCTrainer):
+    pass
+
 class NCDomainILBareTrainer(NCTrainer):
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         curr_batch, mask = _curr_batch
@@ -23,4 +33,6 @@ class NCDomainILBareTrainer(NCTrainer):
         curr_training_states['best_val_loss'] = 1e10
         curr_model.observe_labels(torch.arange(curr_dataset.ndata['label'].shape[-1]))
         self._reset_optimizer(curr_optimizer)
-    
+        
+class NCTimeILBareTrainer(NCTrainer):
+    pass
