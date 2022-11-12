@@ -59,8 +59,7 @@ class LCClassILLwFTrainer(LCTrainer):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
         self.T = kwargs['T'] if 'T' in kwargs else 2.
-        self.save_file_name = f'{self.save_file_name}_{self.lamb}'
-    
+        
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         kd_loss = 0.
         if 'prev_model' in training_states:

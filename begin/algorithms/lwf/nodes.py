@@ -65,7 +65,7 @@ class NCClassILLwFTrainer(NCTrainer):
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         curr_model.load_state_dict(curr_training_states['best_weights'])
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
-        curr_training_states['prev_observed_labels'] = curr_model.get_observed_labels().clone().detach()\
+        curr_training_states['prev_observed_labels'] = curr_model.get_observed_labels().clone().detach()
         
 class NCDomainILLwFTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):

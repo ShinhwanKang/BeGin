@@ -240,7 +240,16 @@ class LPScenarioLoader(BaseScenarioLoader):
     def next_task(self, preds=torch.empty(1)):
         self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
         super().next_task(preds)
-        if self._curr_task == self.num_tasks: return self.__test_results
+        if self._curr_task == self.num_tasks:
+            scores = torch.stack(self.__test_results, dim=0)
+            scores_np = scores.detach().cpu().numpy()
+            ap = scores_np[-1, :-1].mean().item()
+            af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
+            if self.initial_test_result is not None:
+                fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
+            else:
+                fwt = None
+            return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
     
 class LCScenarioLoader(BaseScenarioLoader):
     """

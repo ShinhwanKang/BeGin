@@ -37,6 +37,7 @@ class BaseTrainer:
         self.result_path = kwargs.get('tmp_save_path', 'results')
         self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
         self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
+        self.save_file_name = f'result_{self.__timestamp}'
         
         torch.save(self.__model.state_dict(), self.__model_weight_path)
         torch.save(self.__optimizer.state_dict(), self.__optim_weight_path)
@@ -149,7 +150,11 @@ class BaseTrainer:
                     
                     # revert the 'observed' variable
                     self.__base_model.classifier.observed.copy_(curr_observed_mask)
-            
+                    
+                    # we need to send initial result on the test dataset to compute FWT in the scenario loader
+                    # if self.incr_type == 'domain':
+                    self.__scenario.initial_test_result = initial_results['test']
+                    
             # training loop for the current task
             for epoch_cnt in range(epoch_per_task):
                 for exp_name in ['exp', 'base', 'accum'] if self.full_mode else ['exp']:
@@ -219,7 +224,10 @@ class BaseTrainer:
             return {'init_val': initial_results['val'],
                     'init_test': initial_results['test'],
                     'exp_val': torch.stack(base_eval_results['exp']['val'], dim=0),
-                    'exp_test': torch.stack(eval_results, dim=0),
+                    'exp_test': eval_results['exp_results'],
+                    'exp_AP': eval_results['AP'],
+                    'exp_AF': eval_results['AF'],
+                    'exp_FWT': eval_results['FWT'],
                     'base_val': torch.stack(base_eval_results['base']['val'], dim=0),
                     'base_test': torch.stack(base_eval_results['base']['test'], dim=0),
                     'accum_val': torch.stack(base_eval_results['accum']['val'], dim=0),
@@ -229,7 +237,10 @@ class BaseTrainer:
             return {'init_val': initial_results['val'],
                     'init_test': initial_results['test'],
                     'exp_val': torch.stack(base_eval_results['exp']['val'], dim=0),
-                    'exp_test': torch.stack(eval_results, dim=0),
+                    'exp_test': eval_results['exp_results'],
+                    'exp_AP': eval_results['AP'],
+                    'exp_AF': eval_results['AF'],
+                    'exp_FWT': eval_results['FWT'],
                    }
     
     # event functions and their helper/wrapper functions

@@ -100,9 +100,10 @@ class GCTrainer(BaseTrainer):
     def run(self, epoch_per_task=1):
         results = super().run(epoch_per_task)
         
+        
         # dump the results as pickle
-        with open(f'{self.result_path}/output.pkl', 'wb') as f:
-            pickle.dump({k: v.detach().cpu().numpy() for k, v in results.items()}, f)
+        with open(f'{self.result_path}/{self.save_file_name}.pkl', 'wb') as f:
+            pickle.dump({k: v.detach().cpu().numpy() for k, v in results.items() if 'val' in k or 'test' in k}, f)
         if self.full_mode:
             init_acc, accum_acc_mat, base_acc_mat, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'accum_test', 'base_test', 'exp_test'))
         else:
