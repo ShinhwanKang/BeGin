@@ -4,7 +4,6 @@ import os
 import pickle
 import copy
 from dgl.data.utils import download, Subset
-from ogb.graphproppred import DglGraphPropPredDatasetWithTaskMask as DglGraphPropPredDataset
 
 from .common import BaseScenarioLoader
 from .datasets import *

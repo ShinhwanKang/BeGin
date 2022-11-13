@@ -2,7 +2,7 @@ EWC
 ============
 
 Elastic Weight Consolidation (EWC) is a regularization-based continual learning method that weights to parameters according to the diagonal of the Fisher information matrix.
- For the details, see the `original paper <https://arxiv.org/pdf/1612.00796.pdf>`_.
+For the details, see the `original paper <https://arxiv.org/pdf/1612.00796.pdf>`_.
 
 Node-level Problems
 -------------------------

@@ -21,8 +21,8 @@ class BaseEvaluator:
 
     def __call__(self, prediction, answer, indices):
         r"""
-            WIP
-
+            Measure the performance on each task.
+        
             Args:
                 prediction (torch.Tensor): predicted output of the current model
                 answer (torch.Tensor): ground-truth answer

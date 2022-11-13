@@ -6,7 +6,7 @@ Requirements
 
 BeGin works with the following Python packages:
 
-- pytorch >= 1.8
+- pytorch == 1.8.1
 - dgl >= 0.6.1
 - ogb >= 1.3
 - torch-scatter >= 2.0.6
@@ -21,8 +21,8 @@ For running some examples, you may need the following additional packages:
 Installation
 ----------------
 
-You can install BeGin using pip with the following command:
+You can install BeGin with the following command:
 
 .. code:: bash
 
-    pip install begin-cl
+    python setup.py install

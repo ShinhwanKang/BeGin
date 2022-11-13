@@ -14,24 +14,6 @@ We provides the implemented scenario loaders as follows:
 
 - `Graph-level problems <./graph.html>`_
 
-.. .. toctree::
-..     :maxdepth: 1
-    
-..     node
-..     link
-..     graph
-
-
-
-.. Our benchmark scenarios are based on various node-, link-, graph-level problems.
-.. The problems are defined `Here <https://www.naver.com/>`_.
-
-
-
-.. We prov...
-
-.. The `DGLBasicIL` ...
-
 The base framework is as follows:
 
 .. autoclass:: begin.scenarios.common.BaseScenarioLoader

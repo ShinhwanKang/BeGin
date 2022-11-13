@@ -8,9 +8,17 @@ import dgl.function as fn
 from torch_scatter import segment_csr
 
 class AdaptiveLinear(nn.Module):
+    r"""
+        The linear layer for helping the continual learning procedure, by masking the outputs.
+        
+        Arguments:
+            in_channels (int): the number of input channels (in_features of `torch.nn.Linear`).
+            out_channels (int): the number of output channels (out_features of `torch.nn.Linear`).
+            bias (bool): If set to False, the layer will not learn an additive bias.
+            accum (bool): If set to True, the layer can also provide the logits for the previously seen outputs.
+    """
     def __init__(self, in_channels, out_channels, bias=True, accum=True):
         super().__init__()
-        # inner linear layer
         self.lin = nn.Linear(in_channels, out_channels, bias)
         self.bias = bias
         self.accum = accum
@@ -19,6 +27,13 @@ class AdaptiveLinear(nn.Module):
         self.observed = torch.zeros(out_channels, dtype=torch.bool)
         
     def observe_outputs(self, new_outputs, verbose=True):
+        r"""
+            Observes the ideal outputs in the training dataset.
+            By observing the outputs, the layer determines which outputs (logits) will be masked or not.
+            
+            Arguments:
+                new_outputs (torch.Tensor): the ideal outputs in the training dataset.
+        """
         device = self.lin.weight.data.device
         new_outputs = torch.unique(new_outputs)
         new_num_outputs = max(self.num_outputs, new_outputs.max() + 1)
@@ -33,7 +48,7 @@ class AdaptiveLinear(nn.Module):
             if self.accum: self.output_masks.append(self.output_masks[-1] | new_output_mask)
             else: self.output_masks.append(new_output_mask)    
         
-        # expand the output
+        # if a new class whose index exceeds `self.num_outputs` is observed, expand the output
         if new_num_outputs > self.num_outputs:
             prev_weight, prev_bias = self.lin.weight.data[prv_observed], (self.lin.bias.data[prv_observed] if self.bias else None)
             self.observed = torch.cat((self.observed.to(device), torch.zeros(new_num_outputs - self.num_outputs, dtype=torch.bool).to(device)), dim=-1)
@@ -45,6 +60,12 @@ class AdaptiveLinear(nn.Module):
     
     
     def get_output_mask(self, task_ids=None):
+        r"""
+            Returns the mask managed by the layer.
+            
+            Arguments:
+                task_ids (torch.Tensor or None): If task_ids is provided, the layer returns the mask for each index of the task. Otherwise, it returns the mask for the last task it observed.
+        """
         if task_ids is None:
             # for class-IL, time-IL, and domain-IL
             return self.output_masks[-1]
@@ -56,6 +77,13 @@ class AdaptiveLinear(nn.Module):
             return mask
     
     def forward(self, x, task_masks=None):
+        r"""
+            Returns the masked results of the inner linear layer.
+            
+            Arguments:
+                x (torch.Tensor): the input features.
+                task_masks (torch.Tensor or None): If task_masks is provided, the layer uses the tensor for masking the outputs. Otherwise, the layer uses the mask managed by the layer.
+        """
         out = self.lin(x)
         if task_masks is None:
             out[..., ~self.observed] = -1e12
@@ -64,7 +92,7 @@ class AdaptiveLinear(nn.Module):
         
         return out
     
-class GCN(nn.Module):
+class GCNNode(nn.Module):
     def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class', use_classifier=True):
         super().__init__()
         self.n_layers = n_layers
@@ -120,13 +148,10 @@ class GCN(nn.Module):
         else:
             return self.classifier.output_masks[tid]
 
-class SimpleGCN(GCN):
-    pass
-
-class GCNEdge(nn.Module):
+class GCNLink(nn.Module):
     def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class'):
         super().__init__()
-        self.gcn = GCN(in_feats, n_hidden, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class', use_classifier=False)
+        self.gcn = GCNNode(in_feats, n_hidden, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class', use_classifier=False)
         self.n_layers = n_layers
         self.n_hidden = n_hidden
         self.n_classes = n_classes
@@ -276,7 +301,7 @@ class GCNConv(nn.Module):
         return summary.format(**self.__dict__)
 
     
-class FullGCN(nn.Module):
+class GCNGraph(nn.Module):
     def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=4, n_mlp_layers=2, incr_type='class', readout='mean', node_encoder_fn=None, edge_encoder_fn=None):
         super().__init__()
         self.n_layers = n_layers
@@ -292,7 +317,6 @@ class FullGCN(nn.Module):
             in_hidden = n_hidden # if i > 0 else in_feats
             out_hidden = n_hidden
             self.convs.append(GCNConv(in_hidden, out_hidden, "both", bias=False, allow_zero_in_degree=True, edge_encoder_fn=edge_encoder_fn))
-            # self.convs.append(GraphConv(in_hidden, out_hidden, "both", bias=False, allow_zero_in_degree=True))
             self.norms.append(nn.BatchNorm1d(out_hidden))
         self.dropout = nn.Dropout(dropout)
         self.activation = activation

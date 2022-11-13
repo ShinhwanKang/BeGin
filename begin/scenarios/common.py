@@ -24,6 +24,7 @@ class BaseScenarioLoader:
         
         self._curr_task = 0
         self._target_dataset = None
+        self.initial_test_result = None
         
         self._init_continual_scenario()
         self._update_target_dataset()

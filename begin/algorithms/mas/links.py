@@ -111,7 +111,7 @@ class LCTimeILMASTrainer(LCTrainer):
         self._reset_optimizer(curr_optimizer)
     
     def processEvalIteration(self, model, _curr_batch):
-        results = self._model_inference(model, _curr_batch, None)
+        results = self.inference(model, _curr_batch, None)
         return results['preds'], {'loss': results['loss'].item()}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):

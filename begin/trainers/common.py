@@ -2,6 +2,7 @@ import time
 import copy
 import torch
 from torch import nn
+import random
 import numpy as np
 import sys
 import dgl
@@ -15,15 +16,22 @@ class BaseTrainer:
         optimizer_fn (lambda x: torch.optim.Optimizer): A generator function for optimizer.
         loss_fn : A loss function.
         device (str): target GPU device.
-        kwargs (dict, optional): Keyword arguments to be passed to the trainer module.
+        kwargs (dict, optional): Keyword arguments to be passed to the trainer module. 
 
     Note:
-        For instance, by kwargs, users can pass hyperparameters the implemented method needs or a scheduler function (torch.nn) for tranining.  
+        For instance, by kwargs, users can pass hyperparameters the implemented method needs or a scheduler function (torch.nn) for tranining.
+        In addition, BaseTrainer supports `benchmark = True` and `seed` (int) to fix the random seed, and `full_mode = True` to additionally evaluate the joint (accum) model. 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
         # set random seed for DGL
         if kwargs.get('benchmark', False):
             fixed_seed = kwargs.get('seed', 0)
+            torch.manual_seed(fixed_seed)
+            random.seed(fixed_seed)
+            np.random.seed(fixed_seed)
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.deterministic = True
+            # torch.use_deterministic_algorithms(True)
             dgl.seed(fixed_seed)
             dgl.random.seed(fixed_seed)
             
@@ -64,6 +72,7 @@ class BaseTrainer:
         """ 
             Returns:
                 The incremental setting (e.g., task, class, domain, or time).
+                The trainer retrieves the value from the given scenario loader.
         """
         return self.__scenario.incr_type
         
@@ -71,25 +80,39 @@ class BaseTrainer:
     def curr_task(self):
         """ 
             Returns: 
-                The id of a current task :math:`[0,T-1]`.
+                The index of a current task (from :math:`0` to :math:`T-1`)
         """
         return self.__scenario._curr_task
     
     def _reset_model(self, target_model):
         """ 
             Reinitialize a model.
+            
+            Args:
+                target_model (torch.nn.Module): a model needed to re-initialize
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
     def _reset_optimizer(self, target_optimizer):
         """ 
             Reinitialize an optimizer.
+            
+            Args:
+                target_model (torch.optim.Optimizer): an optimizer needed to re-initialize
         """
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
         
     def run(self, epoch_per_task = 1):
         """
-            Run the overall process of graph continual learning optimization. 
+            Run the overall process of graph continual learning optimization.
+            
+            Args:
+                epoch_per_task (int): maximum number of training epochs for each task
+                
+            Returns:
+                The base trainer returns the dictionary containing the evaluation results on validation and test dataset.
+                And each trainer for specific problem processes the results and outputs the matrix-shaped results for performances 
+                and the final evaluation metrics, such as AP, AF, INT, and FWT.
         """
         # dictionary to store evaluation results
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
@@ -152,8 +175,8 @@ class BaseTrainer:
                     self.__base_model.classifier.observed.copy_(curr_observed_mask)
                     
                     # we need to send initial result on the test dataset to compute FWT in the scenario loader
-                    # if self.incr_type == 'domain':
-                    self.__scenario.initial_test_result = initial_results['test']
+                    if self.incr_type == 'domain':
+                        self.__scenario.initial_test_result = initial_results['test']
                     
             # training loop for the current task
             for epoch_cnt in range(epoch_per_task):
@@ -244,10 +267,15 @@ class BaseTrainer:
                    }
     
     # event functions and their helper/wrapper functions
-    def initTrainingStates(self, dataset, model, optimizer):
+    def initTrainingStates(self, scenario, model, optimizer):
         """
-            Initialize the dictionary for storing training states (i.e., intermedeiate results).
-
+            The event function to initialize the dictionary for storing training states (i.e., intermedeiate results).
+            
+            Args:
+                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
+                model (torch.nn.Module): the given model to the trainer
+                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
+                
             Returns:
                 Initialized training state (dict).
         """
@@ -255,52 +283,104 @@ class BaseTrainer:
     
     def prepareLoader(self, curr_dataset, curr_training_states):
         """
+            The event function to generate dataloaders from the given dataset for the current task.
+            
+            Args:
+                curr_dataset (object): The dataset for the current task. Its type is dgl.graph for node-level and link-level problem, and dgl.data.DGLDataset for graph-level problem.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
             Returns:
-                Train, valid, and test Dataloaders according to graph problems.
+                A tuple containing three dataloaders.
+                The trainer considers the first dataloader, second dataloader, and third dataloader
+                as dataloaders for training, validation, and test, respectively.
         """
         raise NotImplementedError
         
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
-            Execute some processes before training.
-
-            Note:
-                For example, user computes the intermediate statistics for training.
-
+            The event function to execute some processes before training.
+            
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
         """
         pass
     
-    def beforeInference(self, model, optimizer, _curr_batch, training_states):
+    def beforeInference(self, model, optimizer, curr_batch, curr_training_states):
         """
-            Train a model according to graph problems.
-        """
-        raise NotImplementedError
-    
-    def inference(self, model, _curr_batch, training_states):
-        """
-            Train a model according to graph problems.
-        """
-        raise NotImplementedError
-    
-    def afterInference(self, results, model, optimizer, _curr_batch, training_states):
-        """
-            Train a model according to graph problems.
+            The event function to execute some processes right before inference (for training).
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
         """
         raise NotImplementedError
     
-    def processTrainIteration(self, model, optimizer, curr_batch, training_states):
+    def inference(self, model, curr_batch, curr_training_states):
         """
-            Train a model according to graph problems.
+            The event function to execute inference step.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the inference results, such as prediction result and loss.
         """
         raise NotImplementedError
     
-    def _trainWrapper(self, model, optimizer, curr_batch, training_states, curr_stats):
+    def afterInference(self, results, model, optimizer, curr_batch, curr_training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+            
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
+        raise NotImplementedError
+    
+    def processTrainIteration(self, model, optimizer, curr_batch, curr_training_states):
+        """
+            The event function to handle every training iteration.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
+        raise NotImplementedError
+    
+    def _trainWrapper(self, model, optimizer, curr_batch, curr_training_states, curr_stats):
         """
             The wrapper function for training iteration.
             The main role of the function is to collect the returned dictionary of
             the processTrainItearation function to compute final training stats at every epoch.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                curr_stats (dict): the dictionary to store the returned dictionaries.
         """
-        new_stats = self.processTrainIteration(model, optimizer, curr_batch, training_states)
+        new_stats = self.processTrainIteration(model, optimizer, curr_batch, curr_training_states)
         if new_stats is not None:
             for k, v in new_stats.items():
                 if k not in curr_stats:
@@ -311,6 +391,12 @@ class BaseTrainer:
         """
             The helper function to reduce the returned stats during training.
             The default behavior of the function is to compute average for each key in the returned dictionaries.
+            
+            Args:
+                curr_stats (dict): the dictionary containing the training stats.
+            
+            Returns:
+                A reduced dictionary containing the final training outcomes.
         """
         if '_num_items' not in curr_stats:
             reduced_stats = {k: sum(v) / len(v) for k, v in curr_stats.items()}
@@ -322,7 +408,14 @@ class BaseTrainer:
     
     def processEvalIteration(self, model, curr_batch):
         """
-            Evaluate a model.
+            The event function to handle every evaluation iteration.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the evaluation iteration.
         """
         raise NotImplementedError
     
@@ -331,6 +424,11 @@ class BaseTrainer:
             The wrapper function for validation/test iteration.
             The main role of the function is to collect the returned dictionary of
             the processEvalItearation function to compute final stats for evalution at every epoch.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_stats (dict): the dictionary to store the returned dictionaries.
         """
         preds, new_stats = self.processEvalIteration(model, curr_batch)
         if new_stats is not None:
@@ -344,6 +442,12 @@ class BaseTrainer:
         """
             The helper function to reduce the returned stats during evaluation.
             The default behavior of the function is to compute average for each key in the returned dictionaries.
+            
+            Args:
+                curr_stats (dict): the dictionary containing the evaluation stats.
+            
+            Returns:
+                A reduced dictionary containing the final evaluation outcomes.
         """
         if '_num_items' not in curr_stats:
             reduced_stats = {k: sum(v) / len(v) for k, v in curr_stats.items()}
@@ -355,28 +459,51 @@ class BaseTrainer:
     
     def processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
         """
-            Log the intermediate results.
+            (Optional) The event function to output the training logs.
+            
+            Args:
+                task_id (int): the index of the current task
+                epoch_cnt (int): the index of the current epoch
+                val_metric_result (object): the validation performance computed by the evaluator
+                train_stats (dict): the reduced dictionary containg the final training outcomes.
+                val_stats (dict): the reduced dictionary containg the final validation outcomes.
         """
         pass
     
     def processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
         """
-            Execute some processes after each training iteration.
+            The event function to execute some processes for every end of each epoch.
             Whether to continue training or not is determined by the return value of this function.
             If the returned value is False, the trainer stops training the current model in the current task.
             
             Note:
                 This function is called for every end of each epoch,
                 and the event function ``processAfterTraining`` is called only when the learning on the current task has ended. 
+                
+            Args:
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+                curr_iter_results (dict): the dictionary containing the training/validation results of the current epoch.
+                
+            Returns:
+                A boolean value. If the returned value is False, the trainer stops training the current model in the current task.
         """
         return True
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
-            Execute some processes after training the current task.
+            The event function to execute some processes after training the current task.
 
             Note:
                 The event function ``processAfterEachIteration`` is called for every end of each epoch,
-                and this function is called only when the learning on the current task has ended. 
+                and this function is called only when the learning on the current task has ended.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
         """
         pass

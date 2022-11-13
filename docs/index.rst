@@ -45,7 +45,7 @@ Contents
 
 .. toctree::
    :maxdepth: 1
-   :caption: Benchmarks
+   :caption: Continual Learning Methods
 
    050/bare
    050/lwf
@@ -63,5 +63,9 @@ Contents
    060/performance
    060/metric
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Utils
 
+   070/linear
 

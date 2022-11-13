@@ -7,6 +7,12 @@ import random
 from .common import BaseTrainer
 
 class NCTrainer(BaseTrainer):
+    r"""
+        The trainer for handling node classification (NC).
+        
+        Base:
+            `BaseTrainer`
+    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         # integration with scheduler
@@ -86,13 +92,12 @@ class NCTrainer(BaseTrainer):
         else:
             init_acc, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'exp_test'))
             
-        print('init_acc:', init_acc)
-        print('algo_acc_mat:', algo_acc_mat)
+        print('init_acc:', init_acc[:-1])
+        print('algo_acc_mat:', algo_acc_mat[:, :-1])
         print('AP:', round(results['exp_AP'], 4))
         print('AF:', round(results['exp_AF'], 4))
-        print('FWT:', round(results['exp_FWT'], 4))
+        if results['exp_FWT'] is not None: print('FWT:', round(results['exp_FWT'], 4))
         if self.full_mode:
-            print('base_acc_mat:', base_acc_mat)
-            print('joint_acc_mat:', accum_acc_mat)
+            print('joint_acc_mat:', accum_acc_mat[:, :-1])
             print('intransigence:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
         
