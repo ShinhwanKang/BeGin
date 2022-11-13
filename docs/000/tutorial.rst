@@ -63,7 +63,7 @@ where :math:`\theta` is current weights of the model, :math:`\theta^*_j` is lear
 Step 1. Extending the base 
 ============================
 
-BeGin provides basic implementation of trainer for each graph-related problem. Each basic trainer follows the incremental learning schemes, but no CL technique is applied. For example, if we want to implement CL algorithm for NC task, you need to extend :func:`NCTrainer` to reduce your efforts for implementing user-defined functions on managing the overall procedure.
+BeGin provides basic implementation of trainer for each graph-related problem. Each basic trainer follows the incremental learning schemes, but no CL technique is applied. For example, if we want to implement CL algorithm for NC task, you need to extend `NCTrainer` to reduce your efforts for implementing user-defined functions on managing the overall procedure.
 
 .. code-block:: python
 
@@ -74,7 +74,7 @@ BeGin provides basic implementation of trainer for each graph-related problem. E
 Step 2. Setting initial states for the algorithm (:func:`initTrainingStates`)
 ===============================================================================
 
-As in the aformentioned equation, EWC algorithm requires to store learned weights and Fisher information matrices from the previous tasks to compute the regualarization term. However, but they cannot be obtained on the current task. In order to resolve this issue, the trainer provides a dictionary called :func:`training_states` which can store intermediate results and be shared by events as the parameter of the event functions. To set the initial states, BeGin provides :func:`initTrainingStates` event function, and the trainer set the initial states to the returned dictionary from the event function. In this example, we assigned :func:`fishers` to store the fisher information matrices of each task and :func:`params` to store the learned weights of each task, as shown in the code below.
+As in the aformentioned equation, EWC algorithm requires to store learned weights and Fisher information matrices from the previous tasks to compute the regualarization term. However, but they cannot be obtained on the current task. In order to resolve this issue, the trainer provides a dictionary called `training_states` which can store intermediate results and be shared by events as the parameter of the event functions. To set the initial states, BeGin provides :func:`initTrainingStates` event function, and the trainer set the initial states to the returned dictionary from the event function. In this example, we assigned `fishers` to store the fisher information matrices of each task and `params` to store the learned weights of each task, as shown in the code below.
 
 .. code-block:: python
 
@@ -121,7 +121,7 @@ To compute the fisher matrices and learned weights, we need to collect them at t
 Step 4. Computing penalty term and Performing regularization (:func:`processTrainIteration` and :func:`afterInference`)
 ========================================================================================================================
 
-To compute the penalty term and perform regularization with backpropagation, we need to implement them at the end of training for every task. So, we should handle such process in :func:`afterInference`. In the event function, the parameter :func:`results` contains the prediction result and loss of the current model computed in the :func:`inference` function. So, the overall loss including penalty term can be computed as the summation of :func:`results['loss']` and :func:`loss_reg` obtained by the fisher information matrices and the previously learned weights stored in :func:`training_states`.
+To compute the penalty term and perform regularization with backpropagation, we need to implement them at the end of training for every task. So, we should handle such process in :func:`afterInference`. In the event function, the parameter `results` contains the prediction result and loss of the current model computed in the :func:`inference` function. So, the overall loss including penalty term can be computed as the summation of `results['loss']` and `loss_reg` obtained by the fisher information matrices and the previously learned weights stored in `curr_training_states`.
 
 .. code-block:: python
 
@@ -187,11 +187,11 @@ So far we have learned how to load each component of BeGin. The last step is to 
                                   scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='min', patience=20, min_lr=args.lr * 0.001 * 2., verbose=True))
   results = benchmark.run(epoch_per_task = 1000)
   
-To run the experiment, trainer object in BeGin requires a learnable model, a CL scenraio, a proper loss function to train the model, a function to generate optimizer and scheduler, and the other auxilary arguments to customize the trainer. After creating the object, users can start the experiment by calling the member function :func:`results` of the trainer object.
+To run the experiment, trainer object in BeGin requires a learnable model, a CL scenraio, a proper loss function to train the model, a function to generate optimizer and scheduler, and the other auxilary arguments to customize the trainer. After creating the object, users can start the experiment by calling the member function `results` of the trainer object.
 
 In BeGin, at the end of each task, the trainer measures the performance of all tasks. When the procedure is completed, the trainer returns the evaluation results, which is in the form of a matrix. In the matrix, the (i,j)-th entry contains the performance evaluated using the test data of task j when the training of task i has just ended. In addition, BeGin supports the following final evaluation metrics designed for continual learning:
 
 - Average Performance (AP): Average performance on all tasks after learning all tasks.
 - Average Forgetting (AF): Average forgetting on all tasks. We measure the forgetting on task i by the difference between the performance on task i after learning all  tasks and the performance on task i right after learning task i
 - Forward Transfer (FWT) : Average forward transfer on tasks. We measure the forward transfer on task i by the difference between the performance on task i after learning task (i-1) and the performance of initialized model on task i.
-- Intransigence (INT): Average intransigence on all tasks. We measure the intransigence on task i by the difference between the performances of the Joint model and the the target mode on task i after learning task i. BeGin provides this metric only if :func:`full_mode`, which simultaneously runs the bare model and the joint model, is enabled.
+- Intransigence (INT): Average intransigence on all tasks. We measure the intransigence on task i by the difference between the performances of the Joint model and the the target mode on task i after learning task i. BeGin provides this metric if and only if `full_mode = True`, which simultaneously runs the bare model and the joint model, is enabled.
