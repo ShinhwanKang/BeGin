@@ -112,9 +112,6 @@ class LCTimeILLwFTrainer(LCTrainer):
         curr_model.load_state_dict(curr_training_states['best_weights'])
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
         curr_training_states['prev_observed_labels'] = curr_model.get_observed_labels().clone().detach()
-        
-class LPDomainILLwFTrainer(LPTimeILLwFTrainer):
-    pass
 
 class LPTimeILLwFTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
@@ -147,3 +144,6 @@ class LPTimeILLwFTrainer(LPTrainer):
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         curr_model.load_state_dict(curr_training_states['best_weights'])
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
+        
+class LPDomainILLwFTrainer(LPTimeILLwFTrainer):
+    pass

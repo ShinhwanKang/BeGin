@@ -27,7 +27,7 @@ class NCDomainILBareTrainer(NCTrainer):
         loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].float().to(self.device))
         return preds, {'loss': loss.item()}
         
-    def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10

@@ -172,9 +172,6 @@ class LCTimeILGEMTrainer(LCTrainer):
             chosen_edges = (srcs[perm[:self.num_memories]], dsts[perm[:self.num_memories]], labels[perm[:self.num_memories]])
         curr_training_states['memories'].append(chosen_edges)
         
-class LPDomainILGEMTrainer(LPTimeILGEMTrainer):
-    pass
-
 class LPTimeILGEMTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
@@ -250,3 +247,6 @@ class LPTimeILGEMTrainer(LPTrainer):
         chosen_edges = torch.cat([edges[_from:_to] for edges, (_from, _to) in zip(mem['edges'], mem['ranges'])], dim=0)
         chosen_labels = torch.cat([labels[_from:_to] for labels, (_from, _to) in zip(mem['labels'], mem['ranges'])], dim=0)
         curr_training_states['memories'].append((copy.deepcopy(curr_training_states['graph']), chosen_edges, chosen_labels))
+
+class LPDomainILGEMTrainer(LPTimeILGEMTrainer):
+    pass

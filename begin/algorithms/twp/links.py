@@ -224,9 +224,6 @@ class LCTimeILTWPTrainer(LCTrainer):
         curr_training_states['topology_important_score'][_idx] = topology_scores
         curr_training_states['optpar'][_idx] = optpars
         curr_training_states['current_task'] += 1
-        
-class LPDomainILTWPTrainer(LPTimeILTWPTrainer):
-    pass
 
 class LPTimeILTWPTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
@@ -318,3 +315,6 @@ class LPTimeILTWPTrainer(LPTrainer):
         curr_training_states['topology_important_score'][_idx] = topology_scores
         curr_training_states['optpar'][_idx] = optpars
         curr_training_states['current_task'] += 1         
+        
+class LPDomainILTWPTrainer(LPTimeILTWPTrainer):
+    pass

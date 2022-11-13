@@ -48,6 +48,13 @@ Contents
    :caption: Benchmarks
 
    050/bare
+   050/lwf
+   050/ewc
+   050/mas
+   050/gem
+   050/twp
+   050/ergnn
+   050/cgnn
    
 .. toctree::
    :maxdepth: 1

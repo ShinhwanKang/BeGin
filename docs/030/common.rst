@@ -8,11 +8,11 @@ Therefore, we provide 4 scenario loaders and a base framework for further implem
 
 We provides the implemented scenario loaders as follows:
 
-- `Node-level problems <https://begin.readthedocs.io/en/latest/030/node.html>`_
+- `Node-level problems <./node.html>`_
 
-- `Link-level problems <https://begin.readthedocs.io/en/latest/030/link.html>`_
+- `Link-level problems <./link.html>`_
 
-- `Graph-level problems <https://begin.readthedocs.io/en/latest/030/graph.html>`_
+- `Graph-level problems <./graph.html>`_
 
 .. .. toctree::
 ..     :maxdepth: 1

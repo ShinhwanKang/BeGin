@@ -162,9 +162,6 @@ class LCTimeILEWCTrainer(LCTrainer):
         curr_training_states['fishers'].append(fishers)
         curr_training_states['params'].append(params)
         
-class LPDomainILEWCTrainer(LPTimeILEWCTrainer):
-    pass
-
 class LPTimeILEWCTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
@@ -224,3 +221,6 @@ class LPTimeILEWCTrainer(LPTrainer):
             fishers[name] /= total_num_items
         curr_training_states['fishers'].append(fishers)
         curr_training_states['params'].append(params)
+
+class LPDomainILEWCTrainer(LPTimeILEWCTrainer):
+    pass

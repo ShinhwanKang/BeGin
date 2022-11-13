@@ -13,10 +13,9 @@ class LCTaskILBareTrainer(LCTrainer):
         curr_dataset = dgl.add_self_loop(curr_dataset)
         return [(curr_dataset, srcs[train_mask], dsts[train_mask], task_mask[train_mask], labels[train_mask])], [(curr_dataset, srcs[val_mask], dsts[val_mask], task_mask[val_mask], labels[val_mask])], [(curr_dataset, srcs[test_mask], dsts[test_mask], task_mask[test_mask], labels[test_mask])]
     
-    def _model_inference(self, model, _curr_batch, training_states):
+    def inference(self, model, _curr_batch, training_states):
         curr_batch, srcs, dsts, task_masks, labels = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), srcs, dsts, task_masks=task_masks)
-        # print(preds.shape, labels.shape)
         loss = self.loss_fn(preds, labels.to(self.device))
         return {'preds': preds, 'loss': loss}
     
@@ -40,8 +39,8 @@ class LCTimeILBareTrainer(LCTrainer):
         optimizer.step()
         return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'], _curr_batch[-1].to(self.device))}
 
-class LPDomainILBareTrainer(LPTrainer):
+class LPTimeILBareTrainer(LPTrainer):
     pass
 
-class LPTimeILBareTrainer(LPTrainer):
+class LPDomainILBareTrainer(LPTrainer):
     pass

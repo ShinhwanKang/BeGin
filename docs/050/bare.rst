@@ -1,32 +1,30 @@
 Bare Model
 ============
 
-Bare Model: Lower Bound of Graph Continual Learning
+The Bare model follows the incremental learning schemes, but no CL technique is applied to the model.
 
 
 
-Node Classification
+Node-level Problems
 -------------------------
 
-.. automodule:: begin.algorithms.bare.nc_task
+.. automodule:: begin.algorithms.bare.nodes
     :undoc-members:
     :members:
     :private-members:
 
+Link-level Problems
+-------------------------
 
-.. automodule:: begin.algorithms.bare.nc_class
+.. automodule:: begin.algorithms.bare.links
     :undoc-members:
     :members:
     :private-members:
 
+Graph-level Problems
+-------------------------
 
-.. automodule:: begin.algorithms.bare.nc_domain
-    :undoc-members:
-    :members:
-    :private-members:
-
-
-.. automodule:: begin.algorithms.bare.nc_time
+.. automodule:: begin.algorithms.bare.graphs
     :undoc-members:
     :members:
     :private-members:

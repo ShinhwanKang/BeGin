@@ -147,9 +147,6 @@ class LCTimeILMASTrainer(LCTrainer):
         for name, p in curr_model.named_parameters():
             curr_training_states['importances'][name] += (importances[name] / total_num_items)
         
-class LPDomainILMASTrainer(LPTimeILMASTrainer):
-    pass
-
 class LPTimeILMASTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
@@ -205,3 +202,6 @@ class LPTimeILMASTrainer(LPTrainer):
                     
         for name, p in curr_model.named_parameters():
             curr_training_states['importances'][name] += (importances[name] / total_num_items)
+
+class LPDomainILMASTrainer(LPTimeILMASTrainer):
+    pass
