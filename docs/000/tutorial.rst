@@ -55,9 +55,7 @@ Currently, BeGin supports the following event functions. Note that implementing 
 
 Suppose we implement Elastic Weight Consolidation (EWC) algorithm for class-IL node classification using BeGin. EWC algorithm is a regularization-based CL algorithm for generic data. Specifically, it uses weighted L2 penalty term which is determined by the learned weights from the previous tasks as in the following equation:
 
-.. math::
-
-    \mathcal{L}(\theta) = \mathcal{L}_i(\theta) + \sum_{j=1}^{i-1} \frac{\lambda}{2} F_j (\theta - \theta^*_j)^2,
+.. math:: \mathcal{L}(\theta) = \mathcal{L}_i(\theta) + \sum_{j=1}^{i-1} \frac{\lambda}{2} F_j (\theta - \theta^*_j)^2,
 
 where :math:`\theta` is current weights of the model, :math:`\theta^*_j` is learned weights until the :math:`j`-th task, :math:`\lambda > 0` is a hyperparameter, and :math:`F_j` is the diagonal part of the Fisher information matrix until the :math:`j`-th task computed as square of the first derivatives.
 

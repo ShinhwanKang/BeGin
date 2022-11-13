@@ -4,10 +4,6 @@ Welcome to BeGin Tutorials and Documentation!
 **BeGin** (**Be** nchmark **G** raph Cont **in** ual Learning) is an *easy* and *fool-proof* framework for graph continual learning.
 **BeGin** is *easily extended* since it is *modularized* with reusable module for data processing, algorithm design, validation, and evaluation.
 
-.. note::
-
-   This project is under active development.
-
 Contents
 ------------
 
