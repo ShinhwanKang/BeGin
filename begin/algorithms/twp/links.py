@@ -7,12 +7,32 @@ from begin.trainers.links import LCTrainer, LPTrainer
 
 class LCTaskILTWPTrainer(LCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            TWP needs three additional parameters `lambda_l`, `lambda_t`, and `beta`.
+            `lambda_l` is the hyperparamter for the regularization term (similar to EWC) used in :func:`afterInference`.
+            `lambda_t` is the hyperparamter for the regularization term (with topological information) used in :func:`afterInference`.
+            `beta` is the hyperparameter for the regularization term related to `cur_importance_score` in :func:`afterInference`.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lambda_l = kwargs['lambda_l'] if 'lambda_l' in kwargs else 10000
         self.lambda_t = kwargs['lambda_t']  if 'lambda_t' in kwargs else 10000
         self.beta = kwargs['beta'] if 'beta' in kwargs else 0.1
         
     def prepareLoader(self, _curr_dataset, curr_training_states):
+        """
+            The event function to generate dataloaders from the given dataset for the current task.
+            
+            For task-IL, we need to additionally consider task information for the inference step.
+            
+            Args:
+                curr_dataset (object): The dataset for the current task. Its type is dgl.graph for node-level and link-level problem, and dgl.data.DGLDataset for graph-level problem.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A tuple containing three dataloaders.
+                The trainer considers the first dataloader, second dataloader, and third dataloader
+                as dataloaders for training, validation, and test, respectively.
+        """
         curr_dataset = copy.deepcopy(_curr_dataset)
         srcs, dsts = curr_dataset.edges()
         labels = curr_dataset.edata.pop('label')
@@ -24,6 +44,20 @@ class LCTaskILTWPTrainer(LCTrainer):
         return [(curr_dataset, srcs[train_mask], dsts[train_mask], task_mask[train_mask], labels[train_mask])], [(curr_dataset, srcs[val_mask], dsts[val_mask], task_mask[val_mask], labels[val_mask])], [(curr_dataset, srcs[test_mask], dsts[test_mask], task_mask[test_mask], labels[test_mask])]
     
     def inference(self, model, _curr_batch, training_states, return_elist=False):
+        """
+            The event function to execute inference step.
+        
+            For task-IL, we need to additionally consider task information for the inference step.
+            TWP requires edge weights computed by attention mechanism.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the inference results, such as prediction result and loss.
+        """
         curr_batch, srcs, dsts, task_masks, labels = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), srcs, dsts, return_elist=return_elist, task_masks=task_masks)
         if return_elist: preds, elist = preds
@@ -31,6 +65,22 @@ class LCTaskILTWPTrainer(LCTrainer):
         return {'preds': preds, 'loss': loss, 'elist': elist if return_elist else None}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states): 
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+        
+            TWP performs regularization process in this function.
+        
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         cls_loss = results['loss']
         cls_loss.backward(retain_graph=True)
         cur_importance_score = 0.
@@ -51,6 +101,18 @@ class LCTaskILTWPTrainer(LCTrainer):
         return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
+        """
+            The event function to execute some processes after training the current task.
+
+            TWP computes weights for regularization process and stores the learned weights in this function.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_model.load_state_dict(curr_training_states['best_weights'])
         optpars = [None for (name, p) in curr_model.named_parameters()]
         cls_scores = [torch.zeros_like(p.data) for (name, p) in curr_model.named_parameters()]
@@ -84,12 +146,31 @@ class LCTaskILTWPTrainer(LCTrainer):
     
 class LCClassILTWPTrainer(LCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            TWP needs three additional parameters `lambda_l`, `lambda_t`, and `beta`.
+            `lambda_l` is the hyperparamter for the regularization term (similar to EWC) used in :func:`afterInference`.
+            `lambda_t` is the hyperparamter for the regularization term (with topological information) used in :func:`afterInference`.
+            `beta` is the hyperparameter for the regularization term related to `cur_importance_score` in :func:`afterInference`.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lambda_l = kwargs['lambda_l'] if 'lambda_l' in kwargs else 10000
         self.lambda_t = kwargs['lambda_t']  if 'lambda_t' in kwargs else 10000
         self.beta = kwargs['beta'] if 'beta' in kwargs else 0.1
         
     def inference(self, model, _curr_batch, training_states, return_elist=False):
+        """
+            The event function to execute inference step.
+        
+            TWP requires edge weights computed by attention mechanism.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the inference results, such as prediction result and loss.
+        """
         curr_batch, srcs, dsts, labels = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), srcs, dsts, return_elist=return_elist)
         if return_elist: preds, elist = preds
@@ -97,6 +178,22 @@ class LCClassILTWPTrainer(LCTrainer):
         return {'preds': preds, 'loss': loss, 'elist': elist if return_elist else None}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states): 
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+        
+            TWP performs regularization process in this function.
+        
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         cls_loss = results['loss']
         cls_loss.backward(retain_graph=True)
         cur_importance_score = 0.
@@ -117,6 +214,18 @@ class LCClassILTWPTrainer(LCTrainer):
         return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
+        """
+            The event function to execute some processes after training the current task.
+
+            TWP computes weights for regularization process and stores the learned weights in this function.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_model.load_state_dict(curr_training_states['best_weights'])
         optpars = [None for (name, p) in curr_model.named_parameters()]
         cls_scores = [torch.zeros_like(p.data) for (name, p) in curr_model.named_parameters()]
@@ -150,12 +259,30 @@ class LCClassILTWPTrainer(LCTrainer):
 
 class LCTimeILTWPTrainer(LCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            TWP needs three additional parameters `lambda_l`, `lambda_t`, and `beta`.
+            `lambda_l` is the hyperparamter for the regularization term (similar to EWC) used in :func:`afterInference`.
+            `lambda_t` is the hyperparamter for the regularization term (with topological information) used in :func:`afterInference`.
+            `beta` is the hyperparameter for the regularization term related to `cur_importance_score` in :func:`afterInference`.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lambda_l = kwargs['lambda_l'] if 'lambda_l' in kwargs else 10000
         self.lambda_t = kwargs['lambda_t']  if 'lambda_t' in kwargs else 10000
         self.beta = kwargs['beta'] if 'beta' in kwargs else 0.1
         
-    def _processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+        
+            We need to extend the function since the output format is slightly different from the base trainer.
+        
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10
@@ -163,6 +290,19 @@ class LCTimeILTWPTrainer(LCTrainer):
         self._reset_optimizer(curr_optimizer)
         
     def inference(self, model, _curr_batch, training_states, return_elist=False):
+        """
+            The event function to execute inference step.
+        
+            TWP requires edge weights computed by attention mechanism.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the inference results, such as prediction result and loss.
+        """
         curr_batch, srcs, dsts, labels = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), srcs, dsts, return_elist=return_elist)
         if return_elist: preds, elist = preds
@@ -170,6 +310,22 @@ class LCTimeILTWPTrainer(LCTrainer):
         return {'preds': preds, 'loss': loss, 'elist': elist if return_elist else None}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states): 
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+        
+            TWP performs regularization process in this function.
+        
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         cls_loss = results['loss']
         cls_loss.backward(retain_graph=True)
         cur_importance_score = 0.
@@ -187,6 +343,18 @@ class LCTimeILTWPTrainer(LCTrainer):
         return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'], _curr_batch[-1].to(self.device))}
     
     def processEvalIteration(self, model, _curr_batch):
+        """
+            The event function to handle every evaluation iteration.
+            
+            We need to extend the function since the output format is slightly different from the base trainer.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the evaluation iteration.
+        """
         results = self.inference(model, _curr_batch, None)
         return results['preds'], {'loss': results['loss'].item()}
     
@@ -194,6 +362,18 @@ class LCTimeILTWPTrainer(LCTrainer):
         return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
+        """
+            The event function to execute some processes after training the current task.
+
+            TWP computes weights for regularization process and stores the learned weights in this function.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_model.load_state_dict(curr_training_states['best_weights'])
         optpars = [None for (name, p) in curr_model.named_parameters()]
         cls_scores = [torch.zeros_like(p.data) for (name, p) in curr_model.named_parameters()]
@@ -227,12 +407,32 @@ class LCTimeILTWPTrainer(LCTrainer):
 
 class LPTimeILTWPTrainer(LPTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            TWP needs three additional parameters `lambda_l`, `lambda_t`, and `beta`.
+            `lambda_l` is the hyperparamter for the regularization term (similar to EWC) used in :func:`afterInference`.
+            `lambda_t` is the hyperparamter for the regularization term (with topological information) used in :func:`afterInference`.
+            `beta` is the hyperparameter for the regularization term related to `cur_importance_score` in :func:`afterInference`.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lambda_l = kwargs['lambda_l'] if 'lambda_l' in kwargs else 10000
         self.lambda_t = kwargs['lambda_t']  if 'lambda_t' in kwargs else 10000
         self.beta = kwargs['beta'] if 'beta' in kwargs else 0.1
         
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to handle every training iteration.
+        
+            TWP performs inference and regularization process in this function.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
         graph, feats = map(lambda x: x.to(self.device), training_states['graph'])
         edges, labels = map(lambda x: x.to(self.device), _curr_batch)
         optimizer.zero_grad()
@@ -264,6 +464,18 @@ class LPTimeILTWPTrainer(LPTrainer):
         return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
+        """
+            The event function to execute some processes after training the current task.
+
+            TWP computes weights for regularization process and stores the learned weights in this function.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_model.load_state_dict(curr_training_states['best_weights'])
         
         optpars, cls_scores, topology_scores = [], [], []

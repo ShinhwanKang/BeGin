@@ -8,6 +8,9 @@ from .utils import *
 
 class NCTaskILCGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            ContinualGNN additionally requires eight parameters, `detect_strategy`, `memory_size`, `memory_strategy`, `ewc_lambda`, `ewc_type`, `new_nodes_size`, `p`, and `alpha`.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         
         self.device = device
@@ -23,11 +26,39 @@ class NCTaskILCGNNTrainer(NCTrainer):
         self.save_file_name = f'{self.save_file_name}_{self.memory_size}_{self.ewc_lambda}_{self.new_nodes_size}_{self.p}_{self.alpha}'
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+            The event function to generate dataloaders from the given dataset for the current task.
+            
+            ContinualGNN additionally puts saved nodes from the previous tasks to the training set of the current task. 
+            
+            Args:
+                curr_dataset (object): The dataset for the current task. Its type is dgl.graph for node-level and link-level problem, and dgl.data.DGLDataset for graph-level problem.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A tuple containing three dataloaders.
+                The trainer considers the first dataloader, second dataloader, and third dataloader
+                as dataloaders for training, validation, and test, respectively.
+        """
         _temp = deepcopy(curr_dataset)
         _temp.ndata['train_mask'][curr_training_states['train_nodes']] = True
         return [(_temp, _temp.ndata['train_mask'])], [(_temp, _temp.ndata['val_mask'])], [(_temp, _temp.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to handle every training iteration.
+        
+            ContinualGNN performs regularization process (based on EWC) in this function.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
         curr_batch, mask = _curr_batch
 
         optimizer.zero_grad()
@@ -41,6 +72,16 @@ class NCTaskILCGNNTrainer(NCTrainer):
         return {'loss': loss.item(), 'acc': self.eval_fn(preds[mask].argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
 
     def processEvalIteration(self, model, _curr_batch):
+        """
+            The event function to handle every evaluation iteration.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the evaluation iteration.
+        """
         curr_batch, mask = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))[mask]
         loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
@@ -51,6 +92,18 @@ class NCTaskILCGNNTrainer(NCTrainer):
         return {'old_nodes_list':list(), 'train_cha_nodes_list':list(), 'train_nodes':list(), 'sage':None, 'before_g':None}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            In this function, ContinualGNN chooses important nodes for regularization.
+            
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if task_id == 0:
             curr_training_states['train_cha_nodes_list'] = torch.nonzero(curr_dataset.ndata['train_mask']).squeeze().tolist()
             curr_training_states['train_nodes'] = curr_training_states['train_cha_nodes_list']
@@ -117,6 +170,18 @@ class NCTaskILCGNNTrainer(NCTrainer):
         return True
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+            
+            ContinualGNN updates the buffer using the memory handler.
+            
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if curr_model.backbone_model:
             curr_model.load_state_dict(curr_training_states['best_weights'])
             curr_training_states['sage'] = deepcopy(curr_model)
@@ -147,11 +212,39 @@ class NCClassILCGNNTrainer(NCTrainer):
         self.save_file_name = f'{self.save_file_name}_{self.memory_size}_{self.ewc_lambda}_{self.new_nodes_size}_{self.p}_{self.alpha}'
         
     def prepareLoader(self, curr_dataset, curr_training_states):
+        """
+            The event function to generate dataloaders from the given dataset for the current task.
+            
+            ContinualGNN additionally puts saved nodes from the previous tasks to the training set of the current task. 
+            
+            Args:
+                curr_dataset (object): The dataset for the current task. Its type is dgl.graph for node-level and link-level problem, and dgl.data.DGLDataset for graph-level problem.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A tuple containing three dataloaders.
+                The trainer considers the first dataloader, second dataloader, and third dataloader
+                as dataloaders for training, validation, and test, respectively.
+        """
         _temp = deepcopy(curr_dataset)
         _temp.ndata['train_mask'][curr_training_states['train_nodes']] = True
         return [(_temp, _temp.ndata['train_mask'])], [(_temp, _temp.ndata['val_mask'])], [(_temp, _temp.ndata['test_mask'])]
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to handle every training iteration.
+        
+            ContinualGNN performs regularization process (based on EWC) in this function.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
         curr_batch, mask = _curr_batch
 
         optimizer.zero_grad()
@@ -169,6 +262,18 @@ class NCClassILCGNNTrainer(NCTrainer):
         return {'old_nodes_list':list(), 'train_cha_nodes_list':list(), 'train_nodes':list(), 'sage':None, 'before_g':None}
 
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            In this function, ContinualGNN chooses important nodes for regularization.
+            
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if task_id == 0:
             curr_training_states['train_cha_nodes_list'] = torch.nonzero(curr_dataset.ndata['train_mask']).squeeze().tolist()
             curr_training_states['train_nodes'] = curr_training_states['train_cha_nodes_list']
@@ -234,6 +339,18 @@ class NCClassILCGNNTrainer(NCTrainer):
         return True
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+            
+            ContinualGNN updates the buffer using the memory handler.
+            
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if curr_model.backbone_model:
             curr_model.load_state_dict(curr_training_states['best_weights'])
             curr_training_states['sage'] = deepcopy(curr_model)

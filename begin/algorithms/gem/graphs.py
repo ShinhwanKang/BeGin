@@ -10,6 +10,9 @@ from .utils import project2cone2
 
 class GCTaskILGEMTrainer(GCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            GEM needs `lamb` and `num_memories`, the additional hyperparamters for quadratic programming and the training buffer size, respectively.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lamb = kwargs['lamb'] if 'lamb' in kwargs else .5
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
@@ -19,11 +22,36 @@ class GCTaskILGEMTrainer(GCTrainer):
         return {'memories': []}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            GEM performs initialization (for every task) to manage the memory
+        
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         curr_training_states['curr_memory'] = []
         curr_training_states['curr_memory_size'] = 0
         
     def inference(self, model, _curr_batch, training_states):
+        """
+            The event function to execute inference step.
+        
+            For task-IL, we need to additionally consider task information for the inference step.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the inference results, such as prediction result and loss.
+        """
         graphs, labels, masks = _curr_batch
         preds = model(graphs.to(self.device),
                       graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
@@ -34,6 +62,17 @@ class GCTaskILGEMTrainer(GCTrainer):
         return {'preds': preds, 'loss': loss}
     
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            GEM computes the gradients for the previous tasks using the sampled data stored in the memory.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if len(training_states['memories']) > 0:
             all_grads = []
             for saved_batch in training_states['memories']:
@@ -45,6 +84,22 @@ class GCTaskILGEMTrainer(GCTrainer):
         model.zero_grad()
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+        
+            Using the computed gradients from the samples, GEM controls the gradients for the current task with quadratic programming.
+        
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         results['loss'].backward()
         if len(training_states['memories']) > 0:
             curr_grad = torch.cat([p.grad.data.view(-1) for p in model.parameters()])
@@ -75,6 +130,18 @@ class GCTaskILGEMTrainer(GCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), labels.to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+
+            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         chosen_graphs = list(chain.from_iterable([dgl.unbatch(mem['graphs']) for mem in curr_training_states['curr_memory']]))
@@ -91,6 +158,9 @@ class GCTaskILGEMTrainer(GCTrainer):
         
 class GCClassILGEMTrainer(GCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            GEM needs `lamb` and `num_memories`, the additional hyperparamters for quadratic programming and the training buffer size, respectively.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lamb = kwargs['lamb'] if 'lamb' in kwargs else .5
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
@@ -100,11 +170,34 @@ class GCClassILGEMTrainer(GCTrainer):
         return {'memories': []}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            GEM performs initialization (for every task) to manage the memory
+        
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         curr_training_states['curr_memory'] = []
         curr_training_states['curr_memory_size'] = 0
         
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            GEM computes the gradients for the previous tasks using the sampled data stored in the memory.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if len(training_states['memories']) > 0:
             all_grads = []
             for saved_batch in training_states['memories']:
@@ -116,6 +209,22 @@ class GCClassILGEMTrainer(GCTrainer):
         model.zero_grad()
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+        
+            Using the computed gradients from the samples, GEM controls the gradients for the current task with quadratic programming.
+        
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         results['loss'].backward()
         if len(training_states['memories']) > 0:
             curr_grad = torch.cat([p.grad.data.view(-1) for p in model.parameters()])
@@ -146,6 +255,18 @@ class GCClassILGEMTrainer(GCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), labels.to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+
+            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         chosen_graphs = list(chain.from_iterable([dgl.unbatch(mem['graphs']) for mem in curr_training_states['curr_memory']]))
@@ -158,12 +279,30 @@ class GCClassILGEMTrainer(GCTrainer):
 
 class GCDomainILGEMTrainer(GCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            GEM needs `lamb` and `num_memories`, the additional hyperparamters for quadratic programming and the training buffer size, respectively.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
         self.num_memories = (self.num_memories // self.num_tasks)
         
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to handle every training iteration.
+        
+            GEM computes the gradients for the previous tasks using the sampled data stored in the memory.
+            Using the computed gradients from the samples, GEM controls the gradients for the current task with quadratic programming.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
         if len(training_states['memories']) > 0:
             all_grads = []
             for saved_batch in training_states['memories']:
@@ -218,6 +357,18 @@ class GCDomainILGEMTrainer(GCTrainer):
         return {'_num_items': preds.shape[0], 'loss': loss.item(), 'acc': self.eval_fn(preds, labels.to(self.device))}
         
     def processEvalIteration(self, model, _curr_batch):
+        """
+            The event function to handle every evaluation iteration.
+            
+            We need to extend the function since the output format is slightly different from the base trainer.
+        
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the evaluation iteration.
+        """
         graphs, labels = _curr_batch
         preds = model(graphs.to(self.device),
                       graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
@@ -230,6 +381,18 @@ class GCDomainILGEMTrainer(GCTrainer):
         return {'memories': []}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            GEM performs initialization (for every task) to manage the memory
+        
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10
@@ -238,6 +401,18 @@ class GCDomainILGEMTrainer(GCTrainer):
         self._reset_optimizer(curr_optimizer)
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+
+            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         mem = curr_training_states['curr_memory']
         chosen_graphs = dgl.batch(list(chain.from_iterable([(dgl.unbatch(graphs))[_from:_to] for graphs, (_from, _to) in zip(mem['graphs'], mem['ranges'])])))

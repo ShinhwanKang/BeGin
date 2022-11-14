@@ -8,23 +8,66 @@ from .utils import *
 
 class NCTaskILERGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_experience_nodes` is the hyperparameter for size of the memory.
+            `sampler_name` is the hyperparamter for selecting the sampler.
+            `distance_threshold` is the hyperparameter about distances of embeddings used in the sampler.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.num_experience_nodes = kwargs['num_experience_nodes'] if 'num_experience_nodes' in kwargs else 1
         self.sampler_name = kwargs['sampler_name']  if 'sampler_name' in kwargs else 'CM'
         self.distance_threshold = kwargs['distance_threshold'] if 'distance_threshold' in kwargs else 0.5
         
     def initTrainingStates(self, scenario, model, optimizer):
+        """
+            ERGNN requires node sampler. We use CM sampler as the default sampler.
+            
+            Args:
+                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
+                model (torch.nn.Module): the given model to the trainer
+                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
+                
+            Returns:
+                Initialized training state (dict).
+        """
         sampler_list = {'CM': CM_sampler, 'MF': MF_sampler, 'random': random_sampler}
         _samp = sampler_list[self.sampler_name.split('_')[0]](plus = ('_plus' in self.sampler_name)) 
         return {'sampler': _samp, 'buffered_nodes':[]}
     
     def inference(self, model, _curr_batch, training_states):
+        """
+            ERGNN requires node sampler. We use CM sampler as the default sampler.
+            
+            Args:
+                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
+                model (torch.nn.Module): the given model to the trainer
+                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
+                
+            Returns:
+                Initialized training state (dict).
+        """
         curr_batch, mask = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))
         loss = self.loss_fn(preds[mask], curr_batch.ndata['label'][mask].to(self.device))
         return {'preds': preds[mask], 'loss': loss, 'preds_full': preds}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+            
+            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         loss = results['loss']
         curr_batch, mask = _curr_batch
         if len(training_states['buffered_nodes'])>0:
@@ -41,6 +84,18 @@ class NCTaskILERGNNTrainer(NCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+            
+            ERGNN selects nodes using the sampler and stores them in the buffer.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         train_nodes = torch.nonzero(curr_dataset.ndata['train_mask']).squeeze().tolist()
         train_classes = curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']].tolist()
@@ -55,12 +110,28 @@ class NCTaskILERGNNTrainer(NCTrainer):
 
 class NCClassILERGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_experience_nodes` is the hyperparameter for size of the memory.
+            `sampler_name` is the hyperparamter for selecting the sampler.
+            `distance_threshold` is the hyperparameter about distances of embeddings used in the sampler.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.num_experience_nodes = kwargs['num_experience_nodes'] if 'num_experience_nodes' in kwargs else 1
         self.sampler_name = kwargs['sampler_name']  if 'sampler_name' in kwargs else 'CM'
         self.distance_threshold = kwargs['distance_threshold'] if 'distance_threshold' in kwargs else 0.5
         
     def initTrainingStates(self, scenario, model, optimizer):
+        """
+            ERGNN requires node sampler. We use CM sampler as the default sampler.
+            
+            Args:
+                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
+                model (torch.nn.Module): the given model to the trainer
+                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
+                
+            Returns:
+                Initialized training state (dict).
+        """
         sampler_list = {'CM': CM_sampler, 'MF': MF_sampler, 'random': random_sampler}
         _samp = sampler_list[self.sampler_name.split('_')[0]](plus = ('_plus' in self.sampler_name)) 
         return {'sampler': _samp, 'buffered_nodes':[]}
@@ -72,6 +143,22 @@ class NCClassILERGNNTrainer(NCTrainer):
         return {'preds': preds[mask], 'loss': loss, 'preds_full': preds}
     
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+            
+            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
         loss = results['loss']
         curr_batch, mask = _curr_batch
         if len(training_states['buffered_nodes'])>0:
@@ -88,6 +175,18 @@ class NCClassILERGNNTrainer(NCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+            
+            ERGNN selects nodes using the sampler and stores them in the buffer.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         train_nodes = torch.nonzero(curr_dataset.ndata['train_mask']).squeeze().tolist()
         train_classes = curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']].tolist()
@@ -102,6 +201,11 @@ class NCClassILERGNNTrainer(NCTrainer):
         
 class NCDomainILERGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_experience_nodes` is the hyperparameter for size of the memory.
+            `sampler_name` is the hyperparamter for selecting the sampler.
+            `distance_threshold` is the hyperparameter about distances of embeddings used in the sampler.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.num_experience_nodes = kwargs['num_experience_nodes'] if 'num_experience_nodes' in kwargs else 1
         self.sampler_name = kwargs['sampler_name']  if 'sampler_name' in kwargs else 'CM'
@@ -110,12 +214,31 @@ class NCDomainILERGNNTrainer(NCTrainer):
         
 class NCTimeILERGNNTrainer(NCClassILERGNNTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_experience_nodes` is the hyperparameter for size of the memory.
+            `sampler_name` is the hyperparamter for selecting the sampler.
+            `distance_threshold` is the hyperparameter about distances of embeddings used in the sampler.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.num_experience_nodes = kwargs['num_experience_nodes'] if 'num_experience_nodes' in kwargs else 1
         self.sampler_name = kwargs['sampler_name']  if 'sampler_name' in kwargs else 'CM'
         self.distance_threshold = kwargs['distance_threshold'] if 'distance_threshold' in kwargs else 0.5
         
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to handle every training iteration.
+            
+            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the training iteration.
+        """
         model.train()
         model.zero_grad()
         curr_batch, mask = _curr_batch
@@ -136,6 +259,17 @@ class NCTimeILERGNNTrainer(NCClassILERGNNTrainer):
         return {'loss': loss.item(), 'acc': self.eval_fn(preds[mask].argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
+        """
+            ERGNN requires node sampler. We use CM sampler as the default sampler.
+            
+            Args:
+                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
+                model (torch.nn.Module): the given model to the trainer
+                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
+                
+            Returns:
+                Initialized training state (dict).
+        """
         _samp = None
         if self.sampler_name == 'CM':
             _samp = CM_sampler(plus=False)
@@ -150,6 +284,18 @@ class NCTimeILERGNNTrainer(NCClassILERGNNTrainer):
         return {'sampler': _samp, 'buffered_nodes':[]}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+            
+            ERGNN selects nodes using the sampler and stores them in the buffer.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         train_nodes = torch.nonzero(curr_dataset.ndata['train_mask']).squeeze().tolist()
         train_classes = curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']].tolist()
