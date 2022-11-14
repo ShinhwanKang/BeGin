@@ -377,4 +377,7 @@ class LPTimeILMASTrainer(LPTrainer):
             curr_training_states['importances'][name] += (importances[name] / total_num_items)
 
 class LPDomainILMASTrainer(LPTimeILMASTrainer):
+    """
+        This trainer has the same behavior as `LPTimeILMASTrainer`.
+    """
     pass

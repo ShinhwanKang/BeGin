@@ -370,4 +370,7 @@ class NCDomainILCGNNTrainer(NCTrainer):
         raise NotImplementedError
         
 class NCTimeILCGNNTrainer(NCClassILCGNNTrainer):
+    """
+        This trainer has the same behavior as `NCClassILCGNNTrainer`.
+    """
     pass

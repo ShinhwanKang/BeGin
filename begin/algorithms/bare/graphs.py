@@ -96,4 +96,7 @@ class GCDomainILBareTrainer(GCTrainer):
         self._reset_optimizer(curr_optimizer)
         
 class GCTimeILBareTrainer(GCClassILBareTrainer):
+    """
+        This trainer has the same behavior as `GCClassILBareTrainer`.
+    """
     pass

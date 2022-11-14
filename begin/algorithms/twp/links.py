@@ -529,4 +529,7 @@ class LPTimeILTWPTrainer(LPTrainer):
         curr_training_states['current_task'] += 1         
         
 class LPDomainILTWPTrainer(LPTimeILTWPTrainer):
+    """
+        This trainer has the same behavior as `LPTimeILTWPTrainer`.
+    """
     pass

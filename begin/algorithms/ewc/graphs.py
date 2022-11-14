@@ -312,4 +312,7 @@ class GCDomainILEWCTrainer(GCTrainer):
         curr_training_states['params'].append(params)
         
 class GCTimeILEWCTrainer(GCClassILEWCTrainer):
+    """
+        This trainer has the same behavior as `GCClassILEWCTrainer`.
+    """
     pass

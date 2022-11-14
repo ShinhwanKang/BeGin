@@ -396,4 +396,7 @@ class LPTimeILEWCTrainer(LPTrainer):
         curr_training_states['params'].append(params)
 
 class LPDomainILEWCTrainer(LPTimeILEWCTrainer):
+    """
+        This trainer has the same behavior as `LPTimeILEWCTrainer`.
+    """
     pass

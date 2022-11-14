@@ -261,4 +261,7 @@ class GCDomainILLwFTrainer(GCTrainer):
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
         
 class GCTimeILLwFTrainer(GCClassILLwFTrainer):
+    """
+        This trainer has the same behavior as `GCClassILLwFTrainer`.
+    """
     pass

@@ -338,4 +338,7 @@ class NCDomainILGEMTrainer(NCTrainer):
         curr_training_states['memories'].append(torch.cat(chosen_nodes, dim=-1))
         
 class NCTimeILGEMTrainer(NCClassILGEMTrainer):
+    """
+        This trainer has the same behavior as `NCClassILGEMTrainer`.
+    """
     pass

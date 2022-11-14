@@ -256,4 +256,7 @@ class NCDomainILTWPTrainer(NCTrainer):
         raise NotImplementedError
         
 class NCTimeILTWPTrainer(NCClassILTWPTrainer):
+    """
+        This trainer has the same behavior as `NCClassILTWPTrainer`.
+    """
     pass

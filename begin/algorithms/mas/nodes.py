@@ -279,4 +279,7 @@ class NCDomainILMASTrainer(NCTrainer):
             curr_training_states['importances'][name] += (importances[name] / len_loader)
         
 class NCTimeILMASTrainer(NCClassILMASTrainer):
+    """
+        This trainer has the same behavior as `NCClassILMASTrainer`.
+    """
     pass

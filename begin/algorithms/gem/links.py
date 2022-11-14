@@ -468,4 +468,7 @@ class LPTimeILGEMTrainer(LPTrainer):
         curr_training_states['memories'].append((copy.deepcopy(curr_training_states['graph']), chosen_edges, chosen_labels))
 
 class LPDomainILGEMTrainer(LPTimeILGEMTrainer):
+    """
+        This trainer has the same behavior as `LPTimeILGEMTrainer`.
+    """
     pass

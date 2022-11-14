@@ -294,4 +294,7 @@ class NCDomainILEWCTrainer(NCTrainer):
         curr_training_states['params'].append(params)
         
 class NCTimeILEWCTrainer(NCClassILEWCTrainer):
+    """
+        This trainer has the same behavior as `NCClassILEWCTrainer`.
+    """
     pass

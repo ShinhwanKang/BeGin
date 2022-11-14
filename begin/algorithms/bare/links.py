@@ -107,7 +107,13 @@ class LCTimeILBareTrainer(LCTrainer):
         return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'], _curr_batch[-1].to(self.device))}
 
 class LPTimeILBareTrainer(LPTrainer):
+    """
+        This trainer has the same behavior as `LPTrainer`.
+    """
     pass
 
 class LPDomainILBareTrainer(LPTrainer):
+    """
+        This trainer has the same behavior as `LPTrainer`.
+    """
     pass

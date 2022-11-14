@@ -414,4 +414,7 @@ class GCDomainILTWPTrainer(GCTrainer):
         curr_training_states['current_task'] += 1  
         
 class GCTimeILTWPTrainer(GCClassILTWPTrainer):
+    """
+        This trainer has the same behavior as `GCClassILTWPTrainer`.
+    """
     pass

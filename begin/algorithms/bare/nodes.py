@@ -86,4 +86,7 @@ class NCDomainILBareTrainer(NCTrainer):
         self._reset_optimizer(curr_optimizer)
         
 class NCTimeILBareTrainer(NCTrainer):
+    """
+        This trainer has the same behavior as `NCTrainer`.
+    """
     pass

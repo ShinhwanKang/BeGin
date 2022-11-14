@@ -421,4 +421,7 @@ class GCDomainILGEMTrainer(GCTrainer):
         curr_training_states['memories'].append((chosen_graphs, chosen_labels))
         
 class GCTimeILGEMTrainer(GCClassILGEMTrainer):
+    """
+        This trainer has the same behavior as `GCClassILGEMTrainer`.
+    """
     pass

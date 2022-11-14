@@ -237,4 +237,7 @@ class NCDomainILLwFTrainer(NCTrainer):
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
         
 class NCTimeILLwFTrainer(NCClassILLwFTrainer):
+    """
+        This trainer has the same behavior as `NCClassILLwFTrainer`.
+    """
     pass

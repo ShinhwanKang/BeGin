@@ -322,4 +322,7 @@ class LPTimeILLwFTrainer(LPTrainer):
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
         
 class LPDomainILLwFTrainer(LPTimeILLwFTrainer):
+    """
+        This trainer has the same behavior as `LPTimeILLwFTrainer`.
+    """
     pass
