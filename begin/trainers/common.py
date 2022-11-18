@@ -166,7 +166,7 @@ class BaseTrainer:
                         initial_stats = {}
                         initial_test_predictions = []
                         # collect predicted results on current val/test data
-                        for curr_batch in iter(dataloaders['base'][split]):
+                        for curr_batch in dataloaders['base'][split]:
                             initial_test_predictions.append(self._evalWrapper(models['base'], curr_batch, initial_stats))
                         # compute the initial performances
                         initial_results[split] = self.__scenario.get_eval_result(torch.cat(initial_test_predictions, dim=0), target_split=split)
@@ -187,7 +187,7 @@ class BaseTrainer:
                     # training phase of the current epoch
                     # users do not need to consider collecting and reducing the training stats in the current epoch. Instead, ``BeGin`` automatically collects and reduces them and compute the final training stats for the current epoch.
                     models[exp_name].train()
-                    for curr_batch in iter(dataloaders[exp_name]['train']):
+                    for curr_batch in dataloaders[exp_name]['train']:
                         # handle each minibatch
                         self._trainWrapper(models[exp_name], optims[exp_name], curr_batch, training_states[exp_name], train_stats)
                     # reduce the training stats. The default behavior is averaging the values.
@@ -196,7 +196,7 @@ class BaseTrainer:
                     # evaluation phase of the current epoch
                     models[exp_name].eval()
                     val_stats, val_predictions = {}, []
-                    for curr_batch in iter(dataloaders[exp_name]['val']):
+                    for curr_batch in dataloaders[exp_name]['val']:
                         # handle each minibatch
                         val_predictions.append(self._evalWrapper(models[exp_name], curr_batch, val_stats))
                     # reduce the validation stats. The default behavior is averaging the values.
@@ -228,7 +228,7 @@ class BaseTrainer:
                 for exp_name in ['base', 'accum', 'exp'] if self.full_mode else ['exp']:
                     models[exp_name].eval()
                     test_predictions, test_stats = [], {}
-                    for curr_batch in iter(dataloaders['accum'][split]):
+                    for curr_batch in dataloaders['accum'][split]:
                         # handle each minibatch
                         test_predictions.append(self._evalWrapper(models[exp_name], curr_batch, test_stats))
                         

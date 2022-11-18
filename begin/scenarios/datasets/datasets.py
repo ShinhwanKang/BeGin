@@ -15,6 +15,12 @@ import dgl
 from dgl.data.utils import save_graphs, load_graphs, save_info, load_info, makedirs, _get_dgl_url, download
 from ogb.graphproppred import DglGraphPropPredDataset
 
+# for aromaticity dataset
+from dgllife.data import PubChemBioAssayAromaticity
+from dgllife.data.csv_dataset import MoleculeCSVDataset
+from dgllife.utils.mol_to_graph import smiles_to_bigraph
+import pandas as pd
+
 class DGLGNNBenchmarkDataset(dgl.data.DGLBuiltinDataset):
     root_url = 'https://data.pyg.org/datasets/benchmarking-gnns'
     _urls = {
@@ -366,3 +372,47 @@ class BitcoinOTCDataset(dgl.data.DGLBuiltinDataset):
         with gzip.open(file, 'rb') as f_in:
             with open(out_file_path, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
+
+class AromaticityDataset(MoleculeCSVDataset):
+    def __init__(self, raw_dir):
+        self._url = 'dataset/pubchem_bioassay_aromaticity.csv'
+        data_path = raw_dir + '/pubchem_bioassay_aromaticity.csv'
+        download(_get_dgl_url(self._url), path=data_path, overwrite=False)
+        df = pd.read_csv(data_path)
+
+        super(AromaticityDataset, self).__init__(
+            df, smiles_to_bigraph, None, None, "cano_smiles",
+            './pubchem_aromaticity_dglgraph.bin', load=False, log_every=1000, n_jobs=1)
+        
+        label_tensor = torch.FloatTensor(self.labels).squeeze().long()
+        print(torch.bincount(label_tensor))
+        valid_classes = torch.bincount(label_tensor) >= 20
+        valid_indices = valid_classes[label_tensor].numpy().tolist()
+        new_label = torch.cumsum(valid_classes.long(), dim=-1) - 1
+        print(new_label, self.labels[0])
+        self.smiles = [self.smiles[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
+        self.graphs = [self.graphs[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
+        self.labels = torch.LongTensor([new_label[self.labels[i].long()] for i in range(label_tensor.shape[0]) if valid_indices[i]])
+        self.mask   = [  self.mask[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
+        print(torch.bincount(torch.LongTensor(self.labels).squeeze()))
+        for i in tqdm.trange(len(self.graphs)):
+            self.graphs[i].ndata['feat'] = torch.stack((self.graphs[i].in_degrees(), self.graphs[i].out_degrees()), dim=-1).float()
+        self._labels = self.labels.clone()
+        
+    def __getitem__(self, idx):
+        if hasattr(self, '_task_specific_masks'):
+            if isinstance(idx, int):
+                return self.graphs[idx], self.labels[idx], self._task_specific_masks[idx]
+            elif torch.is_tensor(idx) and idx.dtype == torch.long:
+                if idx.dim() == 0:
+                    return self.graphs[idx], self.labels[idx], self._task_specific_masks[idx]
+                elif idx.dim() == 1:
+                    return Subset(self, idx.cpu())
+        else:
+            if isinstance(idx, int):
+                return self.graphs[idx], self.labels[idx]
+            elif torch.is_tensor(idx) and idx.dtype == torch.long:
+                if idx.dim() == 0:
+                    return self.graphs[idx], self.labels[idx]
+                elif idx.dim() == 1:
+                    return Subset(self, idx.cpu())

@@ -127,7 +127,6 @@ class GCNNode(nn.Module):
     
     def bforward(self, blocks, feat, task_masks=None):
         h = feat
-        # print(feat)
         h = self.dropout(h)
         for i in range(self.n_layers):
             conv = self.convs[i](blocks[i], h)

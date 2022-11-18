@@ -13,6 +13,17 @@ def load_graph_dataset(dataset_name, incr_type, save_path):
     if dataset_name in ['mnist', 'cifar10'] and incr_type in ['task', 'class']:
         dataset = DGLGNNBenchmarkDataset(dataset_name, raw_dir=save_path)
         num_feats, num_classes = dataset.num_feats, dataset.num_classes
+    elif dataset_name in ['aromaticity'] and incr_type in ['task', 'class']:
+        dataset = AromaticityDataset(raw_dir=save_path)
+        num_feats, num_classes = 2, 30
+        # load train/val/test split (6:2:2 random split)
+        pkl_path = os.path.join(save_path, f'{dataset_name}_metadata_allIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dataset_name}_metadata_allIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_splits']
+        dataset._train_masks = (inner_tvt_splits % 10) < 6
+        dataset._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7) 
+        dataset._test_masks = (inner_tvt_splits % 10) > 7
     elif dataset_name in ['ogbg-molhiv'] and incr_type in ['domain']:
         dataset = DglGraphPropPredDataset(dataset_name, root=save_path)
         num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
@@ -36,8 +47,8 @@ class GCScenarioLoader(BaseScenarioLoader):
 
         **Usage example:**
 
-            >>> scenario = DGLGraphClassificationIL(dataset_name="ogbg-molhiv", num_tasks=10, metric="rocauc", 
-            ...             save_path="/data", incr_type="domain", task_shuffle=True)
+            >>> scenario = GCScenarioLoader(dataset_name="ogbg-molhiv", num_tasks=10, metric="rocauc", 
+            ...                             save_path="./data", incr_type="domain", task_shuffle=True)
 
         
         Bases: ``BaseScenarioLoader``
@@ -55,6 +66,7 @@ class GCScenarioLoader(BaseScenarioLoader):
                 self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             
             # compute task ids for each instance
+            print('class split information:', self.__splits)
             id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
             for i in range(self.num_tasks):
                 id_to_task[self.__splits[i]] = i

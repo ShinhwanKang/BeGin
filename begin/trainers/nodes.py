@@ -100,4 +100,81 @@ class NCTrainer(BaseTrainer):
         if self.full_mode:
             print('joint_acc_mat:', accum_acc_mat[:, :-1])
             print('intransigence:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
+
+class NCMinibatchTrainer(NCTrainer):
+    r"""
+        The mini-batch trainer (with neighborhood sampler) for handling node classification (NC).
+        
+        Base:
+            ``NCTrainer``
+    """
+    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
+        self.scheduler_fn = kwargs['scheduler_fn']
+        
+        # for randomness of dataloader
+        def seed_worker(worker_id):
+            worker_seed = torch.initial_seed() % 2**32
+            np.random.seed(worker_seed)
+            random.seed(worker_seed)
+        self._dataloader_seed_worker = seed_worker
+        
+    def prepareLoader(self, curr_dataset, curr_training_states):
+        dataset = curr_dataset.clone()
+        # pop train, val, test masks contained in the dataset
+        train_mask = dataset.ndata.pop('train_mask')
+        val_mask = dataset.ndata.pop('val_mask')
+        test_mask = dataset.ndata.pop('test_mask')
+        
+        # use multi-layer neighborhood sampler for efficient training
+        g_train = torch.Generator()
+        g_train.manual_seed(0)
+        train_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
+        train_loader = dgl.dataloading.NodeDataLoader(
+            dataset, torch.nonzero(train_mask, as_tuple=True)[0], train_sampler,
+            batch_size=131072,
+            shuffle=True,
+            drop_last=False,
+            num_workers=1, worker_init_fn=self._dataloader_seed_worker, generator=g_train)
+        
+        g_val = torch.Generator()
+        g_val.manual_seed(0)
+        val_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
+        # use fixed order (shuffle=False)
+        val_loader = dgl.dataloading.NodeDataLoader(
+            dataset, torch.nonzero(val_mask, as_tuple=True)[0], val_sampler,
+            batch_size=131072,
+            shuffle=False,
+            drop_last=False,
+            num_workers=1, worker_init_fn=self._dataloader_seed_worker, generator=g_val)
+        
+        g_test = torch.Generator()
+        g_test.manual_seed(0)
+        test_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
+        # use fixed order (shuffle=False)
+        test_loader = dgl.dataloading.NodeDataLoader(
+            dataset, torch.nonzero(test_mask, as_tuple=True)[0], test_sampler,
+            batch_size=131072,
+            shuffle=False,
+            drop_last=False,
+            num_workers=3, worker_init_fn=self._dataloader_seed_worker, generator=g_test)
+        
+        return train_loader, val_loader, test_loader
+    
+    def inference(self, model, _curr_batch, training_states):
+        # inference function for mini-batch 
+        input_nodes, output_nodes, blocks = _curr_batch
+        blocks = [b.to(self.device) for b in blocks]
+        labels = blocks[-1].dstdata['label']
+        preds = model.bforward(blocks, blocks[0].srcdata['feat'])
+        loss = self.loss_fn(preds, labels)
+        return {'preds': preds, 'loss': loss}
+    
+    def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        results['loss'].backward()
+        optimizer.step()
+        return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
+        
+    def processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
+        if epoch_cnt % 1 == 0: print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
         

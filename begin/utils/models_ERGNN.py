@@ -20,3 +20,16 @@ class GCN(GCNNode):
         self.last_h = h
         h = self.classifier(h, task_masks)
         return h
+    
+    def bforward(self, graph, feat, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            conv = self.convs[i](graph[i], h)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+        self.last_h = h
+        h = self.classifier(h, task_masks)
+        return h

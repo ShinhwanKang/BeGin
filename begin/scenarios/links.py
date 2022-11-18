@@ -67,7 +67,7 @@ class LPScenarioLoader(BaseScenarioLoader):
         **Usage example:**
 
             >>> scenario = LPScenarioLoader(dataset_name="ogbl-collab", num_tasks=3, metric="hits@50", 
-            ...             save_path="/data", incr_type="time", task_shuffle=True)
+            ...                             save_path="./data", incr_type="time", task_shuffle=True)
 
         Bases: ``BaseScenarioLoader``
     """
@@ -258,10 +258,10 @@ class LCScenarioLoader(BaseScenarioLoader):
         **Usage example:**
 
             >>> scenario = LCScenarioLoader(dataset_name="bitcoin", num_tasks=3, metric="accuracy", 
-            ...             save_path="/data", incr_type="task", task_shuffle=True)
+            ...                             save_path="./data", incr_type="task", task_shuffle=True)
             
             >>> scenario = LCScenarioLoader(dataset_name="bitcoin", num_tasks=7, metric="aucroc", 
-            ...             save_path="/data", incr_type="time")
+            ...                             save_path="./data", incr_type="time")
 
         Bases: ``BaseScenarioLoader``
     """

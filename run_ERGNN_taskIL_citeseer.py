@@ -1,10 +1,10 @@
 import torch
-from begin.algorithms.cgnn.nodes import *
+from begin.algorithms.ergnn.nodes import *
 from begin.scenarios.nodes import NCScenarioLoader
-from begin.utils import GCN
+from begin.utils.models_ERGNN import GCN
 scenario = NCScenarioLoader(dataset_name='citeseer', num_tasks=3, metric='accuracy', save_path='data', incr_type='task', task_shuffle=1)
 model = GCN(scenario.num_feats, scenario.num_classes, 256, dropout=0.0)
-benchmark = NCTimeILCGNNTrainer(model = model,
+benchmark = NCTaskILERGNNTrainer(model = model,
                                  scenario = scenario,
                                  optimizer_fn = lambda x: torch.optim.Adam(x, lr=1e-3, weight_decay=0),
                                  loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1),

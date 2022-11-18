@@ -41,6 +41,43 @@ Statistics:
    
 -----
 
+----------
+CoraFull
+----------
+`CoraFull <https://docs.dgl.ai/generated/dgl.data.CoraFullDataset.html>`_ is a citation network. Each node is a scientific publication,
+and its class is the field of the publication.
+For CoraFull, we formulate 35 binary classification tasks for Task-IL. 
+
+Statistics:
+
+- Nodes: 19,793
+- Edges: 126,842
+- Number of Node Features: 8,710
+- Number of Classes: 70
+- Supported Incremental Settings:
+   
+   + Task-IL with 35 tasks
+   
+-----
+
+--------------
+ogbn-products
+--------------
+`ogbn-products <https://ogb.stanford.edu/docs/nodeprop/#ogbn-products>`_ is a co-purchase network, where each node
+is a product, and its class belongs to 47 categories, which are divided into 9 groups for Class-IL.
+The number of classes increase by 5 in each task, and two categories are not used.
+
+Statistics:
+
+- Nodes: 2,449,029
+- Edges: 61,859,140
+- Number of Node Features: 100
+- Number of Classes: 47
+- Supported Incremental Settings:
+   
+   + Class-IL with 9 tasks
+   
+-----
 
 ---------------
 ogbn-proteins

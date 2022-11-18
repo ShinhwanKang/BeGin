@@ -44,6 +44,28 @@ Statistics:
 
 -----
 
+--------------
+Aromaticity
+--------------
+
+Graphs in `Aromaticity <https://lifesci.dgl.ai/api/data.html#pubmed-aromaticity>`_ are molecules consisting of atoms and their chemical bonds.
+The original dataset contains labels representing the number of aromatic atoms in each molecule.
+We divide molecules into 30 groups based on the labels and formulate Task-IL and Class-IL settings with 10 tasks.
+
+Statistics:
+
+- Number of Graphs: 3,868
+- Average Number of Nodes: 29.7
+- Average Number of Edges: 65.4
+- Number of Node Features: 0
+- Number of Classes: 30
+- Supported Incremental Settings:
+   
+   + Task-IL with 10 tasks
+   + Class-IL with 10 tasks
+   
+-----
+
 ------------
 ogbg-molhiv
 ------------

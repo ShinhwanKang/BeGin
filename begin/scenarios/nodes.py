@@ -56,6 +56,24 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         # load target label and timestamp information
         graph.ndata['label'] = label.squeeze()
         graph.ndata['time'] = graph.ndata.pop('year').squeeze()
+    elif dataset_name in ['ogbn-products'] and incr_type in ['task', 'class']:
+        dataset = DglNodePropPredDataset(dataset_name, root=save_path)
+        graph, label = dataset[0]
+        num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
+        
+        # to_bidirected
+        srcs, dsts = graph.all_edges()
+        graph.add_edges(dsts, srcs)
+        
+        # load train/val/test split
+        split_idx = dataset.get_idx_split()
+        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
+            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
+            _indices[split_idx[_split]] = True
+            graph.ndata[_split_name + '_mask'] = _indices
+        
+        # load target label and timestamp information
+        graph.ndata['label'] = label.squeeze()
     elif dataset_name in ['ogbn-proteins'] and incr_type in ['domain']:
         dataset = DglNodePropPredDataset(dataset_name, root=save_path)
         graph, label = dataset[0]
@@ -108,8 +126,8 @@ class NCScenarioLoader(BaseScenarioLoader):
 
         **Usage example:**
 
-            >>> scenario = DGLNodeClassificationIL(dataset_name="cora", num_tasks=3, metric="accuracy", 
-            ...             save_path="/data", incr_type="task", task_shuffle=True)
+            >>> scenario = NCScenarioLoader(dataset_name="cora", num_tasks=3, metric="accuracy", 
+            ...                             save_path="./data", incr_type="task", task_shuffle=True)
 
         Bases: ``BaseScenarioLoader``
     """
@@ -121,9 +139,18 @@ class NCScenarioLoader(BaseScenarioLoader):
             if self.kwargs is not None and 'task_orders' in self.kwargs:
                 self.__splits = tuple([torch.LongTensor(class_ids) for class_ids in self.kwargs['task_orders']])
             elif self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
-                self.__splits = torch.split(torch.randperm(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
+                if self.dataset_name == 'ogbn-products':
+                    # remove class index 46 (since it contains only one sample)
+                    self.__splits = torch.split(torch.randperm(self.num_classes-1), (self.num_classes-1) // self.num_tasks)[:self.num_tasks]
+                else:
+                    self.__splits = torch.split(torch.randperm(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             else:
-                self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
+                if self.dataset_name == 'ogbn-products':
+                    # remove class index 46 (since it contains only one sample)
+                    self.__splits = torch.split(torch.arange(self.num_classes-1), (self.num_classes-1) // self.num_tasks)[:self.num_tasks]
+                else:
+                    self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
+            
             print('class split information:', self.__splits)
             # compute task ids for each node
             id_to_task = self.num_tasks * torch.ones(self.num_classes).long()

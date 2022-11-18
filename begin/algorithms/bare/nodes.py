@@ -1,5 +1,5 @@
 import sys
-from begin.trainers.nodes import NCTrainer
+from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 
 class NCTaskILBareTrainer(NCTrainer):
     def inference(self, model, _curr_batch, training_states):
@@ -22,6 +22,15 @@ class NCTaskILBareTrainer(NCTrainer):
         return {'preds': preds, 'loss': loss}
     
 class NCClassILBareTrainer(NCTrainer):
+    """
+        This trainer has the same behavior as `NCTrainer`.
+    """
+    pass
+
+class NCClassILBareMinibatchTrainer(NCMinibatchTrainer):
+    """
+        This trainer has the same behavior as `NCMinibatchTrainer`.
+    """
     pass
 
 class NCDomainILBareTrainer(NCTrainer):
