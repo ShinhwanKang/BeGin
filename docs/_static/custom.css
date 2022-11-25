@@ -1,0 +1,40 @@
+.wy-side-nav-search {
+    background-color: #007842;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: #004224;
+}
+
+.wy-nav-top {
+    background-color: #007842;
+}
+
+.icon {
+    color: #007842;
+}
+
+.fa {
+    color: #007842;
+}
+
+span.caption-text{
+    color: #007842;
+}
+
+/*
+.wy-menu-vertical a:hover {
+    background-color: #c8c8c8;
+}
+
+.rst-versions {
+    border-top: solid 10px #d0d0d0;
+}
+
+.rst-versions .rst-current-version {
+    background-color: #e0e0e0;
+}
+
+a:hover {
+    text-decoration: underline !important;
+}*/

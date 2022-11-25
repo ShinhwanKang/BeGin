@@ -10,7 +10,17 @@ sys.path.append(os.path.abspath('..'))
 project = 'BeGin'
 copyright = 'KAIST Data Mining Lab'
 author = 'BeGin Team'
+html_static_path = ['_static']
 
+html_css_files = [
+    'custom.css',
+]
+
+html_logo = "logo.png"
+html_theme_options = {
+    'logo_only': True,
+    'display_version': True,
+}
 
 release = '0.1'
 version = '0.1.0'
