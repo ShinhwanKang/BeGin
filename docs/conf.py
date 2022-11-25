@@ -8,8 +8,8 @@ sys.path.append(os.path.abspath('..'))
 # -- Project information
 
 project = 'BeGin'
-copyright = 'Anonymous'
-author = 'Anonymous'
+copyright = 'KAIST Data Mining Lab'
+author = 'BeGin Team'
 
 
 release = '0.1'
@@ -59,6 +59,8 @@ extensions = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3/', None),
     'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy', None),
+    'torch': ('https://pytorch.org/docs/master', None)
 }
 intersphinx_disabled_domains = ['std']
 
@@ -73,6 +75,7 @@ exclude_patterns = ['.ipynb_checkpoints/*.rst', '0*0*/.ipynb_checkpoints/*.rst']
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
+
 
 autodoc_mock_imports = ["torch", "dgl", "numpy", "os", "time", "copy", "itertools", "pickle", "torch_scatter", "sklearn", "ogb", "scipy", "networkx", "tqdm", "qpth", "quadprog", "cvxpy", "rdkit", "dgllife", "pandas"]
 
