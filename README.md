@@ -1,6 +1,24 @@
-# BeGin
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/logo.png" height="100px" width="300px"></p>
 
-BeGin is an easy-to-use, fool-proof, and extensive benchmark framework for graph continual learning.
+# Overview
+
+**BeGin** is an easy and fool-proof framework for graph continual learning.
+
+Our framework **BeGin** has the following advantages:
+
+- BeGin is easy-to-use. It is easily extended since it is modularized with reusable modules for data processing, algorithm design, training, and evaluation.
+
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/framework.png" width="600px"></p>
+
+- BeGin is fool-proof by completely separating the evaluation module from the learning part, where users implement their own graph CL methods.
+
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/interaction.png" width="600px"></p>
+
+- BeGin provides 23 benchmark scenarios for graph from 14 real-world datasets, which cover 12 combinations of the incremental settings and the levels of problem. In addition, BeGin provides various basic evaluation metrics for measuring the performances and final evalution metrics designed for continual learning.
+
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/coverage.png" width="400px"></p>
+
+ 
 
 ## Dependencies
 - `PyTorch>=1.8.1`
