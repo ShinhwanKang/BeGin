@@ -28,4 +28,4 @@ You can install BeGin with the following command:
 
 .. code:: bash
 
-    python setup.py install
+    pip install -e .
