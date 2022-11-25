@@ -54,3 +54,15 @@ The tutorial and documents of BeGin are available at https://begin.readthedocs.i
 
 We also provide some running examples in `examples` directory.
 
+## Citing BeGin
+
+If you use this framework as part of any published research, please consider acknowledging our paper.
+
+```
+@article{kokang2022begin,
+  title={BeGin: Extensive Benchmark Scenarios and An Easy-to-use Framework for Graph Continual Learning},
+  author={Ko, Jihoon and Kang, Shinhwan and Shin, Kijung},
+  journal={arXiv preprint arXiv:2211.?????},
+  year={2022},
+}
+```
