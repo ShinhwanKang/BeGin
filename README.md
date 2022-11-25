@@ -4,11 +4,13 @@
 
 **BeGin** is an easy and fool-proof framework for graph continual learning.
 
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/framework.png" width="800px"></p>
+
 Our framework **BeGin** has the following advantages:
 
 - BeGin is easy-to-use. It is easily extended since it is modularized with reusable modules for data processing, algorithm design, training, and evaluation.
 
-<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/framework.png" width="800px"></p>
+<p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/trainer_example.png" width="800px"></p>
 
 - BeGin is fool-proof by completely separating the evaluation module from the learning part, where users implement their own graph CL methods.
 
