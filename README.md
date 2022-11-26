@@ -1,7 +1,5 @@
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/logo.png" height="100px" width="300px"></p>
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-
 # Overview
 
 **BeGin** is an easy and fool-proof framework for graph continual learning.
