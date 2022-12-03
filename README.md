@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 
-<tr><td colspan="4"> <a href=https://begin.readthedocs.io/>Read the docs</a></td></tr> | <tr><td colspan="4"> <a href="#Installation">Installation</a></td></tr> | <tr><td colspan="4"> <a href="#Citing-BeGin">Citing Begin</a></td></tr>
+<tr><td colspan="4"> <a href=https://begin.readthedocs.io/>Read the docs</a></td></tr> | <tr><td colspan="4"> <a href=https://arxiv.org/abs/2211.14568>Paper</a></td></tr> | <tr><td colspan="4"> <a href="#Installation">Installation</a></td></tr> | <tr><td colspan="4"> <a href="#Citing-BeGin">Citing Begin</a></td></tr>
 
 
 # Overview
@@ -66,10 +66,10 @@ We also provide some running examples in `examples` directory.
 If you use this framework as part of any published research, please consider acknowledging our paper.
 
 ```
-@article{kokang2022begin,
+@article{ko2022begin,
   title={BeGin: Extensive Benchmark Scenarios and An Easy-to-use Framework for Graph Continual Learning},
   author={Ko, Jihoon and Kang, Shinhwan and Shin, Kijung},
-  journal={arXiv preprint arXiv:2211.?????},
-  year={2022},
+  journal={arXiv preprint arXiv:2211.14568},
+  year={2022}
 }
 ```
