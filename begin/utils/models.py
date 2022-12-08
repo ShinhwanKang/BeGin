@@ -105,6 +105,7 @@ class GCNNode(nn.Module):
             out_hidden = n_hidden
             self.convs.append(GraphConv(in_hidden, out_hidden, "both", bias=False, allow_zero_in_degree=True))
             self.norms.append(nn.BatchNorm1d(out_hidden))
+            
         self.dropout = nn.Dropout(dropout)
         self.activation = activation
         if use_classifier:
