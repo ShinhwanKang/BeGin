@@ -61,10 +61,6 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph, label = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         
-        # to_bidirected
-        srcs, dsts = graph.all_edges()
-        graph.add_edges(dsts, srcs)
-        
         # load train/val/test split
         split_idx = dataset.get_idx_split()
         for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
@@ -97,6 +93,34 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         # load target label and domain information
         graph.ndata['label'] = label
         graph.ndata['domain'] = graph.ndata.pop('species').squeeze()
+    elif dataset_name in ['ogbn-mag'] and incr_type in ['task', 'class']:
+        dataset = DglNodePropPredDataset(dataset_name, root=save_path)
+        _graph, _label = dataset[0]
+        srcs, dsts = _graph.edges(etype='cites')
+        graph = dgl.graph((srcs, dsts))
+        
+        # pick nodes whose entity is 'paper'
+        graph.ndata['feat'] = _graph.ndata['feat']['paper']
+        graph.add_edges(dsts, srcs)
+        label = _label['paper'].squeeze()
+        
+        # select classes with at least 10 nodes
+        split_idx = dataset.get_idx_split()
+        traincnt = torch.bincount(label[split_idx['train']['paper']])
+        valcnt = torch.bincount(label[split_idx['valid']['paper']])
+        testcnt = torch.bincount(label[split_idx['test']['paper']])
+        considered_labels = torch.nonzero(torch.min(torch.stack((traincnt, valcnt, testcnt), dim=-1), dim=-1).values >= 10, as_tuple=True)[0]
+        processed_labels = torch.ones(label.max() + 1, dtype=torch.long) * considered_labels.shape[0]
+        processed_labels[considered_labels] = torch.arange(considered_labels.shape[0])
+        label = processed_labels[label]
+        
+        # load train/val/test split
+        num_feats, num_classes = graph.ndata['feat'].shape[-1], (label.max().item() + 1)
+        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
+            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
+            _indices[split_idx[_split]['paper']] = True
+            graph.ndata[_split_name + '_mask'] = _indices
+        graph.ndata['label'] = label.squeeze()    
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
         
