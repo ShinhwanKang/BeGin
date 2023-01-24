@@ -11,8 +11,8 @@ from .datasets import *
 from . import evaluator_map
 
 def load_linkp_dataset(dataset_name, incr_type, save_path):
-    if dataset_name == 'ogbl-collab' and incr_type in ['time']:
-        dataset = DglLinkPropPredDataset(dataset_name, root=save_path)
+    if dataset_name in ['ogbl-collab', 'collabx'] and incr_type in ['time']:
+        dataset = DglLinkPropPredDataset('ogbl-collab', root=save_path)
         # load edges and negative edges
         split_edge = dataset.get_edge_split()
         train_graph = dataset[0]
@@ -41,7 +41,7 @@ def load_linkp_dataset(dataset_name, incr_type, save_path):
         neg_edges = {}
         neg_edges['val'] = torch.LongTensor([[_s, _d] for _s, _d in zip(*zip(*split_edge['valid']['edge_neg'].numpy().tolist())) if (_s, _d) not in edgeset])
         neg_edges['test'] = torch.LongTensor([[_s, _d] for _s, _d in zip(*zip(*split_edge['test']['edge_neg'].numpy().tolist())) if (_s, _d) not in edgeset])
-    elif dataset_name == 'wikics' and incr_type in ['domain']:
+    elif dataset_name in ['wikics', 'wikicsx'] and incr_type in ['domain']:
         dataset = WikiCSLinkDataset(raw_dir=save_path)
         graph = dataset._g
         # load negative edges later
@@ -72,6 +72,11 @@ class LPScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
+        if self.dataset_name == 'ogbl-collab' and self.incr_type == 'time':
+            self.dataset_name = 'collabx'
+        if self.dataset_name == 'wikics' and self.incr_type == 'domain':
+            self.dataset_name = 'wikicsx'
+            
         self.num_feats, self.__graph, self.__neg_edges = load_linkp_dataset(self.dataset_name, self.incr_type, self.save_path)
         self.num_classes = 1
         
@@ -79,40 +84,72 @@ class LPScenarioLoader(BaseScenarioLoader):
             # It is impossible to make class-IL and task-IL setting
             raise NotImplementedError
         elif self.incr_type == 'time':
+            dname = self.dataset_name if self.dataset_name != 'collabx' else 'ogbl-collab'
             # load time split and train/val/test split information
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_timeIL.pkl', pkl_path)
+            pkl_path = os.path.join(self.save_path, f'{dname}_metadata_timeIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dname}_metadata_timeIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             self.__inner_tvt_splits = metadata['inner_tvt_splits']
             self.__time_splits = metadata['time_splits']
             
-            # compute task ids for each instance
-            self.num_tasks = len(self.__time_splits) - 1
-            self.__task_ids = torch.zeros_like(self.__graph.edata['time'])
-            for i in range(1, self.num_tasks):
-                self.__task_ids[self.__graph.edata['time'] >= self.__time_splits[i]] = i
+            if self.dataset_name == 'ogbl-collab':
+                # compute task ids for each instance
+                self.num_tasks = len(self.__time_splits) - 1
+                self.__task_ids = torch.zeros_like(self.__graph.edata['time'])
+                for i in range(1, self.num_tasks):
+                    self.__task_ids[self.__graph.edata['time'] >= self.__time_splits[i]] = i
+            elif self.dataset_name == 'collabx':
+                self.__task_ids = torch.clamp(self.__graph.edata['time'] - 1970, 0, 20000)
+                self.num_tasks = self.__task_ids.max() + 1
+                print(self.num_tasks, torch.bincount(self.__task_ids))
         elif self.incr_type == 'domain':
+            dname = self.dataset_name if self.dataset_name != 'wikicsx' else 'wikics'
             # load domain information and train/val/test split
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_domainIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_domainIL.pkl', pkl_path)
+            pkl_path = os.path.join(self.save_path, f'{dname}_metadata_domainIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dname}_metadata_domainIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             self.__inner_tvt_splits = metadata['inner_tvt_splits']
             self.__neg_edges = metadata['neg_edges']
             
-            # determine task configuration
-            self.num_tasks = min(self.num_tasks, self.__graph.ndata['domain'].max().item() + 1)
-            if self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
-                domain_order = torch.randperm(self.num_tasks)
-            else:
-                domain_order = torch.arange(self.num_tasks)
-            domain_order_inv = torch.arange(self.num_tasks)
-            domain_order_inv[domain_order] = torch.arange(self.num_tasks)
-            
-            # compute task ids for each link (instance)
-            domain_infos = self.__graph.ndata.pop('domain')
-            srcs, dsts = self.__graph.edges()
-            self.__task_ids = torch.max(domain_order_inv[domain_infos[srcs]], domain_order_inv[domain_infos[dsts]])
-        
+            if self.dataset_name == 'wikics':
+                # determine task configuration
+                self.num_tasks = min(self.num_tasks, self.__graph.ndata['domain'].max().item() + 1)
+                if self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
+                    domain_order = torch.randperm(self.num_tasks)
+                else:
+                    domain_order = torch.arange(self.num_tasks)
+                domain_order_inv = torch.arange(self.num_tasks)
+                domain_order_inv[domain_order] = torch.arange(self.num_tasks)
+
+                # compute task ids for each link (instance)
+                domain_infos = self.__graph.ndata.pop('domain')
+                srcs, dsts = self.__graph.edges()
+                self.__task_ids = torch.max(domain_order_inv[domain_infos[srcs]], domain_order_inv[domain_infos[dsts]])
+            elif self.dataset_name == 'wikicsx':
+                self.num_tasks = 54
+                if self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
+                    domain_order = torch.randperm(self.num_tasks)
+                else:
+                    domain_order = torch.arange(self.num_tasks)
+                task_map = torch.LongTensor([[0,1,2,3,4,5,self.num_tasks,6,7,8],
+                                             [-1,9,10,11,12,13,14,15,16,17],
+                                             [-1,-1,18,19,20,21,22,23,24,25],
+                                             [-1,-1,-1,26,27,28,29,30,31,32],
+                                             [-1,-1,-1,-1,33,34,35,36,37,38],
+                                             [-1,-1,-1,-1,-1,39,40,41,42,43],
+                                             [-1,-1,-1,-1,-1,-1,44,45,46,47],
+                                             [-1,-1,-1,-1,-1,-1,-1,48,49,50],
+                                             [-1,-1,-1,-1,-1,-1,-1,-1,51,52],
+                                             [-1,-1,-1,-1,-1,-1,-1,-1,-1,53]])
+                
+                domain_order_inv = torch.arange(self.num_tasks + 1)
+                domain_order_inv[domain_order] = torch.arange(self.num_tasks)
+
+                domain_infos = self.__graph.ndata.pop('domain')
+                srcs, dsts = self.__graph.edges()
+                self.__task_ids = domain_order_inv[task_map[torch.min(domain_infos[srcs], domain_infos[dsts]), torch.max(domain_infos[srcs], domain_infos[dsts])]]
+                print(torch.bincount(self.__task_ids))
+                
         # set evaluator for the target scenario
         if self.metric is not None:
             if '@' in self.metric:
@@ -139,9 +176,9 @@ class LPScenarioLoader(BaseScenarioLoader):
         # generate data using only train edges
         target_dataset = dgl.graph((srcs[edges_for_train], dsts[edges_for_train]), num_nodes=self.__graph.num_nodes())
         for k in self.__graph.ndata.keys():
-            if (not self.minimize) or (k != 'time' or k != 'domain'): target_dataset.ndata[k] = self.__graph.ndata[k]
+            if (k != 'time' or k != 'domain'): target_dataset.ndata[k] = self.__graph.ndata[k]
         for k in self.__graph.edata.keys():
-            if (not self.minimize) or (k != 'time' or k != 'domain'): target_dataset.edata[k] = self.__graph.edata[k][edges_for_train]
+            if (k != 'time' or k != 'domain'): target_dataset.edata[k] = self.__graph.edata[k][edges_for_train]
             
         # prepare val/test data for current task (containing negative edges)
         target_edges = {_split: torch.stack((srcs[edges_ready[_split]], dsts[edges_ready[_split]]), dim=-1) for _split in ['val', 'test']}
@@ -175,9 +212,9 @@ class LPScenarioLoader(BaseScenarioLoader):
                        'test': (self.__inner_tvt_splits > 8) & is_even}
         target_dataset = dgl.graph((srcs[edges_for_train], dsts[edges_for_train]), num_nodes=self.__graph.num_nodes())
         for k in self.__graph.ndata.keys():
-            if (not self.minimize) or (k != 'time' or k != 'domain'): target_dataset.ndata[k] = self.__graph.ndata[k]
+            if (k != 'time' or k != 'domain'): target_dataset.ndata[k] = self.__graph.ndata[k]
         for k in self.__graph.edata.keys():
-            if (not self.minimize) or (k != 'time' or k != 'domain'): target_dataset.edata[k] = self.__graph.edata[k][edges_for_train]
+            if (k != 'time' or k != 'domain'): target_dataset.edata[k] = self.__graph.edata[k][edges_for_train]
             
         # prepare val/test data for current task (containing negative edges)
         target_edges = {_split: torch.stack((srcs[edges_ready[_split]], dsts[edges_ready[_split]]), dim=-1) for _split in ['val']}

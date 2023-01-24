@@ -24,8 +24,8 @@ def load_graph_dataset(dataset_name, incr_type, save_path):
         dataset._train_masks = (inner_tvt_splits % 10) < 6
         dataset._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7) 
         dataset._test_masks = (inner_tvt_splits % 10) > 7
-    elif dataset_name in ['ogbg-molhiv'] and incr_type in ['domain']:
-        dataset = DglGraphPropPredDataset(dataset_name, root=save_path)
+    elif dataset_name in ['ogbg-molhiv', 'molhivx'] and incr_type in ['domain']:
+        dataset = DglGraphPropPredDataset('ogbg-molhiv', root=save_path)
         num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
         # load train/val/test split
         split_idx = dataset.get_idx_split()
@@ -54,6 +54,8 @@ class GCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
+        if self.dataset_name == 'ogbg-molhiv' and self.incr_type == 'domain':
+            self.dataset_name = 'molhivx'
         self.num_classes, self.num_feats, self.__dataset = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
         
         if self.incr_type in ['class', 'task']:

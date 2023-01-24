@@ -37,8 +37,8 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph.ndata['train_mask'] = (inner_tvt_splits < 6)
         graph.ndata['val_mask'] = (6 <= inner_tvt_splits) & (inner_tvt_splits < 8)
         graph.ndata['test_mask'] = (8 <= inner_tvt_splits)
-    elif dataset_name in ['ogbn-arxiv'] and incr_type in ['task', 'class', 'time']:
-        dataset = DglNodePropPredDataset(dataset_name, root=save_path)
+    elif dataset_name in ['ogbn-arxiv', 'arxivx'] and incr_type in ['task', 'class', 'time']:
+        dataset = DglNodePropPredDataset('ogbn-arxiv', root=save_path)
         graph, label = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         
@@ -156,7 +156,9 @@ class NCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     
-    def _init_continual_scenario(self):    
+    def _init_continual_scenario(self):
+        if self.dataset_name == 'ogbn-arxiv' and self.incr_type == 'time':
+            self.dataset_name = 'arxivx'
         self.num_classes, self.num_feats, self.__graph, self.__cover_rule = load_node_dataset(self.dataset_name, self.incr_type, self.save_path)
         if self.incr_type in ['class', 'task']:
             # determine task configuration
@@ -185,8 +187,9 @@ class NCScenarioLoader(BaseScenarioLoader):
             # ignore classes which are not used in the tasks
             self.__graph.ndata['test_mask'] = self.__graph.ndata['test_mask'] & (self.__task_ids < self.num_tasks)
         elif self.incr_type == 'time':
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_timeIL.pkl', pkl_path)
+            dname = self.dataset_name if self.dataset_name != 'arxivx' else 'ogbn-arxiv'
+            pkl_path = os.path.join(self.save_path, f'{dname}_metadata_timeIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dname}_metadata_timeIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             inner_tvt_splits = metadata['inner_tvt_splits']
             self.__time_splits = metadata['time_splits']
