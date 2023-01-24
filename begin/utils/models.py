@@ -125,6 +125,34 @@ class GCNNode(nn.Module):
             h = self.classifier(h, task_masks)
         return h
     
+    def forward_hat(self, graph, feat, hat_masks, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            conv = self.convs[i](graph, h)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+            
+            device = h.get_device()
+            h=h*hat_masks[i].to(device).expand_as(h)
+            
+        if self.classifier is not None:
+            h = self.classifier(h, task_masks)
+        return h
+    
+    def forward_without_classifier(self, graph, feat, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            conv = self.convs[i](graph, h)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+        return h
+    
     def bforward(self, blocks, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
@@ -173,6 +201,21 @@ class GCNLink(nn.Module):
             x = self.dropout(x)
         x = self.classifier(x, task_masks)
         return x
+    
+    def forward_hat(self, graph, feat, srcs, dsts, hat_masks=None, task_masks=None):
+        _h = self.gcn.forward_hat(graph, feat, hat_masks[:-(self.n_layers - 1)], task_masks)
+        x = _h[srcs] * _h[dsts]
+        x = self.dropout(x)
+        for i in range(self.n_layers - 1):
+            x = self.linears[i](x)
+            x = self.activation(x)
+            x = self.dropout(x)
+        x = self.classifier(x, task_masks)
+        return x
+    
+    def forward_without_classifier(self, graph, feat, task_masks=None):
+        _h = self.gcn.forward_without_classifier(graph, feat, task_masks)
+        return _h
     
     def observe_labels(self, new_labels, verbose=True):
         self.classifier.observe_outputs(new_labels, verbose=verbose)
@@ -304,6 +347,7 @@ class GCNGraph(nn.Module):
     def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=4, n_mlp_layers=2, incr_type='class', readout='mean', node_encoder_fn=None, edge_encoder_fn=None):
         super().__init__()
         self.n_layers = n_layers
+        self.n_mlp_layers = n_mlp_layers
         self.n_hidden = n_hidden
         self.n_classes = n_classes
         self.convs = nn.ModuleList()
@@ -343,6 +387,45 @@ class GCNGraph(nn.Module):
             h = self.dropout(h)
             
         h = self.classifier(h, task_masks)
+        return h
+    
+    def forward_hat(self, graph, feat, hat_masks, task_masks=None, edge_weight=None, edge_attr=None):
+        h = self.enc(feat)
+        h = self.dropout(h)
+        device = h.get_device()
+        
+        h = h * hat_masks[0].to(device).expand_as(h)
+        for i in range(self.n_layers):
+            conv = self.convs[i](graph, h, edge_weight=edge_weight, edge_attr=edge_attr)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+            h = h * hat_masks[1 + i].to(device).expand_as(h)
+            
+        if self.readout_mode != 'none':
+            ptrs = torch.cat((torch.LongTensor([0]).to(h.device), torch.cumsum(graph.batch_num_nodes(), dim=-1)), dim=-1)
+            h1 = segment_csr(h, ptrs, reduce=self.readout_mode)
+            h = h1
+            
+        for layer in self.mlp_layers:
+            h = layer(h)
+            h = self.activation(h)
+            h = self.dropout(h)
+            h=h*hat_masks[1 + self.n_layers + i].to(device).expand_as(h)
+            
+        h = self.classifier(h, task_masks)
+        return h
+    
+    def forward_without_classifier(self, graph, feat, task_masks=None, edge_weight=None, edge_attr=None):
+        h = self.enc(feat)
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            conv = self.convs[i](graph, h, edge_weight=edge_weight, edge_attr=edge_attr)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
         return h
     
     def observe_labels(self, new_labels, verbose=True):

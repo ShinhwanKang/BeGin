@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import torch
 import copy
+from torch import nn
 import torch.nn.functional as F
 from begin.trainers.nodes import NCTrainer
 
@@ -73,7 +74,7 @@ class NCTaskILPackNetTrainer(NCTrainer):
         pre_scheduler = self.scheduler_fn(curr_optimizer)
         best_val_loss = 1e10
         pre_checkpoint = copy.deepcopy(curr_model.state_dict())
-        for epoch_cnt in range(self.args.num_steps // 10):
+        for epoch_cnt in range(self.max_num_epochs // 10):
             curr_model.train()
             if self.curr_task > 0:
                 curr_model.apply(set_bn_eval)

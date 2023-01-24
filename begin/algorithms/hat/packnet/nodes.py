@@ -1,19 +1,17 @@
 import sys
 import numpy as np
 import torch
-import dgl
-from torch import nn
 import copy
 import torch.nn.functional as F
-from begin.trainers.graphs import GCTrainer
+from begin.trainers.nodes import NCTrainer
 
-class GCTaskILPackNetTrainer(GCTrainer):
+class NCTaskILPackNetTrainer(NCTrainer):
     def initTrainingStates(self, scenario, model, optimizer):
         model_masks = {}
         with torch.no_grad():
             pr = 1. - np.exp((1. / (self.num_tasks - 1)) * np.log(1. / self.num_tasks))
             for name, p in model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name:
                     model_masks[name] = (torch.ones_like(p.data) * (self.num_tasks + 1)).long()
         return {'pr': pr, 'packnet_masks': model_masks, 'class_to_task': -torch.ones(model.classifier.num_outputs, dtype=torch.long)}
     
@@ -31,13 +29,9 @@ class GCTaskILPackNetTrainer(GCTrainer):
             Returns:
                 A dictionary containing the inference results, such as prediction result and loss.
         """
-        graphs, labels, masks = _curr_batch
-        preds = model(graphs.to(self.device),
-                      graphs.ndata['feat'].to(self.device) if 'feat' in graphs.ndata else None,
-                      edge_attr = graphs.edata['feat'].to(self.device) if 'feat' in graphs.edata else None,
-                      edge_weight = graphs.edata['weight'].to(self.device) if 'weight' in graphs.edata else None,
-                      task_masks = masks)
-        loss = self.loss_fn(preds, labels.to(self.device))
+        curr_batch, mask = _curr_batch
+        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))[mask]
+        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].to(self.device))
         return {'preds': preds, 'loss': loss}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
@@ -71,40 +65,35 @@ class GCTaskILPackNetTrainer(GCTrainer):
                     p.requires_grad_(False)
                     
         # detect new classes    
-        trainloader, valloader, _ = self.prepareLoader(curr_dataset, curr_training_states)
-        first_train_batch = next(iter(trainloader))
-        curr_model.class_to_task[first_train_batch[-1][0]] = self.curr_task
+        new_classes = curr_dataset.ndata['task_specific_mask'][curr_dataset.ndata['train_mask']][0]
+        curr_model.class_to_task[new_classes > 0] = self.curr_task
         
         # pre-training (10% of number of training epochs)
+        trainset, valset, _ = self.prepareLoader(curr_dataset, curr_training_states)
         pre_scheduler = self.scheduler_fn(curr_optimizer)
         best_val_loss = 1e10
         pre_checkpoint = copy.deepcopy(curr_model.state_dict())
-        for epoch_cnt in range(self.max_num_epochs // 10):
+        for epoch_cnt in range(self.args.num_steps // 10):
             curr_model.train()
             if self.curr_task > 0:
                 curr_model.apply(set_bn_eval)
-                
-            for curr_batch in trainloader:
-                self.processTrainIteration(curr_model, curr_optimizer, curr_batch, curr_training_states, use_mask=False)
-            
+            train_dict = self.processTrainIteration(curr_model, curr_optimizer, trainset[0], curr_training_states, use_mask=False)
             curr_model.eval()
-            val_stats = []
-            for curr_batch in valloader:
-                val_stats.append(self.processEvalIteration(curr_model, curr_batch, use_mask=False)[-1])
-            val_loss = sum([vst['loss'] for vst in val_stats]) / sum([vst['n_samples'] for vst in val_stats])
-            
+            _, val_dict = self.processEvalIteration(curr_model, valset[0], use_mask=False)
+            val_loss = val_dict['loss']
+
             if val_loss < best_val_loss:
                 best_val_loss = val_loss
                 pre_checkpoint = copy.deepcopy(curr_model.state_dict())
             pre_scheduler.step(val_loss)
             if -1e-9 < (curr_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
                 break
-        
+                
         # select parameters and perform masking
         with torch.no_grad():
             curr_model.load_state_dict(pre_checkpoint)
             for name, p in curr_model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name:
                     try:
                         candidates = torch.abs(p.data)[curr_model.packnet_masks[name] >= self.curr_task]
                         threshold = torch.topk(candidates, int((candidates.shape[0] * curr_training_states['pr']) + 0.5), largest=True).values.min()
@@ -119,7 +108,7 @@ class GCTaskILPackNetTrainer(GCTrainer):
         for name, p in curr_model.named_parameters():
             if 'norms' in name:
                 p.requires_grad_(False)
-                
+        
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
     def afterInference(self, results, model, optimizer, _curr_batch, training_states, use_mask=True):
@@ -145,15 +134,15 @@ class GCTaskILPackNetTrainer(GCTrainer):
         if use_mask:
             # flow gradients only for masked ones
             for name, p in model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name:
                     p.grad = p.grad * (model.packnet_masks[name] == self.curr_task).long()
         else:
             # flow gradients only for unmasked ones (pre-training)
             for name, p in model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name:
                     p.grad = p.grad * (model.packnet_masks[name] >= self.curr_task).long()
         optimizer.step()
-        return {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
+        return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states, use_mask=True):
         """
@@ -203,14 +192,13 @@ class GCTaskILPackNetTrainer(GCTrainer):
         
         # classify each sample by its task-id
         eval_model = copy.deepcopy(model)
-        graphs, labels, mask = _curr_batch
-        each_graph = dgl.unbatch(graphs)
-        task_ids = torch.max(mask * model.class_to_task, dim=-1).values
-        task_checks = torch.min(mask * model.class_to_task, dim=-1).values
+        curr_batch, mask = _curr_batch
+        task_ids = torch.max(curr_batch.ndata['task_specific_mask'][mask] * model.class_to_task, dim=-1).values
+        task_checks = torch.min(curr_batch.ndata['task_specific_mask'][mask] * model.class_to_task, dim=-1).values
+        test_nodes = torch.arange(mask.shape[0])[mask]
         task_ids[task_checks < 0] = self.curr_task
-        
-        num_samples = torch.bincount(task_ids.detach().cpu(), minlength=self.curr_task+1)
-        total_results = torch.zeros(mask.shape[0], dtype=torch.long).to(self.device)
+        num_samples = torch.bincount(task_ids.detach().cpu())
+        total_results = torch.zeros_like(test_nodes).to(self.device)
         total_loss = 0.
         
         # handle the samples with different tasks separately
@@ -218,16 +206,15 @@ class GCTaskILPackNetTrainer(GCTrainer):
             if num_samples[i].item() == 0: continue
             if use_mask:
                 for name, p in eval_model.named_parameters():
-                    if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                    if 'convs' in name:
                         p.data = p.data * (model.packnet_masks[name] <= i).long()
 
-            eval_mask = (task_ids == i)
-            eval_nodes = torch.nonzero(eval_mask, as_tuple=True)[0]
-            target_graphs = dgl.batch([each_graph[graph_id] for graph_id in eval_nodes.tolist()])
-            results = self.inference(eval_model, (target_graphs, labels[eval_mask], mask[eval_mask]), None)
-            total_results[eval_nodes] = torch.argmax(results['preds'], dim=-1)
+            eval_mask = torch.zeros(mask.shape[0])
+            eval_mask[test_nodes[task_ids == i]] = 1
+            results = self.inference(eval_model, (curr_batch, eval_mask.bool()), None)
+
+            total_results[task_ids == i] = torch.argmax(results['preds'], dim=-1)
             total_loss += results['loss'].item() * num_samples[i].item()
-        n_samples = torch.sum(num_samples).item()
-        total_loss /= n_samples
-        
-        return total_results, {'loss': total_loss, 'n_samples': n_samples}
+        total_loss /= torch.sum(num_samples).item()
+
+        return total_results, {'loss': total_loss}

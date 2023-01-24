@@ -71,8 +71,9 @@ class GCTrainer(BaseTrainer):
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         optimizer.zero_grad()
-        self.beforeInference(model, optimizer, _curr_batch, training_states)
+        before_inference_results = self.beforeInference(model, optimizer, _curr_batch, training_states)
         inference_results = self.inference(model, _curr_batch, training_states)
+        inference_results['_before_inference'] = before_inference_results
         return self.afterInference(inference_results, model, optimizer, _curr_batch, training_states)
         
     def processEvalIteration(self, model, _curr_batch):

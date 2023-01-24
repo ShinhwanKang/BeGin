@@ -125,7 +125,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
             pre_optimizer = self.optimizer_fn(dgi_model.parameters())
             pre_scheduler = self.scheduler_fn(pre_optimizer)
             best_val_loss = 1e10
-            for epoch_cnt in range(self.args.num_steps):
+            for epoch_cnt in range(self.max_num_epochs):
                 val_loss = 0.
                 for _curr_batch in trainloader:
                     pre_optimizer.zero_grad()

@@ -2,6 +2,8 @@ import sys
 import numpy as np
 import torch
 import dgl
+from torch import nn
+import copy
 import torch.nn.functional as F
 from begin.trainers.links import LCTrainer
 
@@ -76,6 +78,7 @@ class LCTaskILPackNetTrainer(LCTrainer):
         def set_bn_eval(m):
             if isinstance(m, nn.BatchNorm1d):
                 m.eval()
+        
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         if self.curr_task == 0:
@@ -97,7 +100,7 @@ class LCTaskILPackNetTrainer(LCTrainer):
         pre_scheduler = self.scheduler_fn(curr_optimizer)
         best_val_loss = 1e10
         pre_checkpoint = copy.deepcopy(curr_model.state_dict())
-        for epoch_cnt in range(self.args.num_steps // 10):
+        for epoch_cnt in range(self.max_num_epochs // 10):
             curr_model.train()
             if self.curr_task > 0:
                 curr_model.apply(set_bn_eval)
@@ -157,12 +160,12 @@ class LCTaskILPackNetTrainer(LCTrainer):
         if use_mask:
             # flow gradients only for masked ones
             for name, p in model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name or 'linears' in name:
                     p.grad = p.grad * (model.packnet_masks[name] == self.curr_task).long()
         else:
             # flow gradients only for unmasked ones (pre-training)
             for name, p in model.named_parameters():
-                if 'convs' in name or 'mlp_layers' in name or 'enc' in name:
+                if 'convs' in name or 'linears' in name:
                     p.grad = p.grad * (model.packnet_masks[name] >= self.curr_task).long()
         optimizer.step()
         return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[-1].to(self.device))}
@@ -234,7 +237,7 @@ class LCTaskILPackNetTrainer(LCTrainer):
 
             eval_mask = (task_ids == i)
             eval_nodes = torch.nonzero(eval_mask, as_tuple=True)[0]
-            results = self._model_inference(eval_model, (curr_batch, srcs[eval_mask], dsts[eval_mask], task_masks[eval_mask], labels[eval_mask]), None)
+            results = self.inference(eval_model, (curr_batch, srcs[eval_mask], dsts[eval_mask], task_masks[eval_mask], labels[eval_mask]), None)
             total_results[eval_nodes] = torch.argmax(results['preds'], dim=-1)
             total_loss += results['loss'].item() * num_samples[i].item()
         n_samples = torch.sum(num_samples).item()

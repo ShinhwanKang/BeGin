@@ -4,12 +4,12 @@ import torch
 import copy
 import dgl
 import torch.nn.functional as F
-from begin.trainers.nodes import NCTrainer
+from begin.trainers.graphs import GCTrainer
 
 from .utils import *
 from torch import nn
 
-class NCTaskILPiggybackTrainer(NCTrainer):
+class GCTaskILPiggybackTrainer(GCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         """
             `threshold_fn` is a function converting a real-valued mask to a binary mask.
@@ -33,11 +33,13 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                 curr_batch (object): the data (or minibatch) for the current iteration.
                 curr_training_states (dict): the dictionary containing the current training states.
         """
+        
         # fix batchnorm parameters
         def set_bn_eval(m):
             if isinstance(m, nn.BatchNorm1d):
                 m.eval()
         model.apply(set_bn_eval)
+        
         for name, p in model.named_parameters():
             if 'norm' in name:
                 p.requires_grad_(False)
@@ -50,7 +52,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                 weights_before_inference.append(copy.deepcopy(p))
                 p.data.copy_(weights_before_inference[-1] * (model.task_masks[ccnt] >= self.threshold))
                 ccnt += 1
-        return weights_before_inference
+        return weights_before_inference        
         
     def inference(self, model, _curr_batch, training_states):
         """
@@ -108,7 +110,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                     p.data.copy_(results['_before_inference'][ccnt])
                     ccnt += 1            
         return {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
-    
+        
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
             The event function to execute some processes before training.
@@ -131,7 +133,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
             pre_optimizer = self.optimizer_fn(dgi_model.parameters())
             pre_scheduler = self.scheduler_fn(pre_optimizer)
             best_val_loss = 1e10
-            for epoch_cnt in range(self.args.num_steps):
+            for epoch_cnt in range(self.max_num_epochs):
                 val_loss = 0.
                 for _curr_batch in trainloader:
                     pre_optimizer.zero_grad()
@@ -147,7 +149,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                 if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
                     break
             curr_model.load_state_dict(pre_checkpoint)
-        
+            
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         # initialize masks and fix batchnorm
@@ -243,6 +245,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
             if i < self.curr_task:
                 eval_model.task_masks = eval_model.done_masks[i]
             if num_samples[i].item() == 0: continue
+            
             eval_mask = (task_ids == i)
             eval_nodes = torch.nonzero(eval_mask, as_tuple=True)[0]
             target_graphs = dgl.batch([each_graph[graph_id] for graph_id in eval_nodes.tolist()])
@@ -256,6 +259,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                     if 'conv' in name or 'mlp_layers' in name or 'enc' in name:
                         p.data.copy_(before_inference_results[ccnt])
                         ccnt += 1
+        
             total_results[task_ids == i] = torch.argmax(results['preds'], dim=-1)
             total_loss += results['loss'].item() * num_samples[i].item()
         n_samples = torch.sum(num_samples).item()
