@@ -85,7 +85,7 @@ Statistics:
 - Number of Classes: 2
 - Supported Incremental Settings:
    
-   + Domain-IL with 10 tasks
+   + Domain-IL with 20 tasks
    
    
 -----

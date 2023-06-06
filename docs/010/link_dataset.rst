@@ -29,9 +29,8 @@ Wiki-CS (Link Prediction)
 
 `Wiki-CS <https://github.com/pmernyei/wiki-cs-dataset>`_ is a hyperlink network between computer science articles.
 Each article has a label indicating one of the 10 subfields that it belongs to. For Domain-IL, the
-node labels are used as domains, and specifically, the edges are divide into 10 groups, according
-to the labels of their endpoints. If the domains of its two endpoints are different, the domain
-considered in a later task is assigned to the edge.
+node labels are used as domains, and specifically, the edges are divide into 54 groups, according
+to the labels of their endpoints.
 
 Statistics:
 
@@ -41,14 +40,14 @@ Statistics:
 - Number of Node Features: 300
 - Supported Incremental Settings:
    
-   + Domain-IL with 10 tasks
+   + Domain-IL with 54 tasks
 
 ------------------------------
 ogbl-collab (Link Prediction)
 ------------------------------
 
 `ogbl-collab <https://ogb.stanford.edu/docs/linkprop/#ogbl-collab>`_ s a co-authorship network, where nodes are
-authors. We use publication years to form 9 groups for the Time-IL setting.
+authors. We use publication years to form 50 groups for the Time-IL setting.
 
 Statistics:
 
@@ -58,4 +57,4 @@ Statistics:
 - Number of Node Features: 128
 - Supported Incremental Settings:
    
-   + Time-IL with 9 tasks
+   + Time-IL with 50 tasks

@@ -37,8 +37,8 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph.ndata['train_mask'] = (inner_tvt_splits < 6)
         graph.ndata['val_mask'] = (6 <= inner_tvt_splits) & (inner_tvt_splits < 8)
         graph.ndata['test_mask'] = (8 <= inner_tvt_splits)
-    elif dataset_name in ['ogbn-arxiv'] and incr_type in ['task', 'class', 'time']:
-        dataset = DglNodePropPredDataset(dataset_name, root=save_path)
+    elif dataset_name in ['ogbn-arxiv', 'arxivx'] and incr_type in ['task', 'class', 'time']:
+        dataset = DglNodePropPredDataset('ogbn-arxiv', root=save_path)
         graph, label = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         
@@ -60,10 +60,6 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         dataset = DglNodePropPredDataset(dataset_name, root=save_path)
         graph, label = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
-        
-        # to_bidirected
-        srcs, dsts = graph.all_edges()
-        graph.add_edges(dsts, srcs)
         
         # load train/val/test split
         split_idx = dataset.get_idx_split()
@@ -97,6 +93,34 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         # load target label and domain information
         graph.ndata['label'] = label
         graph.ndata['domain'] = graph.ndata.pop('species').squeeze()
+    elif dataset_name in ['ogbn-mag'] and incr_type in ['task', 'class']:
+        dataset = DglNodePropPredDataset(dataset_name, root=save_path)
+        _graph, _label = dataset[0]
+        srcs, dsts = _graph.edges(etype='cites')
+        graph = dgl.graph((srcs, dsts))
+        
+        # pick nodes whose entity is 'paper'
+        graph.ndata['feat'] = _graph.ndata['feat']['paper']
+        graph.add_edges(dsts, srcs)
+        label = _label['paper'].squeeze()
+        
+        # select classes with at least 10 nodes
+        split_idx = dataset.get_idx_split()
+        traincnt = torch.bincount(label[split_idx['train']['paper']])
+        valcnt = torch.bincount(label[split_idx['valid']['paper']])
+        testcnt = torch.bincount(label[split_idx['test']['paper']])
+        considered_labels = torch.nonzero(torch.min(torch.stack((traincnt, valcnt, testcnt), dim=-1), dim=-1).values >= 10, as_tuple=True)[0]
+        processed_labels = torch.ones(label.max() + 1, dtype=torch.long) * considered_labels.shape[0]
+        processed_labels[considered_labels] = torch.arange(considered_labels.shape[0])
+        label = processed_labels[label]
+        
+        # load train/val/test split
+        num_feats, num_classes = graph.ndata['feat'].shape[-1], (label.max().item() + 1)
+        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
+            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
+            _indices[split_idx[_split]['paper']] = True
+            graph.ndata[_split_name + '_mask'] = _indices
+        graph.ndata['label'] = label.squeeze()    
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
         
@@ -132,7 +156,9 @@ class NCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     
-    def _init_continual_scenario(self):    
+    def _init_continual_scenario(self):
+        if self.dataset_name == 'ogbn-arxiv' and self.incr_type == 'time':
+            self.dataset_name = 'arxivx'
         self.num_classes, self.num_feats, self.__graph, self.__cover_rule = load_node_dataset(self.dataset_name, self.incr_type, self.save_path)
         if self.incr_type in ['class', 'task']:
             # determine task configuration
@@ -161,8 +187,9 @@ class NCScenarioLoader(BaseScenarioLoader):
             # ignore classes which are not used in the tasks
             self.__graph.ndata['test_mask'] = self.__graph.ndata['test_mask'] & (self.__task_ids < self.num_tasks)
         elif self.incr_type == 'time':
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_timeIL.pkl', pkl_path)
+            dname = self.dataset_name if self.dataset_name != 'arxivx' else 'ogbn-arxiv'
+            pkl_path = os.path.join(self.save_path, f'{dname}_metadata_timeIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dname}_metadata_timeIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             inner_tvt_splits = metadata['inner_tvt_splits']
             self.__time_splits = metadata['time_splits']

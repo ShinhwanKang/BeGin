@@ -61,6 +61,25 @@ Statistics:
 -----
 
 --------------
+ogbn-mag
+--------------
+
+We extract, from `ogbn-mag <https://ogb.stanford.edu/docs/nodeprop/#ogbn-products>`_ , the citation network between research papers. While the original dataset has 349 node classes indicating fields of studies, we use the 257 classes with 10 or more nodes. They are divided into 128 groups for Task-IL. Similarly, the number of classes increases by 2 in each task in Class-IL.
+
+Statistics:
+
+- Nodes: 736,389
+- Edges: 10,832,542
+- Number of Node Features: 128
+- Number of Classes: 257
+- Supported Incremental Settings:
+   
+   + Task-IL with 128 tasks
+   + Class-IL with 128 tasks
+
+-----
+
+--------------
 ogbn-products
 --------------
 `ogbn-products <https://ogb.stanford.edu/docs/nodeprop/#ogbn-products>`_ is a co-purchase network, where each node
@@ -119,4 +138,4 @@ Statistics:
    
    + Task-IL with 8 tasks
    + Class-IL with 8 tasks
-   + Time-IL with 11 tasks
+   + Time-IL with 24 tasks

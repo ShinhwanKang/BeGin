@@ -1,6 +1,6 @@
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/logo.png" height="200px" width="600px"></p>
 
-[![Latest Release](https://img.shields.io/badge/Latest-v0.1-success)](https://github.com/ShinhwanKang/BeGin/releases)
+[![Latest Release](https://img.shields.io/badge/Latest-v0.2-success)](https://github.com/ShinhwanKang/BeGin/releases)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 
@@ -23,11 +23,11 @@ Our framework **BeGin** has the following advantages:
 
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/interaction.png" width="800px"></p>
 
-- BeGin provides 23 benchmark scenarios for graph from 14 real-world datasets, which cover 12 combinations of the incremental settings and the levels of problem. In addition, BeGin provides various basic evaluation metrics for measuring the performances and final evalution metrics designed for continual learning.
+- BeGin provides 25 benchmark scenarios for graph from 15 real-world datasets, which cover 12 combinations of the incremental settings and the levels of problem. In addition, BeGin provides various basic evaluation metrics for measuring the performances and final evalution metrics designed for continual learning.
 
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/coverage.png" width="600px"></p>
 
- 
+- To the best of our knowledge, we are the first to apply and evaluate parameter-isolation-based methods to graph CL.
 
 ## Installation
 
@@ -46,7 +46,7 @@ Before running the command, we strongly recommend installing the proper version 
 - `torch-sparse>=0.6.9`
 - `torch-geometric>=2.0.4`
 - `ogb>=1.3.4`
-- `dgl-lifesci>=0.2.9`
+- `dgl-lifesci==0.3.0`
 - `rdkit-pypi>=2022.9.1`
 
 For running some algorithms, you may need the following additional packages:

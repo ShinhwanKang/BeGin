@@ -39,6 +39,7 @@ class BaseTrainer:
         self.__timestamp = str(time.time()).replace('.', '')
         self.__model = model
         self.__optimizer = optimizer_fn(self.__model.parameters())
+        self.optimizer_fn = optimizer_fn
         
         # set path for storing initial parameters of model and optimizer
         self.tmp_path = kwargs.get('tmp_save_path', 'tmp')
@@ -114,6 +115,7 @@ class BaseTrainer:
                 And each trainer for specific problem processes the results and outputs the matrix-shaped results for performances 
                 and the final evaluation metrics, such as AP, AF, INT, and FWT.
         """
+        self.max_num_epochs = epoch_per_task
         # dictionary to store evaluation results
         base_eval_results = {'base': {'val': [], 'test': []}, 'accum': {'val': [], 'test': []}, 'exp': {'val': [], 'test': []}}
         # variable for initialized training state
@@ -151,9 +153,11 @@ class BaseTrainer:
             dataloaders = {}
             for exp_name in ['exp', 'base']:
                 dataloaders[exp_name] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(curr_dataset, training_states[exp_name]))}
-                self.processBeforeTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+                if exp_name == 'exp' or self.curr_task == 0 or self.full_mode:
+                    self.processBeforeTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
             dataloaders['accum'] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(accumulated_dataset, training_states['accum']))}
-            self.processBeforeTraining(self.__scenario._curr_task, accumulated_dataset, models['accum'], optims['accum'], training_states['accum'])    
+            if self.full_mode:
+                self.processBeforeTraining(self.__scenario._curr_task, accumulated_dataset, models['accum'], optims['accum'], training_states['accum'])    
             
             # compute initial performance
             if self.curr_task == 0:
