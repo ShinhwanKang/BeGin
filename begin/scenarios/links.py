@@ -100,8 +100,7 @@ class LPScenarioLoader(BaseScenarioLoader):
                     self.__task_ids[self.__graph.edata['time'] >= self.__time_splits[i]] = i
             elif self.dataset_name == 'collabx':
                 self.__task_ids = torch.clamp(self.__graph.edata['time'] - 1970, 0, 20000)
-                self.num_tasks = self.__task_ids.max() + 1
-                print(self.num_tasks, torch.bincount(self.__task_ids))
+                self.num_tasks = self.__task_ids.max().item() + 1
         elif self.incr_type == 'domain':
             dname = self.dataset_name if self.dataset_name != 'wikicsx' else 'wikics'
             # load domain information and train/val/test split
@@ -131,6 +130,8 @@ class LPScenarioLoader(BaseScenarioLoader):
                     domain_order = torch.randperm(self.num_tasks)
                 else:
                     domain_order = torch.arange(self.num_tasks)
+                print('domain_order:', domain_order)
+                
                 task_map = torch.LongTensor([[0,1,2,3,4,5,self.num_tasks,6,7,8],
                                              [-1,9,10,11,12,13,14,15,16,17],
                                              [-1,-1,18,19,20,21,22,23,24,25],
@@ -148,7 +149,6 @@ class LPScenarioLoader(BaseScenarioLoader):
                 domain_infos = self.__graph.ndata.pop('domain')
                 srcs, dsts = self.__graph.edges()
                 self.__task_ids = domain_order_inv[task_map[torch.min(domain_infos[srcs], domain_infos[dsts]), torch.max(domain_infos[srcs], domain_infos[dsts])]]
-                print(torch.bincount(self.__task_ids))
                 
         # set evaluator for the target scenario
         if self.metric is not None:
@@ -336,6 +336,7 @@ class LCScenarioLoader(BaseScenarioLoader):
             else:
                 self.__splits = torch.split(torch.arange(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
             
+            print('class split information:', self.__splits)
             # compute task ids for each instance and remove time information (since it is unnecessary)
             id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
             for i in range(self.num_tasks):

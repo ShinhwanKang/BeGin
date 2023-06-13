@@ -385,16 +385,13 @@ class AromaticityDataset(MoleculeCSVDataset):
             './pubchem_aromaticity_dglgraph.bin', load=False, log_every=1000, n_jobs=1)
         
         label_tensor = torch.FloatTensor(self.labels).squeeze().long()
-        print(torch.bincount(label_tensor))
         valid_classes = torch.bincount(label_tensor) >= 20
         valid_indices = valid_classes[label_tensor].numpy().tolist()
         new_label = torch.cumsum(valid_classes.long(), dim=-1) - 1
-        print(new_label, self.labels[0])
         self.smiles = [self.smiles[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
         self.graphs = [self.graphs[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
         self.labels = torch.LongTensor([new_label[self.labels[i].long()] for i in range(label_tensor.shape[0]) if valid_indices[i]])
         self.mask   = [  self.mask[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
-        print(torch.bincount(torch.LongTensor(self.labels).squeeze()))
         for i in tqdm.trange(len(self.graphs)):
             self.graphs[i].ndata['feat'] = torch.stack((self.graphs[i].in_degrees(), self.graphs[i].out_degrees()), dim=-1).float()
         self._labels = self.labels.clone()

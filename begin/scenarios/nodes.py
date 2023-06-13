@@ -199,12 +199,16 @@ class NCScenarioLoader(BaseScenarioLoader):
             self.__graph.ndata['train_mask'] = (inner_tvt_splits < 4)
             self.__graph.ndata['val_mask'] = (inner_tvt_splits == 4)
             self.__graph.ndata['test_mask'] = (inner_tvt_splits > 4)
-            self.num_tasks = len(self.__time_splits) - 1
             
             # compute task ids for each node
-            self.__task_ids = torch.zeros_like(self.__graph.ndata['time'])
-            for i in range(1, self.num_tasks):
-                self.__task_ids[self.__graph.ndata['time'] >= self.__time_splits[i]] = i
+            if dname == 'ogbn-arxiv':
+                self.__task_ids = torch.clamp(self.__graph.ndata['time'] - 1997, 0, 20000)
+                self.num_tasks = self.__task_ids.max().item() + 1
+            else:
+                self.__task_ids = torch.zeros_like(self.__graph.ndata['time'])
+                for i in range(1, self.num_tasks):
+                    self.__task_ids[self.__graph.ndata['time'] >= self.__time_splits[i]] = i
+                self.num_tasks = len(self.__time_splits) - 1
         elif self.incr_type == 'domain':
             # num_tasks only depends on the number of domains
             self.num_tasks = self.__graph.ndata['domain'].max().item() + 1

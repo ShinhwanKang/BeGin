@@ -34,9 +34,9 @@ def detect_bfs(data, cur_g, X, t, new_node_size, device):
     candidate_mask = torch.zeros_like(f_matrix).bool()
     candidate_mask[data['train_cha_nodes_list']] = True
     candidate_mask[data['old_nodes_list']] = True
-    node_indices = torch.arange(cur_g.num_nodes())[candidate_mask]
+    node_indices = torch.arange(cur_g.num_nodes())[candidate_mask.cpu()]
     f_matrix = f_matrix[candidate_mask]
-    new_nodes = node_indices[torch.argsort(f_matrix, dim=0)[-new_node_size:]].detach().cpu().numpy().tolist()
+    new_nodes = node_indices[torch.argsort(f_matrix, dim=0)[-new_node_size:].cpu()].detach().cpu().numpy().tolist()
     return new_nodes
 
 def get_h(model, g, X, train_cha_nodes_list):
@@ -48,7 +48,7 @@ def bfs_sharp(g, nodes, weights, device, hop = 2):
         g.srcdata['_bfs_input'] = torch.zeros(g.num_nodes()).to(device)
         g.srcdata['_bfs_input'][torch.LongTensor(nodes).to(device)] = weights
         for i in range(hop):
-            g.update_all(fn.copy_src('_bfs_input', '_bfs_m'), fn.mean('_bfs_m', '_bfs_output'))
+            g.update_all(fn.copy_u('_bfs_input', '_bfs_m'), fn.mean('_bfs_m', '_bfs_output'))
             g.srcdata['_bfs_input'] = g.dstdata.pop('_bfs_output')
         return g.srcdata.pop('_bfs_input')
         
@@ -182,14 +182,14 @@ class MemoryHandler(object):
                 srcs, dsts = graph.edges()
                 graph.srcdata['_valid_label'] = (_labels != -1).float()
                 graph.edata['_differents'] = (_labels[srcs] != _labels[dsts]).float()
-                graph.update_all(fn.copy_src('_valid_label', '_m1'), fn.sum('_m1', '_n_valid_nbrs'))
+                graph.update_all(fn.copy_u('_valid_label', '_m1'), fn.sum('_m1', '_n_valid_nbrs'))
                 graph.update_all(fn.u_mul_e('_valid_label', '_differents', '_m2'), fn.sum('_m2', '_n_diff_nbrs'))
                 _importance = (graph.dstdata['_n_diff_nbrs'] / graph.dstdata['_n_valid_nbrs'])[nodes]
             else:
                 srcs, dsts = graph.edges()
                 graph.srcdata['_valid_label'] = (_labels != -1).float()
                 graph.edata['_differents'] = (_labels[srcs] != _labels[dsts]).float()
-                graph.update_all(fn.copy_src('_valid_label', '_m1'), fn.sum('_m1', '_n_valid_nbrs'))
+                graph.update_all(fn.copy_u('_valid_label', '_m1'), fn.sum('_m1', '_n_valid_nbrs'))
                 graph.update_all(fn.u_mul_e('_valid_label', '_differents', '_m2'), fn.sum('_m2', '_n_diff_nbrs'))
                 _importance = (graph.dstdata['_n_diff_nbrs'] / graph.dstdata['_n_valid_nbrs'])[nodes]
         _importance = (_importance * 10 - 5)

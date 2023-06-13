@@ -146,7 +146,7 @@ class LCTaskILPiggybackTrainer(LCTrainer):
         if self.curr_task == 0:
             # pre-training with Deep Graph Infomax
             pre_model = copy.deepcopy(curr_model)
-            dgi_model = DGI(pre_model).to(self.device)
+            dgi_model = DGILC(pre_model).to(self.device)
             pre_optimizer = self.optimizer_fn(dgi_model.parameters())
             pre_scheduler = self.scheduler_fn(pre_optimizer)
             best_val_loss = 1e10
@@ -155,7 +155,8 @@ class LCTaskILPiggybackTrainer(LCTrainer):
                 for _curr_batch in trainloader:
                     pre_optimizer.zero_grad()
                     curr_batch, _1, _2, _3, _4 = _curr_batch
-                    _loss = dgi_model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))
+                    base_srcs, base_dsts = curr_batch.edges()
+                    _loss = dgi_model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), base_srcs.to(self.device), base_dsts.to(self.device))
                     _loss.backward()
                     pre_optimizer.step()    
                     val_loss = val_loss + _loss.item()
@@ -165,6 +166,7 @@ class LCTaskILPiggybackTrainer(LCTrainer):
                 pre_scheduler.step(val_loss)
                 if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
                     break
+            
             curr_model.load_state_dict(pre_checkpoint)
         
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)

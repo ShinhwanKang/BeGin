@@ -213,9 +213,15 @@ class GCNLink(nn.Module):
         x = self.classifier(x, task_masks)
         return x
     
-    def forward_without_classifier(self, graph, feat, task_masks=None):
-        _h = self.gcn.forward_without_classifier(graph, feat, task_masks)
-        return _h
+    def forward_without_classifier(self, graph, feat, srcs, dsts, task_masks=None):
+        _h = self.gcn(graph, feat, task_masks)
+        x = _h[srcs] * _h[dsts]
+        x = self.dropout(x)
+        for i in range(self.n_layers - 1):
+            x = self.linears[i](x)
+            x = self.activation(x)
+            x = self.dropout(x)
+        return x
     
     def observe_labels(self, new_labels, verbose=True):
         self.classifier.observe_outputs(new_labels, verbose=verbose)
@@ -274,7 +280,7 @@ class GCNConv(nn.Module):
                                    'the issue. Setting ``allow_zero_in_degree`` '
                                    'to be `True` when constructing this module will '
                                    'suppress the check and let the code run.')
-            aggregate_fn = fn.copy_src('h', 'm')
+            aggregate_fn = fn.copy_u('h', 'm')
             if edge_weight is not None:
                 # print("EWI")
                 assert edge_weight.shape[0] == graph.number_of_edges()
@@ -367,28 +373,37 @@ class GCNGraph(nn.Module):
         self.classifier = AdaptiveLinear(n_hidden // (1 << n_mlp_layers), n_classes, bias=True, accum = False if incr_type == 'task' else True)
         self.readout_mode = readout
         
-    def forward(self, graph, feat, task_masks=None, edge_weight=None, edge_attr=None):
+    def forward(self, graph, feat, task_masks=None, edge_weight=None, edge_attr=None, get_intermediate_outputs=False):
         h = self.enc(feat)
         h = self.dropout(h)
+        inter_hs = []
         for i in range(self.n_layers):
             conv = self.convs[i](graph, h, edge_weight=edge_weight, edge_attr=edge_attr)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
             h = self.dropout(h)
+            inter_hs.append(h)
+            
         if self.readout_mode != 'none':
+            # h0 = self.readout_fn(graph, h)
             # use deterministic algorithm instead
             ptrs = torch.cat((torch.LongTensor([0]).to(h.device), torch.cumsum(graph.batch_num_nodes(), dim=-1)), dim=-1)
             h1 = segment_csr(h, ptrs, reduce=self.readout_mode)
+            # print((h1 - h0).abs().sum()) => 0
             h = h1
         for layer in self.mlp_layers:
             h = layer(h)
             h = self.activation(h)
             h = self.dropout(h)
-            
+        inter_hs.append(h)
+        
         h = self.classifier(h, task_masks)
-        return h
-    
+        if get_intermediate_outputs:
+            return h, inter_hs
+        else:
+            return h
+        
     def forward_hat(self, graph, feat, hat_masks, task_masks=None, edge_weight=None, edge_attr=None):
         h = self.enc(feat)
         h = self.dropout(h)

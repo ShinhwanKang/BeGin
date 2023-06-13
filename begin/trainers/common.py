@@ -6,6 +6,7 @@ import random
 import numpy as np
 import sys
 import dgl
+import os
 
 class BaseTrainer:
     r""" Base framework for implementing trainer module.
@@ -31,7 +32,6 @@ class BaseTrainer:
             np.random.seed(fixed_seed)
             torch.backends.cudnn.benchmark = True
             torch.backends.cudnn.deterministic = True
-            # torch.use_deterministic_algorithms(True)
             dgl.seed(fixed_seed)
             dgl.random.seed(fixed_seed)
             
@@ -44,6 +44,17 @@ class BaseTrainer:
         # set path for storing initial parameters of model and optimizer
         self.tmp_path = kwargs.get('tmp_save_path', 'tmp')
         self.result_path = kwargs.get('tmp_save_path', 'results')
+        
+        try:
+            os.mkdir(self.tmp_path)
+        except:
+            pass
+        
+        try:
+            os.mkdir(self.result_path)
+        except:
+            pass
+        
         self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
         self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
         self.save_file_name = f'result_{self.__timestamp}'
