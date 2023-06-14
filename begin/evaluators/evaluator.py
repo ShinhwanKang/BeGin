@@ -77,14 +77,14 @@ class ROCAUCEvaluator(BaseEvaluator):
     
     def simple_eval(self, prediction, answer):
         num_items, num_qs = answer.shape
-        valid_cols = (answer.sum(0) < num_items) & (answer.sum(0) > 0)
+        valid_cols = (answer.sum(0) < num_items) & (answer.sum(0) >= 0)
         prediction, answer = prediction[..., valid_cols], answer[..., valid_cols]
         num_valid_qs = valid_cols.long().sum().item()
         idx_order = torch.argsort(prediction, dim=0).to(answer.device).view(-1) * num_valid_qs + torch.arange(num_valid_qs).to(answer.device).repeat(num_items)
         ordered_answer = (answer.view(-1)[idx_order]).view(num_items, num_valid_qs)
         num_pos = torch.cumsum(ordered_answer, dim=0)
         num_neg = torch.arange(num_items).unsqueeze(-1).to(answer.device) - num_pos
-        rocauc_scores = 1. - ((num_pos * (ordered_answer == 0)).sum(0) / (num_pos[-1] * num_neg[-1]))
+        rocauc_scores = 1. - ((num_pos * (ordered_answer == 0)).sum(0) / (num_pos[-1] * num_neg[-1] + 1e-6))
         return rocauc_scores.mean().item()
 
 class HitsEvaluator(BaseEvaluator):

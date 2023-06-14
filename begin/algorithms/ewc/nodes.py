@@ -1,7 +1,4 @@
-import sys
-import numpy as np
 import torch
-import copy
 import torch.nn.functional as F
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 
@@ -11,7 +8,7 @@ class NCTaskILEWCTrainer(NCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def inference(self, model, _curr_batch, training_states):
         """
@@ -105,7 +102,7 @@ class NCClassILEWCTrainer(NCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         """
@@ -180,7 +177,7 @@ class NCClassILEWCMinibatchTrainer(NCMinibatchTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         """
@@ -255,7 +252,7 @@ class NCDomainILEWCTrainer(NCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         """

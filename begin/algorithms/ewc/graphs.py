@@ -1,10 +1,5 @@
-import sys
-import random
-import numpy as np
 import torch
-import copy
 import torch.nn.functional as F
-
 from begin.trainers.graphs import GCTrainer
 
 class GCTaskILEWCTrainer(GCTrainer):
@@ -13,7 +8,7 @@ class GCTaskILEWCTrainer(GCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`.
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def inference(self, model, _curr_batch, training_states):
         """
@@ -112,7 +107,7 @@ class GCClassILEWCTrainer(GCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`afterInference`.
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
         
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         """
@@ -188,7 +183,7 @@ class GCDomainILEWCTrainer(GCTrainer):
             EWC needs `lamb`, the additional hyperparamter for the regularization term used in :func:`processTrainIteration`.
         """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
+        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 10000.
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         """

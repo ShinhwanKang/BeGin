@@ -23,8 +23,6 @@ class NCTaskILCGNNTrainer(NCTrainer):
         self.p = kwargs['p']
         self.alpha = kwargs['alpha']
         
-        self.save_file_name = f'{self.save_file_name}_{self.memory_size}_{self.ewc_lambda}_{self.new_nodes_size}_{self.p}_{self.alpha}'
-        
     def prepareLoader(self, curr_dataset, curr_training_states):
         """
             The event function to generate dataloaders from the given dataset for the current task.
@@ -208,8 +206,6 @@ class NCClassILCGNNTrainer(NCTrainer):
         self.new_nodes_size = kwargs['new_nodes_size']
         self.p = kwargs['p']
         self.alpha = kwargs['alpha']
-        
-        self.save_file_name = f'{self.save_file_name}_{self.memory_size}_{self.ewc_lambda}_{self.new_nodes_size}_{self.p}_{self.alpha}'
         
     def prepareLoader(self, curr_dataset, curr_training_states):
         """

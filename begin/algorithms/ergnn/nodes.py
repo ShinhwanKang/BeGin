@@ -1,8 +1,5 @@
-import sys
-import numpy as np
 import torch
 import dgl
-from copy import deepcopy
 import torch.nn.functional as F
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 from .utils import *
@@ -77,7 +74,7 @@ class NCTaskILERGNNTrainer(NCTrainer):
             buffered_mask = torch.zeros(curr_batch.ndata['feat'].shape[0]).to(self.device)
             buffered_mask[training_states['buffered_nodes']] = 1.
             buffered_mask = buffered_mask.to(torch.bool)
-            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask].to(self.device), _curr_batch[0].ndata['label'][buffered_mask].to(self.device))
+            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask.cpu()].to(self.device), _curr_batch[0].ndata['label'][buffered_mask.cpu()].to(self.device))
             loss = (1-beta) * loss + beta * buffered_loss
         loss.backward()
         optimizer.step()
@@ -168,7 +165,7 @@ class NCClassILERGNNTrainer(NCTrainer):
             buffered_mask = torch.zeros(curr_batch.ndata['feat'].shape[0]).to(self.device)
             buffered_mask[training_states['buffered_nodes']] = 1.
             buffered_mask = buffered_mask.to(torch.bool)
-            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask].to(self.device), _curr_batch[0].ndata['label'][buffered_mask].to(self.device))
+            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask.cpu()].to(self.device), _curr_batch[0].ndata['label'][buffered_mask.cpu()].to(self.device))
             loss = (1-beta) * loss + beta * buffered_loss
         loss.backward()
         optimizer.step()
@@ -359,7 +356,7 @@ class NCTimeILERGNNTrainer(NCClassILERGNNTrainer):
             buffered_mask = torch.zeros(curr_batch.ndata['feat'].shape[0]).to(self.device)
             buffered_mask[training_states['buffered_nodes']] = 1.
             buffered_mask = buffered_mask.to(torch.bool)
-            buffered_loss = self.loss_fn(preds[buffered_mask].to(self.device), curr_batch.ndata['label'][buffered_mask].to(self.device))
+            buffered_loss = self.loss_fn(preds[buffered_mask.cpu()].to(self.device), curr_batch.ndata['label'][buffered_mask.cpu()].to(self.device))
             loss = (1-beta) * loss + beta * buffered_loss
             
         loss.backward()

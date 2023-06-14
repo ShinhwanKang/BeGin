@@ -6,6 +6,7 @@ import random
 import numpy as np
 import sys
 import dgl
+import os
 
 class BaseTrainer:
     r""" Base framework for implementing trainer module.
@@ -23,7 +24,7 @@ class BaseTrainer:
         In addition, BaseTrainer supports `benchmark = True` and `seed` (int) to fix the random seed, and `full_mode = True` to additionally evaluate the joint (accum) model. 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
-        # set random seed for DGL
+        # set random seed
         if kwargs.get('benchmark', False):
             fixed_seed = kwargs.get('seed', 0)
             torch.manual_seed(fixed_seed)
@@ -31,9 +32,6 @@ class BaseTrainer:
             np.random.seed(fixed_seed)
             torch.backends.cudnn.benchmark = True
             torch.backends.cudnn.deterministic = True
-            # torch.use_deterministic_algorithms(True)
-            dgl.seed(fixed_seed)
-            dgl.random.seed(fixed_seed)
             
         self.__scenario = scenario
         self.__timestamp = str(time.time()).replace('.', '')
@@ -44,6 +42,17 @@ class BaseTrainer:
         # set path for storing initial parameters of model and optimizer
         self.tmp_path = kwargs.get('tmp_save_path', 'tmp')
         self.result_path = kwargs.get('tmp_save_path', 'results')
+        
+        try:
+            os.mkdir(self.tmp_path)
+        except:
+            pass
+        
+        try:
+            os.mkdir(self.result_path)
+        except:
+            pass
+        
         self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
         self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
         self.save_file_name = f'result_{self.__timestamp}'
@@ -66,8 +75,9 @@ class BaseTrainer:
         self.device = device # gpu device
         self.num_tasks = scenario.num_tasks # number of tasks
         self.eval_fn = lambda x, y: scenario.get_simple_eval_result(x, y) # evaluation function for minibatches
-        self.full_mode = kwargs.get('full_mode', False) # base model and joint model are used when full_mode=True
-
+        self.full_mode = kwargs.get('full_mode', False) # joint model is used when full_mode=True
+        self.verbose = kwargs.get('verbose', True)
+        
     @property
     def incr_type(self):
         """ 
@@ -213,7 +223,7 @@ class BaseTrainer:
                         val_metric_result = self.__scenario.get_eval_result(torch.cat(val_predictions, dim=0), target_split='val')[self.__scenario._curr_task].item()
                     
                     # handle procedure for printing training logs. BeGin provides reduced stats obtained from the train and validation dataset
-                    if exp_name == 'exp':
+                    if exp_name == 'exp' and self.verbose:
                         self.processTrainingLogs(self.__scenario._curr_task, epoch_cnt, val_metric_result, reduced_train_stats, reduced_val_stats)
                     
                     curr_iter_results = {'val_metric': val_metric_result, 'train_stats': reduced_train_stats, 'val_stats': reduced_val_stats}
@@ -246,7 +256,7 @@ class BaseTrainer:
                         # test dataset is already accumulated
                         base_eval_results[exp_name][split].append(self.__scenario.get_eval_result(test_predictions, target_split=split))
         
-        # return the final evaluationr results
+        # return the final evaluation results
         if self.full_mode:
             return {'init_val': initial_results['val'],
                     'init_test': initial_results['test'],

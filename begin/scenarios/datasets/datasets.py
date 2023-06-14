@@ -136,9 +136,9 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
         map_to_id = {'"Bronx"': 1, '"Brooklyn"': 2, '"EWR"': 3, '"Manhattan"': 4, '"Queens"': 5, '"Staten Island"': 6, '"Unknown"': 7}
         download('https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv', path=os.path.join(root, 'lookup.csv'))
         with open(os.path.join(root, 'lookup.csv'), 'r') as fcsv:
-            print(fcsv.readline())
+            fcsv.readline()
             node_feats = torch.LongTensor([map_to_id[line.split(',')[1]] for line in fcsv])
-            print(node_feats.min(), node_feats.max(), node_feats.shape)
+            # print(node_feats.min(), node_feats.max(), node_feats.shape)
             node_feats = node_feats - 1
             
         for yy in tqdm.trange(2021, 2021+1):
@@ -328,7 +328,7 @@ class BitcoinOTCDataset(dgl.data.DGLBuiltinDataset):
         self._graphs = []
         edges = data[:, 0:2]
         rate = data[:, 2]
-        print(data[:, 0:2].min(), data[:, 0:2].max())
+        # print(data[:, 0:2].min(), data[:, 0:2].max())
         g = dgl.graph((edges[:, 0], edges[:, 1]))
         g.edata['label'] = torch.LongTensor(rate.reshape(-1, 1))
         g.edata['time'] = torch.LongTensor(time_index.reshape(-1))
@@ -385,16 +385,13 @@ class AromaticityDataset(MoleculeCSVDataset):
             './pubchem_aromaticity_dglgraph.bin', load=False, log_every=1000, n_jobs=1)
         
         label_tensor = torch.FloatTensor(self.labels).squeeze().long()
-        print(torch.bincount(label_tensor))
         valid_classes = torch.bincount(label_tensor) >= 20
         valid_indices = valid_classes[label_tensor].numpy().tolist()
         new_label = torch.cumsum(valid_classes.long(), dim=-1) - 1
-        print(new_label, self.labels[0])
         self.smiles = [self.smiles[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
         self.graphs = [self.graphs[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
         self.labels = torch.LongTensor([new_label[self.labels[i].long()] for i in range(label_tensor.shape[0]) if valid_indices[i]])
         self.mask   = [  self.mask[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
-        print(torch.bincount(torch.LongTensor(self.labels).squeeze()))
         for i in tqdm.trange(len(self.graphs)):
             self.graphs[i].ndata['feat'] = torch.stack((self.graphs[i].in_degrees(), self.graphs[i].out_degrees()), dim=-1).float()
         self._labels = self.labels.clone()
