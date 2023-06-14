@@ -126,7 +126,7 @@ ogbn-arxiv
 `ogbn-arxiv <https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv>`_ is a citation network, where each node is a
 research paper, and its class belongs to 40 subject areas, which are divided into 8 groups for Task-
 IL. Similarly, the number of classes increase by 5 in each task in Class-IL. Publication years are
-used to form 11 groups for the Time-IL setting.
+used to form 24 groups for the Time-IL setting.
 
 Statistics:
 

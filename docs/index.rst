@@ -50,6 +50,9 @@ Contents
    050/twp
    050/ergnn
    050/cgnn
+   050/packnet
+   050/piggyback
+   050/hat
    
 .. toctree::
    :maxdepth: 1

@@ -16,7 +16,7 @@ def load_node_dataset(dataset_name, incr_type, save_path):
     """
     cover_rule = {'feat': 'node', 'label': 'node', 'train_mask': 'node', 'val_mask': 'node', 'test_mask': 'node'}
     if dataset_name in ['cora'] and incr_type in ['task', 'class']:
-        dataset = dgl.data.CoraGraphDataset(raw_dir=save_path, verbose=True)
+        dataset = dgl.data.CoraGraphDataset(raw_dir=save_path, verbose=False)
         graph = dataset._g
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
     elif dataset_name in ['citeseer'] and incr_type in ['task', 'class']:
@@ -24,7 +24,7 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph = dataset._g
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
     elif dataset_name in ['corafull'] and incr_type in ['task', 'class']:
-        dataset = dgl.data.CoraFullDataset(raw_dir=save_path, verbose=True)
+        dataset = dgl.data.CoraFullDataset(raw_dir=save_path, verbose=False)
         graph = dataset._graph
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         

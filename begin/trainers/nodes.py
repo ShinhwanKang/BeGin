@@ -31,7 +31,7 @@ class NCTrainer(BaseTrainer):
         curr_training_states['best_val_loss'] = 1e10
         self._reset_optimizer(curr_optimizer)
         # it enables to predict the new classes from the current task
-        curr_model.observe_labels(curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']])    
+        curr_model.observe_labels(curr_dataset.ndata['label'][curr_dataset.ndata['train_mask'] | curr_dataset.ndata['val_mask']])    
     
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
         pass

@@ -72,7 +72,7 @@ ogbg-molhiv
 
 Graphs in  `ogbg-molhiv <https://ogb.stanford.edu/docs/graphprop/#ogbg-mol>`_ are molecules
 consisting of atoms and their chemical bonds. The binary class of each graph indicates whether
-the molecule inhibits HIV virus replication or not. For Domain-IL, we divide molecules into 10
+the molecule inhibits HIV virus replication or not. For Domain-IL, we divide molecules into 20
 groups based on structural similarity by the scaffold splitting procedure.
 
 Statistics:

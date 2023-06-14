@@ -24,7 +24,7 @@ class BaseTrainer:
         In addition, BaseTrainer supports `benchmark = True` and `seed` (int) to fix the random seed, and `full_mode = True` to additionally evaluate the joint (accum) model. 
     """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device=None, **kwargs):
-        # set random seed for DGL
+        # set random seed
         if kwargs.get('benchmark', False):
             fixed_seed = kwargs.get('seed', 0)
             torch.manual_seed(fixed_seed)
@@ -32,8 +32,6 @@ class BaseTrainer:
             np.random.seed(fixed_seed)
             torch.backends.cudnn.benchmark = True
             torch.backends.cudnn.deterministic = True
-            # dgl.seed(fixed_seed)
-            # dgl.random.seed(fixed_seed)
             
         self.__scenario = scenario
         self.__timestamp = str(time.time()).replace('.', '')
