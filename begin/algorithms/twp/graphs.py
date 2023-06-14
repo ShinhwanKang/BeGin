@@ -1,8 +1,4 @@
-import sys
-import random
-import numpy as np
 import torch
-from copy import deepcopy
 import torch.nn.functional as F
 from begin.trainers.graphs import GCTrainer
 
@@ -82,7 +78,13 @@ class GCTaskILTWPTrainer(GCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{},
+                'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
         """
@@ -203,7 +205,13 @@ class GCClassILTWPTrainer(GCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{},
+                'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
         """
@@ -326,7 +334,13 @@ class GCDomainILTWPTrainer(GCTrainer):
         return preds, {'_num_items': preds.shape[0], 'loss': loss.item(), 'acc': self.eval_fn(preds, labels.to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{}, 
+                'topology_important_score':{}}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """

@@ -92,16 +92,18 @@ class NCTrainer(BaseTrainer):
             init_acc, accum_acc_mat, base_acc_mat, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'accum_test', 'base_test', 'exp_test'))
         else:
             init_acc, algo_acc_mat = map(lambda x: results[x].detach().cpu().numpy(), ('init_test', 'exp_test'))
-            
-        print('init_acc:', init_acc[:-1])
-        print('algo_acc_mat:', algo_acc_mat[:, :-1])
-        print('AP:', round(results['exp_AP'], 4))
-        print('AF:', round(results['exp_AF'], 4))
-        if results['exp_FWT'] is not None: print('FWT:', round(results['exp_FWT'], 4))
-        if self.full_mode:
-            print('joint_acc_mat:', accum_acc_mat[:, :-1])
-            print('intransigence:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
-
+        
+        if self.verbose:
+            print('init_acc:', init_acc[:-1])
+            print('algo_acc_mat:', algo_acc_mat[:, :-1])
+            print('AP:', round(results['exp_AP'], 4))
+            print('AF:', round(results['exp_AF'], 4))
+            if results['exp_FWT'] is not None: print('FWT:', round(results['exp_FWT'], 4))
+            if self.full_mode:
+                print('joint_acc_mat:', accum_acc_mat[:, :-1])
+                print('intransigence:', round((accum_acc_mat - algo_acc_mat)[np.arange(self.num_tasks), np.arange(self.num_tasks)].mean(), 4))
+        return results
+    
 class NCMinibatchTrainer(NCTrainer):
     r"""
         The mini-batch trainer (with neighborhood sampler) for handling node classification (NC).

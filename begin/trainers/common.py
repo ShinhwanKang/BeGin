@@ -32,8 +32,8 @@ class BaseTrainer:
             np.random.seed(fixed_seed)
             torch.backends.cudnn.benchmark = True
             torch.backends.cudnn.deterministic = True
-            dgl.seed(fixed_seed)
-            dgl.random.seed(fixed_seed)
+            # dgl.seed(fixed_seed)
+            # dgl.random.seed(fixed_seed)
             
         self.__scenario = scenario
         self.__timestamp = str(time.time()).replace('.', '')
@@ -77,8 +77,9 @@ class BaseTrainer:
         self.device = device # gpu device
         self.num_tasks = scenario.num_tasks # number of tasks
         self.eval_fn = lambda x, y: scenario.get_simple_eval_result(x, y) # evaluation function for minibatches
-        self.full_mode = kwargs.get('full_mode', False) # base model and joint model are used when full_mode=True
-
+        self.full_mode = kwargs.get('full_mode', False) # joint model is used when full_mode=True
+        self.verbose = kwargs.get('verbose', True)
+        
     @property
     def incr_type(self):
         """ 
@@ -224,7 +225,7 @@ class BaseTrainer:
                         val_metric_result = self.__scenario.get_eval_result(torch.cat(val_predictions, dim=0), target_split='val')[self.__scenario._curr_task].item()
                     
                     # handle procedure for printing training logs. BeGin provides reduced stats obtained from the train and validation dataset
-                    if exp_name == 'exp':
+                    if exp_name == 'exp' and self.verbose:
                         self.processTrainingLogs(self.__scenario._curr_task, epoch_cnt, val_metric_result, reduced_train_stats, reduced_val_stats)
                     
                     curr_iter_results = {'val_metric': val_metric_result, 'train_stats': reduced_train_stats, 'val_stats': reduced_val_stats}
@@ -257,7 +258,7 @@ class BaseTrainer:
                         # test dataset is already accumulated
                         base_eval_results[exp_name][split].append(self.__scenario.get_eval_result(test_predictions, target_split=split))
         
-        # return the final evaluationr results
+        # return the final evaluation results
         if self.full_mode:
             return {'init_val': initial_results['val'],
                     'init_test': initial_results['test'],

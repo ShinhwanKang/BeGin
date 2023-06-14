@@ -1,7 +1,4 @@
-import sys
-import numpy as np
 import torch
-from copy import deepcopy
 import torch.nn.functional as F
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 
@@ -77,7 +74,13 @@ class NCTaskILTWPTrainer(NCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
         
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{},
+                'topology_important_score':{}}
         
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
         """
@@ -194,7 +197,13 @@ class NCClassILTWPTrainer(NCTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{},
+                'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
         """
@@ -312,7 +321,13 @@ class NCClassILTWPMinibatchTrainer(NCMinibatchTrainer):
                 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
-        return {'current_task':0, 'fisher_loss':{}, 'fisher_att':{}, 'optpar':{}, 'mem_mask':None, 'cls_important_score':{}, 'topology_important_score':{}}
+        return {'current_task':0,
+                'fisher_loss':{},
+                'fisher_att':{},
+                'optpar':{},
+                'mem_mask':None,
+                'cls_important_score':{},
+                'topology_important_score':{}}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):        
         """
