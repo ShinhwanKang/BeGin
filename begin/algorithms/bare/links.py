@@ -49,62 +49,9 @@ class LCClassILBareTrainer(LCTrainer):
     pass
 
 class LCTimeILBareTrainer(LCTrainer):
-    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
-        """
-            The event function to execute some processes before training.
-            
-            We need to extend the function since the output format is slightly different from the base trainer.
-            
-            Args:
-                task_id (int): the index of the current task
-                curr_dataset (object): The dataset for the current task.
-                curr_model (torch.nn.Module): the current trained model.
-                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_training_states (dict): the dictionary containing the current training states.
-        """
-        curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
-        curr_training_states['best_val_acc'] = -1.
-        curr_training_states['best_val_loss'] = 1e10
-        # it is logistic regression (binary classification) problem
-        curr_model.observe_labels(torch.LongTensor([0]))
-        self._reset_optimizer(curr_optimizer)
-    
-    def processEvalIteration(self, model, _curr_batch):
-        """
-            The event function to execute some processes before training.
-            We need to extend the base function since the output format is slightly different from the base trainer.
-            
-            Args:
-                task_id (int): the index of the current task
-                curr_dataset (object): The dataset for the current task.
-                curr_model (torch.nn.Module): the current trained model.
-                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_training_states (dict): the dictionary containing the current training states.
-        """
-        results = self.inference(model, _curr_batch, None)
-        # output format is slightly different from the base LCTrainer
-        return results['preds'], {'loss': results['loss'].item()}
-    
-    def afterInference(self, results, model, optimizer, _curr_batch, training_states):
-        """
-            The event function to execute some processes right after the inference step (for training).
-            We recommend performing backpropagation in this event function.
-            
-            We need to extend the base function since the output format is slightly different from the base trainer.
-             
-            Args:
-                results (dict): the returned dictionary from the event function `inference`.
-                model (torch.nn.Module): the current trained model.
-                optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_batch (object): the data (or minibatch) for the current iteration.
-                curr_training_states (dict): the dictionary containing the current training states.
-                
-            Returns:
-                A dictionary containing the information from the `results`.
-        """
-        results['loss'].backward()
-        optimizer.step()
-        return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'], _curr_batch[-1].to(self.device))}
+    """
+        This trainer has the same behavior as `LCTrainer`.
+    """
 
 class LPTimeILBareTrainer(LPTrainer):
     """

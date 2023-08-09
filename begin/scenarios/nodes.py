@@ -5,6 +5,7 @@ import pickle
 import copy
 from dgl.data.utils import download, Subset
 from ogb.nodeproppred import DglNodePropPredDataset
+from torch_scatter import scatter
 
 from .common import BaseScenarioLoader
 from .datasets import *
@@ -14,6 +15,8 @@ def load_node_dataset(dataset_name, incr_type, save_path):
     """
         The function for load node-level datasets.
     """
+    print(f"Loading {dataset_name} for {incr_type}-IL setting...")
+    
     cover_rule = {'feat': 'node', 'label': 'node', 'train_mask': 'node', 'val_mask': 'node', 'test_mask': 'node'}
     if dataset_name in ['cora'] and incr_type in ['task', 'class']:
         dataset = dgl.data.CoraGraphDataset(raw_dir=save_path, verbose=False)
@@ -37,7 +40,8 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph.ndata['train_mask'] = (inner_tvt_splits < 6)
         graph.ndata['val_mask'] = (6 <= inner_tvt_splits) & (inner_tvt_splits < 8)
         graph.ndata['test_mask'] = (8 <= inner_tvt_splits)
-    elif dataset_name in ['ogbn-arxiv', 'arxivx'] and incr_type in ['task', 'class', 'time']:
+        
+    elif dataset_name in ['ogbn-arxiv'] and incr_type in ['task', 'class', 'time']:
         dataset = DglNodePropPredDataset('ogbn-arxiv', root=save_path)
         graph, label = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
@@ -46,16 +50,28 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         srcs, dsts = graph.all_edges()
         graph.add_edges(dsts, srcs)
         
-        # load train/val/test split
-        split_idx = dataset.get_idx_split()
-        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
-            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
-            _indices[split_idx[_split]] = True
-            graph.ndata[_split_name + '_mask'] = _indices
+        if incr_type == 'time':
+            # load train/val/test split
+            pkl_path = os.path.join(save_path, f'ogbn-arxiv_metadata_timeIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-arxiv_metadata_timeIL.pkl', pkl_path)
+            metadata = pickle.load(open(pkl_path, 'rb'))
+            inner_tvt_splits = metadata['inner_tvt_splits']
+            graph.ndata['train_mask'] = (inner_tvt_splits < 4)
+            graph.ndata['val_mask'] = (inner_tvt_splits == 4)
+            graph.ndata['test_mask'] = (inner_tvt_splits > 4)
+            # time information for splitting tasks
+            graph.ndata['time'] = torch.clamp(graph.ndata.pop('year').squeeze() - 1997, 0, 20000)
+        else:
+            # load train/val/test split
+            split_idx = dataset.get_idx_split()
+            for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
+                _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
+                _indices[split_idx[_split]] = True
+                graph.ndata[_split_name + '_mask'] = _indices
         
         # load target label and timestamp information
         graph.ndata['label'] = label.squeeze()
-        graph.ndata['time'] = graph.ndata.pop('year').squeeze()
+        
     elif dataset_name in ['ogbn-products'] and incr_type in ['task', 'class']:
         dataset = DglNodePropPredDataset(dataset_name, root=save_path)
         graph, label = dataset[0]
@@ -84,16 +100,19 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         num_feats, num_classes = graph.ndata['feat'].shape[-1], label.shape[-1]
         
         # load train/val/test split
-        split_idx = dataset.get_idx_split()
-        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
-            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
-            _indices[split_idx[_split]] = True
-            graph.ndata[_split_name + '_mask'] = _indices
+        pkl_path = os.path.join(save_path, f'ogbn-proteins_metadata_domainIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-proteins_metadata_domainIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_splits']
+        graph.ndata['train_mask'] = (inner_tvt_splits < 4)
+        graph.ndata['val_mask'] = (inner_tvt_splits == 4)
+        graph.ndata['test_mask'] = (inner_tvt_splits > 4)
         
         # load target label and domain information
         graph.ndata['label'] = label
-        graph.ndata['domain'] = graph.ndata.pop('species').squeeze()
-    elif dataset_name in ['ogbn-mag'] and incr_type in ['task', 'class']:
+        if incr_type == 'domain': graph.ndata['domain'] = graph.ndata.pop('species').squeeze()
+        
+    elif dataset_name in ['ogbn-mag'] and incr_type in ['task', 'class', 'time']:
         dataset = DglNodePropPredDataset(dataset_name, root=save_path)
         _graph, _label = dataset[0]
         srcs, dsts = _graph.edges(etype='cites')
@@ -104,23 +123,42 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         graph.add_edges(dsts, srcs)
         label = _label['paper'].squeeze()
         
-        # select classes with at least 10 nodes
         split_idx = dataset.get_idx_split()
-        traincnt = torch.bincount(label[split_idx['train']['paper']])
-        valcnt = torch.bincount(label[split_idx['valid']['paper']])
-        testcnt = torch.bincount(label[split_idx['test']['paper']])
-        considered_labels = torch.nonzero(torch.min(torch.stack((traincnt, valcnt, testcnt), dim=-1), dim=-1).values >= 10, as_tuple=True)[0]
-        processed_labels = torch.ones(label.max() + 1, dtype=torch.long) * considered_labels.shape[0]
-        processed_labels[considered_labels] = torch.arange(considered_labels.shape[0])
-        label = processed_labels[label]
         
-        # load train/val/test split
-        num_feats, num_classes = graph.ndata['feat'].shape[-1], (label.max().item() + 1)
-        for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
-            _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
-            _indices[split_idx[_split]['paper']] = True
-            graph.ndata[_split_name + '_mask'] = _indices
-        graph.ndata['label'] = label.squeeze()    
+        # (for task, class) select classes with at least 10 nodes (in train, valid, and test split)
+        if incr_type in ['task', 'class']:
+            traincnt = torch.bincount(label[split_idx['train']['paper']])
+            valcnt = torch.bincount(label[split_idx['valid']['paper']])
+            testcnt = torch.bincount(label[split_idx['test']['paper']])
+            considered_labels = torch.nonzero(torch.min(torch.stack((traincnt, valcnt, testcnt), dim=-1), dim=-1).values >= 10, as_tuple=True)[0]
+            processed_labels = torch.ones(label.max() + 1, dtype=torch.long) * considered_labels.shape[0]
+            processed_labels[considered_labels] = torch.arange(considered_labels.shape[0])
+            label = processed_labels[label]
+            num_feats, num_classes = graph.ndata['feat'].shape[-1], label.max().item() # ignore the last class
+            
+            # load train/val/test split
+            for _split, _split_name in [('train', 'train'), ('valid', 'val'), ('test', 'test')]:
+                _indices = torch.zeros(graph.num_nodes(), dtype=torch.bool)
+                _indices[split_idx[_split]['paper']] = True
+                graph.ndata[_split_name + '_mask'] = _indices
+            graph.ndata['label'] = label.squeeze()
+        elif incr_type in ['time']:
+            pkl_path = os.path.join(save_path, f'ogbn-mag_metadata_timeIL.pkl')
+            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-mag_metadata_timeIL.pkl', pkl_path)
+            metadata = pickle.load(open(pkl_path, 'rb'))
+            inner_tvt_splits = metadata['inner_tvt_splits']
+            graph.ndata['train_mask'] = (inner_tvt_splits < 4)
+            graph.ndata['val_mask'] = (inner_tvt_splits == 4)
+            graph.ndata['test_mask'] = (inner_tvt_splits > 4)
+            
+            graph.ndata['label'] = label.squeeze()
+            num_feats, num_classes = graph.ndata['feat'].shape[-1], (label.max().item() + 1)
+            graph.ndata['time'] = _graph.ndata['year']['paper'].squeeze() - 2010
+            
+    elif dataset_name in ['twitch'] and incr_type in ['domain']:
+        dataset = TwitchGamerDataset(dataset_name, raw_dir=save_path)
+        graph = dataset[0]
+        num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
         
@@ -142,6 +180,18 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         final_graph.edata[k] = graph.edata[k][is_non_loop]
     final_graph = dgl.add_self_loop(final_graph)
     
+    print("=====CHECK=====")
+    print("num_classes:", num_classes, ", num_feats:", num_feats)
+    print("graph.ndata['train_mask']:", 'train_mask' in graph.ndata)
+    print("graph.ndata['val_mask']:", 'val_mask' in graph.ndata)
+    print("graph.ndata['test_mask']:", 'test_mask' in graph.ndata)
+    print("graph.ndata['label']:", 'label' in graph.ndata)
+    if incr_type == 'time':
+        print("graph.ndata['time']:", 'time' in graph.ndata)
+    if incr_type == 'domain':
+        print("graph.ndata['domain']:", 'domain' in graph.ndata)
+    print("===============")
+    
     return num_classes, num_feats, final_graph, cover_rule
 
 class NCScenarioLoader(BaseScenarioLoader):
@@ -157,29 +207,19 @@ class NCScenarioLoader(BaseScenarioLoader):
     """
     
     def _init_continual_scenario(self):
-        if self.dataset_name == 'ogbn-arxiv' and self.incr_type == 'time':
-            self.dataset_name = 'arxivx'
         self.num_classes, self.num_feats, self.__graph, self.__cover_rule = load_node_dataset(self.dataset_name, self.incr_type, self.save_path)
         if self.incr_type in ['class', 'task']:
             # determine task configuration
             if self.kwargs is not None and 'task_orders' in self.kwargs:
                 self.__splits = tuple([torch.LongTensor(class_ids) for class_ids in self.kwargs['task_orders']])
             elif self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
-                if self.dataset_name == 'ogbn-products':
-                    # remove class index 46 (since it contains only one sample)
-                    self.__splits = torch.split(torch.randperm(self.num_classes-1), (self.num_classes-1) // self.num_tasks)[:self.num_tasks]
-                else:
-                    self.__splits = torch.split(torch.randperm(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
+                self.__splits = torch.split(torch.randperm(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             else:
-                if self.dataset_name == 'ogbn-products':
-                    # remove class index 46 (since it contains only one sample)
-                    self.__splits = torch.split(torch.arange(self.num_classes-1), (self.num_classes-1) // self.num_tasks)[:self.num_tasks]
-                else:
-                    self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
+                self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             
             print('class split information:', self.__splits)
             # compute task ids for each node
-            id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
+            id_to_task = self.num_tasks * torch.ones(self.__graph.ndata['label'].max() + 1).long()
             for i in range(self.num_tasks):
                 id_to_task[self.__splits[i]] = i
             self.__task_ids = id_to_task[self.__graph.ndata['label']]
@@ -187,28 +227,12 @@ class NCScenarioLoader(BaseScenarioLoader):
             # ignore classes which are not used in the tasks
             self.__graph.ndata['test_mask'] = self.__graph.ndata['test_mask'] & (self.__task_ids < self.num_tasks)
         elif self.incr_type == 'time':
-            dname = self.dataset_name if self.dataset_name != 'arxivx' else 'ogbn-arxiv'
-            pkl_path = os.path.join(self.save_path, f'{dname}_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dname}_metadata_timeIL.pkl', pkl_path)
-            metadata = pickle.load(open(pkl_path, 'rb'))
-            inner_tvt_splits = metadata['inner_tvt_splits']
-            self.__time_splits = metadata['time_splits']
-            
-            # Since our setting is different from the original setting, we need to update train/val/test split for the setting
-            # We used random split (train:val:test = 4:1:5)
-            self.__graph.ndata['train_mask'] = (inner_tvt_splits < 4)
-            self.__graph.ndata['val_mask'] = (inner_tvt_splits == 4)
-            self.__graph.ndata['test_mask'] = (inner_tvt_splits > 4)
-            
             # compute task ids for each node
-            if dname == 'ogbn-arxiv':
-                self.__task_ids = torch.clamp(self.__graph.ndata['time'] - 1997, 0, 20000)
-                self.num_tasks = self.__task_ids.max().item() + 1
-            else:
-                self.__task_ids = torch.zeros_like(self.__graph.ndata['time'])
-                for i in range(1, self.num_tasks):
-                    self.__task_ids[self.__graph.ndata['time'] >= self.__time_splits[i]] = i
-                self.num_tasks = len(self.__time_splits) - 1
+            self.__task_ids = self.__graph.ndata['time']
+            if self.num_tasks != self.__task_ids.max().item() + 1:
+                print("WARNING: Mismatch between the number of tasks and the processed data. Please check again.")
+            # overwrite num_tasks
+            self.num_tasks = self.__task_ids.max().item() + 1
         elif self.incr_type == 'domain':
             # num_tasks only depends on the number of domains
             self.num_tasks = self.__graph.ndata['domain'].max().item() + 1

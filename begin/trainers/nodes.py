@@ -30,8 +30,18 @@ class NCTrainer(BaseTrainer):
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_loss'] = 1e10
         self._reset_optimizer(curr_optimizer)
-        # it enables to predict the new classes from the current task
-        curr_model.observe_labels(curr_dataset.ndata['label'][curr_dataset.ndata['train_mask'] | curr_dataset.ndata['val_mask']])    
+        if self.binary:
+            # it uses all outputs for every task
+            curr_model.observe_labels(torch.arange(curr_dataset.ndata['label'].shape[-1]))
+        else:
+            # it enables to predict the new classes from the current task
+            curr_model.observe_labels(curr_dataset.ndata['label'][curr_dataset.ndata['train_mask'] | curr_dataset.ndata['val_mask']])    
+    
+    def predictionFormat(self, results):
+        if self.binary:
+            return results['preds']
+        else:
+            return results['preds'].argmax(-1)
     
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
         pass
@@ -45,7 +55,7 @@ class NCTrainer(BaseTrainer):
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         results['loss'].backward()
         optimizer.step()
-        return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+        return {'loss': results['loss'].item(), 'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         optimizer.zero_grad()
@@ -56,7 +66,7 @@ class NCTrainer(BaseTrainer):
     
     def processEvalIteration(self, model, _curr_batch):
         results = self.inference(model, _curr_batch, None)
-        return torch.argmax(results['preds'], dim=-1), {'loss': results['loss'].item()}
+        return self.predictionFormat(results), {'loss': results['loss'].item()}
     
     def processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
         if epoch_cnt % 10 == 0: print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))

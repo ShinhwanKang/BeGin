@@ -413,3 +413,59 @@ class AromaticityDataset(MoleculeCSVDataset):
                     return self.graphs[idx], self.labels[idx]
                 elif idx.dim() == 1:
                     return Subset(self, idx.cpu())
+                
+class TwitchGamerDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'http://snap.stanford.edu/data/twitch_gamers.zip'
+
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(TwitchGamerDataset, self).__init__(name='twitch',
+                                                 url=self._url,
+                                                 raw_dir=raw_dir,
+                                                 force_reload=force_reload,
+                                                 verbose=verbose)
+    def process(self):
+        self._graphs = []
+        edgefile = os.path.join(self.save_path, 'large_twitch_edges.csv')
+        edgedata = pd.read_csv(edgefile)
+        nodefile = os.path.join(self.save_path, 'large_twitch_features.csv')
+        nodedata = pd.read_csv(nodefile)
+        lang_to_domain = {'CS': 0, 'DA': 1, 'DE': 2, 'EN': 3, 'ES': 4, 'FI': 5, 'FR': 6, 'HU': 7, 'IT': 8, 'JA': 9,
+                          'KO': 10, 'NL': 11, 'NO': 12, 'PL': 13, 'PT': 14, 'RU': 15, 'SV': 16, 'TH': 17, 'TR': 18, 'ZH': 19,
+                          'OTHER': 20}
+        graph = dgl.graph((edgedata['numeric_id_1'].values, edgedata['numeric_id_2'].values))
+
+        langs = nodedata['language'].values.tolist()
+        graph.ndata['domain'] = torch.LongTensor([lang_to_domain[_lang] for _lang in langs])
+        normalized_views = torch.FloatTensor(nodedata['views'].values / float(nodedata['views'].values.max()))
+        matures = torch.FloatTensor(nodedata['mature'].values)
+        lifetimes = torch.FloatTensor(nodedata['life_time'].values)
+        is_deads = torch.FloatTensor(nodedata['dead_account'].values)
+        graph.ndata['feat'] = torch.stack((normalized_views, matures, lifetimes, is_deads), dim=-1)
+        graph.ndata['label'] = torch.FloatTensor(nodedata['affiliate'].values)
+        self._graphs.append(graph)
+
+    def has_cache(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        return os.path.exists(graph_path)
+
+    def save(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        save_graphs(graph_path, self.graphs)
+
+    def load(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        self._graphs = load_graphs(graph_path)[0]
+
+    @property
+    def graphs(self):
+        return self._graphs
+
+    @property
+    def num_classes(self):
+        return 2
+
+    def __len__(self):
+        return len(self.graphs)
+
+    def __getitem__(self, item):
+        return self.graphs[item]
