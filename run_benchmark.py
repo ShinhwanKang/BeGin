@@ -57,7 +57,9 @@ num_memories = {'cora': 12,
                 'wikics': 4000,
                 'bitcoin': 500,
                 'corafull': 210,
-                'ogbn-mag': 8000}
+                'ogbn-mag': 8000,
+                'twitch': 2000,
+                'ogbg-ppa': 500}
 
 special_kwargs = {'Bare': {},
                   'LwF': {'lamb': None, 'T': 2.},
@@ -95,6 +97,8 @@ if __name__ == '__main__':
                         help="gpu_id")
     parser.add_argument("--task-type", type=str, default="NC",
                         help="target task (NC, LC, LP, or GC)")
+    parser.add_argument("--save-path", type=str, default="./",
+                        help="result save path (default: '.')")
     args = parser.parse_args()
     
     _scenario_loader_path = f'begin.scenarios.{task_level[args.task_type]}'
@@ -126,7 +130,7 @@ if __name__ == '__main__':
     seeds = [0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000]
     
     try:
-        log_path = f'benchmark_{args.task_type}_{args.dataset_name}_{args.algo}_{args.incr}' 
+        log_path = os.path.join(args.save_path, f'benchmark_{args.task_type}_{args.dataset_name}_{args.algo}_{args.incr}')
         os.mkdir(log_path)
     except:
         pass
