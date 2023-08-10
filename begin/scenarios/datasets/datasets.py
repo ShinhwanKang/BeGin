@@ -49,11 +49,11 @@ class DGLGNNBenchmarkDataset(dgl.data.DGLBuiltinDataset):
         
         self._graphs = list(chain(train_graphs, val_graphs, test_graphs))
         train_ys, val_ys, test_ys = map(lambda x: torch.LongTensor(x), (train_ys, val_ys, test_ys))
-        self._labels = torch.cat((train_ys, val_ys, test_ys), dim=0)
+        self.labels = torch.cat((train_ys, val_ys, test_ys), dim=0)
         self._train_masks = torch.cat((torch.ones_like(train_ys).bool(), torch.zeros_like(val_ys).bool(), torch.zeros_like(test_ys).bool()), dim=0)
         self._val_masks = torch.cat((torch.zeros_like(train_ys).bool(), torch.ones_like(val_ys).bool(), torch.zeros_like(test_ys).bool()), dim=0)
         self._test_masks = torch.cat((torch.zeros_like(train_ys).bool(), torch.zeros_like(val_ys).bool(), torch.ones_like(test_ys).bool()), dim=0)
-        self._num_classes = self._labels.max().item() + 1
+        self._num_classes = self.labels.max().item() + 1
         self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
         
     def has_cache(self):
@@ -73,7 +73,7 @@ class DGLGNNBenchmarkDataset(dgl.data.DGLBuiltinDataset):
                                   self.save_name + '.bin')
         info_path = os.path.join(self.save_path,
                                  self.save_name + '.pkl')
-        save_graphs(str(graph_path), self._graphs, {'y': self._labels, 'train_masks': self._train_masks, 'val_masks': self._val_masks, 'test_masks': self._test_masks})
+        save_graphs(str(graph_path), self._graphs, {'y': self.labels, 'train_masks': self._train_masks, 'val_masks': self._val_masks, 'test_masks': self._test_masks})
         save_info(str(info_path), {'num_classes': self._num_classes})
 
     def load(self):
@@ -86,21 +86,21 @@ class DGLGNNBenchmarkDataset(dgl.data.DGLBuiltinDataset):
         self._num_classes = info['num_classes']
         
         self._graphs = graphs
-        self._labels = auxs['y']
+        self.labels = auxs['y']
         self._train_masks = auxs['train_masks'].bool()
         self._val_masks = auxs['val_masks'].bool()
         self._test_masks = auxs['test_masks'].bool()
         self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
         
         if self.verbose:
-            print('num_graphs:', len(self._graphs), ', num_labels:', self._labels.shape, 'num_classes:', self._num_classes)
+            print('num_graphs:', len(self._graphs), ', num_labels:', self.labels.shape, 'num_classes:', self._num_classes)
             
     def __getitem__(self, idx):
         # print(self._task_specific_masks.shape)
         if hasattr(self, '_task_specific_masks'):
-            return self._graphs[idx], self._labels[idx], self._task_specific_masks[idx]
+            return self._graphs[idx], self.labels[idx], self._task_specific_masks[idx]
         else:
-            return self._graphs[idx], self._labels[idx]
+            return self._graphs[idx], self.labels[idx]
         
     def __len__(self):
         return len(self._graphs)
@@ -155,7 +155,7 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
                         graphs.append(g)
                     
         self._graphs = graphs
-        self._labels = torch.LongTensor(labels).unsqueeze(-1)
+        self.labels = torch.LongTensor(labels).unsqueeze(-1)
         # self._months = torch.LongTensor(times)
         self._num_classes = 1
         self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
@@ -177,7 +177,7 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
                                   self.save_name + '.bin')
         info_path = os.path.join(self.save_path,
                                  self.save_name + '.pkl')
-        save_graphs(str(graph_path), self._graphs, {'y': self._labels}) # , 'mm': self._months
+        save_graphs(str(graph_path), self._graphs, {'y': self.labels}) # , 'mm': self._months
         save_info(str(info_path), {'num_classes': self._num_classes})
 
     def load(self):
@@ -190,19 +190,19 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
         self._num_classes = info['num_classes']
         
         self._graphs = graphs
-        self._labels = auxs['y']
+        self.labels = auxs['y']
         # self._months = auxs['mm']
         self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
         
         if self.verbose:
-            print('num_graphs:', len(self._graphs), ', num_labels:', self._labels.shape, 'num_classes:', self._num_classes)
+            print('num_graphs:', len(self._graphs), ', num_labels:', self.labels.shape, 'num_classes:', self._num_classes)
             
     def __getitem__(self, idx):
         # print(self._task_specific_masks.shape)
         if hasattr(self, '_task_specific_masks'):
-            return self._graphs[idx], self._labels[idx], self._task_specific_masks[idx]
+            return self._graphs[idx], self.labels[idx], self._task_specific_masks[idx]
         else:
-            return self._graphs[idx], self._labels[idx]
+            return self._graphs[idx], self.labels[idx]
         
     def __len__(self):
         return len(self._graphs)
@@ -394,7 +394,7 @@ class AromaticityDataset(MoleculeCSVDataset):
         self.mask   = [  self.mask[i] for i in range(label_tensor.shape[0]) if valid_indices[i]]
         for i in tqdm.trange(len(self.graphs)):
             self.graphs[i].ndata['feat'] = torch.stack((self.graphs[i].in_degrees(), self.graphs[i].out_degrees()), dim=-1).float()
-        self._labels = self.labels.clone()
+        # self._labels = self.labels.clone()
         
     def __getitem__(self, idx):
         if hasattr(self, '_task_specific_masks'):
@@ -441,7 +441,7 @@ class TwitchGamerDataset(dgl.data.DGLBuiltinDataset):
         lifetimes = torch.FloatTensor(nodedata['life_time'].values)
         is_deads = torch.FloatTensor(nodedata['dead_account'].values)
         graph.ndata['feat'] = torch.stack((normalized_views, matures, lifetimes, is_deads), dim=-1)
-        graph.ndata['label'] = torch.FloatTensor(nodedata['affiliate'].values)
+        graph.ndata['label'] = torch.LongTensor(nodedata['affiliate'].values)
         self._graphs.append(graph)
 
     def has_cache(self):
@@ -469,3 +469,31 @@ class TwitchGamerDataset(dgl.data.DGLBuiltinDataset):
 
     def __getitem__(self, item):
         return self.graphs[item]
+    
+class OgbgPpaSampledDataset:
+    def __init__(self, save_path):
+        dataset = DglGraphPropPredDataset(name = 'ogbg-ppa', root=save_path)
+        pkl_path = os.path.join(save_path, f'ogbg-ppa_metadata_domainIL.pkl')
+        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        self.graphs = []
+        for i in tqdm.tqdm(metadata['sampled_indices']):
+            graph = dataset.graphs[i]
+            graph.ndata['feat'] = torch.stack((graph.in_degrees(), graph.out_degrees()), dim=-1).float()
+            self.graphs.append(graph)
+            
+        self.labels = dataset.labels[metadata['sampled_indices']].squeeze()
+        
+    def __getitem__(self, idx):
+        '''Get datapoint with index'''
+        if isinstance(idx, int):
+            return self.graphs[idx], self.labels[idx]
+        elif torch.is_tensor(idx) and idx.dtype == torch.long:
+            if idx.dim() == 0:
+                return self.graphs[idx], self.labels[idx]
+            elif idx.dim() == 1:
+                return Subset(self, idx.cpu())
+
+        raise IndexError(
+            'Only integers and long are valid '
+            'indices (got {}).'.format(type(idx).__name__))

@@ -159,6 +159,15 @@ def load_node_dataset(dataset_name, incr_type, save_path):
         dataset = TwitchGamerDataset(dataset_name, raw_dir=save_path)
         graph = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
+        
+        pkl_path = os.path.join(save_path, f'twitch_metadata_domainIL.pkl')
+        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/twitch_metadata_domainIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_splits']
+        graph.ndata['train_mask'] = (inner_tvt_splits < 4)
+        graph.ndata['val_mask'] = (inner_tvt_splits == 4)
+        graph.ndata['test_mask'] = (inner_tvt_splits > 4)
+            
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
         
@@ -243,17 +252,7 @@ class NCScenarioLoader(BaseScenarioLoader):
                 self.__task_ids = self.__task_order[self.__graph.ndata['domain']]
             else:
                 self.__task_ids = self.__graph.ndata['domain']
-            
-            # load train/val/test split
-            # We used random split (train:val:test = 4:1:5)
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_domainIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_domainIL.pkl', pkl_path)
-            metadata = pickle.load(open(pkl_path, 'rb'))
-            inner_tvt_splits = metadata['inner_tvt_splits']
-            self.__graph.ndata['train_mask'] = (inner_tvt_splits < 4)
-            self.__graph.ndata['val_mask'] = (inner_tvt_splits == 4)
-            self.__graph.ndata['test_mask'] = (inner_tvt_splits > 4)
-            
+                
         # we need to provide task information (only for task-IL)
         if self.incr_type == 'task':
             self.__task_masks = torch.zeros(self.num_tasks + 1, self.num_classes).bool()

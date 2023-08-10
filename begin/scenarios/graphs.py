@@ -10,6 +10,7 @@ from .datasets import *
 from . import evaluator_map
 
 def load_graph_dataset(dataset_name, incr_type, save_path):
+    domain_info, time_info = None, None
     if dataset_name in ['mnist', 'cifar10'] and incr_type in ['task', 'class']:
         dataset = DGLGNNBenchmarkDataset(dataset_name, raw_dir=save_path)
         num_feats, num_classes = dataset.num_feats, dataset.num_classes
@@ -24,22 +25,72 @@ def load_graph_dataset(dataset_name, incr_type, save_path):
         dataset._train_masks = (inner_tvt_splits % 10) < 6
         dataset._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7) 
         dataset._test_masks = (inner_tvt_splits % 10) > 7
-    elif dataset_name in ['ogbg-molhiv', 'molhivx'] and incr_type in ['domain']:
+        
+    elif dataset_name in ['ogbg-molhiv'] and incr_type in ['domain']:
         dataset = DglGraphPropPredDataset('ogbg-molhiv', root=save_path)
         num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
+        
+        """ (For Task/Class-IL)
         # load train/val/test split
         split_idx = dataset.get_idx_split()
         for _split, _split_name in [('train', '_train'), ('valid', '_val'), ('test', '_test')]:
             _indices = torch.zeros(len(dataset), dtype=torch.bool)
             _indices[split_idx[_split]] = True
             setattr(dataset, _split_name + '_mask', _indices)
+        """
+        # load train/val/test split and domain_info
+        pkl_path = os.path.join(save_path, f'molhivx_metadata_domainIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/molhivx_metadata_domainIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_splits']
+        # set train/val/test split (random split, 8:1:1)
+        dataset._train_masks = (inner_tvt_splits % 10) < 8
+        dataset._val_masks = (inner_tvt_splits % 10) == 8
+        dataset._test_masks = (inner_tvt_splits % 10) > 8
+        domain_info = metadata['domain_splits']
+        
     elif dataset_name in ['nyctaxi'] and incr_type in ['time']:
         dataset = NYCTaxiDataset(dataset_name, raw_dir=save_path)
         num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 2
+        
+        # load time split information and train/val/test splits (random split, 6:2:2)
+        pkl_path = os.path.join(save_path, f'nyctaxi_metadata_timeIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/nyctaxi_metadata_timeIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_splits']
+        dataset._train_masks = (inner_tvt_splits % 10) < 6
+        dataset._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7) 
+        dataset._test_masks = (inner_tvt_splits % 10) > 7    
+        time_info = metadata['time_splits']
+    elif dataset_name in ['ogbg-ppa'] and incr_type in ['domain']:
+        dataset = OgbgPpaSampledDataset(save_path)
+        num_feats, num_classes = 2, 37
+        pkl_path = os.path.join(save_path, f'ogbg-ppa_metadata_domainIL.pkl')
+        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        inner_tvt_splits = metadata['inner_tvt_split']
+        # set train/val/test split (random split, 8:1:1)
+        dataset._train_masks = (inner_tvt_splits % 10) < 8
+        dataset._val_masks = (inner_tvt_splits % 10) == 8
+        dataset._test_masks = (inner_tvt_splits % 10) > 8
+        domain_info = metadata['domain_info']
+        
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
-        
-    return num_classes, num_feats, dataset
+    
+    print("=====CHECK=====")
+    print("num_classes:", num_classes, ", num_feats:", num_feats)
+    print("dataset._train_mask:", dataset._train_masks.shape)
+    print("dataset._val_mask:", dataset._val_masks.shape)
+    print("dataset._test_mask:", dataset._test_masks.shape)
+    print("dataset.labels:", dataset.labels.shape)
+    if incr_type == 'time':
+        print("time_info:", time_info is not None)
+    if incr_type == 'domain':
+        print("domain_info:", domain_info is not None)
+    print("===============")
+    
+    return num_classes, num_feats, dataset, domain_info, time_info
 
 class GCScenarioLoader(BaseScenarioLoader):
     """
@@ -54,9 +105,7 @@ class GCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        if self.dataset_name == 'ogbg-molhiv' and self.incr_type == 'domain':
-            self.dataset_name = 'molhivx'
-        self.num_classes, self.num_feats, self.__dataset = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_classes, self.num_feats, self.__dataset, self.__domain_info, self.__time_split = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
         
         if self.incr_type in ['class', 'task']:
             # determine task configuration
@@ -72,47 +121,25 @@ class GCScenarioLoader(BaseScenarioLoader):
             id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
             for i in range(self.num_tasks):
                 id_to_task[self.__splits[i]] = i
-            self.__task_ids = id_to_task[self.__dataset._labels]
-            self.__original_labels = self.__dataset._labels.clone()
-            self.__dataset._labels[self.__dataset._test_masks] = -1
+            self.__task_ids = id_to_task[self.__dataset.labels]
+            self.__original_labels = self.__dataset.labels.clone()
+            self.__dataset.labels[self.__dataset._test_masks] = -1
         elif self.incr_type == 'time':
-            # load time split information and train/val/test splits (random split, 6:2:2)
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_timeIL.pkl', pkl_path)
-            metadata = pickle.load(open(pkl_path, 'rb'))
-            inner_tvt_splits = metadata['inner_tvt_splits']
-            self.__time_splits = metadata['time_splits']
-            self.__dataset._train_masks = (inner_tvt_splits % 10) < 6
-            self.__dataset._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7) 
-            self.__dataset._test_masks = (inner_tvt_splits % 10) > 7
-            
             # compute task ids for each instance
             self.num_tasks = self.__time_splits.max().item() + 1
             self.__task_ids = self.__time_splits
-            self.__dataset._labels = self.__dataset._labels.squeeze()
-            self.__original_labels = self.__dataset._labels.clone()
-            self.__dataset._labels[self.__dataset._test_masks] = -1
+            self.__dataset.labels = self.__dataset.labels.squeeze()
+            self.__original_labels = self.__dataset.labels.clone()
+            self.__dataset.labels[self.__dataset._test_masks] = -1
         elif self.incr_type == 'domain':
-            # load domain information and train/val/test splits
-            pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_domainIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_domainIL.pkl', pkl_path)
-            metadata = pickle.load(open(pkl_path, 'rb'))
-            inner_tvt_splits = metadata['inner_tvt_splits']
-            domain_info = metadata['domain_splits']
-            
             # determine task configuration
-            self.num_tasks = domain_info.max().item() + 1
+            self.num_tasks = self.__domain_info.max().item() + 1
             if self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
                 self.__task_order = torch.randperm(self.num_tasks)
                 print('domain_order:', self.__task_order)
-                self.__task_ids = self.__task_order[domain_info]
+                self.__task_ids = self.__task_order[self.__domain_info]
             else:
-                self.__task_ids = domain_info
-            
-            # set train/val/test split (random split, 8:1:1)
-            self.__dataset._train_masks = (inner_tvt_splits % 10) < 8
-            self.__dataset._val_masks = (inner_tvt_splits % 10) == 8
-            self.__dataset._test_masks = (inner_tvt_splits % 10) > 8
+                self.__task_ids = self.__domain_info
             self.__original_labels = self.__dataset.labels.clone()
             self.__dataset.labels[self.__dataset._test_masks] = -1
             

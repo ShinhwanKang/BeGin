@@ -71,7 +71,7 @@ class NCTaskILTWPTrainer(NCTrainer):
         cls_loss.backward()
         optimizer.step()
         return {'loss': cls_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
         
     def initTrainingStates(self, scenario, model, optimizer):
         return {'current_task':0,
@@ -194,7 +194,7 @@ class NCClassILTWPTrainer(NCTrainer):
         cls_loss.backward()
         optimizer.step()
         return {'loss': cls_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
         return {'current_task':0,
@@ -318,7 +318,7 @@ class NCClassILTWPMinibatchTrainer(NCMinibatchTrainer):
         cls_loss.backward()
         optimizer.step()
         return {'loss': cls_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
     
     def initTrainingStates(self, scenario, model, optimizer):
         return {'current_task':0,
@@ -374,20 +374,12 @@ class NCClassILTWPMinibatchTrainer(NCMinibatchTrainer):
         curr_training_states['optpar'][_idx] = optpars
         curr_training_states['current_task'] += 1
         
-class NCDomainILTWPTrainer(NCTrainer):
-    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """
-            TWP needs three additional parameters `lambda_l`, `lambda_t`, and `beta`.
-            `lambda_l` is the hyperparamter for the regularization term (similar to EWC) used in :func:`afterInference`.
-            `lambda_t` is the hyperparamter for the regularization term (with topological information) used in :func:`afterInference`.
-            `beta` is the hyperparameter for the regularization term related to `cur_importance_score` in :func:`afterInference`.
-        """
-        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lambda_l = kwargs['lambda_l'] if 'lambda_l' in kwargs else 10000
-        self.lambda_t = kwargs['lambda_t']  if 'lambda_t' in kwargs else 10000
-        self.beta = kwargs['beta'] if 'beta' in kwargs else 0.1
-        raise NotImplementedError
-        
+class NCDomainILTWPTrainer(NCClassILTWPTrainer):
+    """
+        This trainer has the same behavior as `NCClassILTWPTrainer`.
+    """
+    pass
+
 class NCTimeILTWPTrainer(NCClassILTWPTrainer):
     """
         This trainer has the same behavior as `NCClassILTWPTrainer`.

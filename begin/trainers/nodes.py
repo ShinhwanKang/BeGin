@@ -30,6 +30,7 @@ class NCTrainer(BaseTrainer):
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_loss'] = 1e10
         self._reset_optimizer(curr_optimizer)
+        
         if self.binary:
             # it uses all outputs for every task
             curr_model.observe_labels(torch.arange(curr_dataset.ndata['label'].shape[-1]))
