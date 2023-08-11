@@ -497,3 +497,94 @@ class OgbgPpaSampledDataset:
         raise IndexError(
             'Only integers and long are valid '
             'indices (got {}).'.format(type(idx).__name__))
+        
+class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'http://snap.stanford.edu/data/sx-askubuntu.txt.gz'
+    
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(AskUbuntuDataset, self).__init__(name='askubuntu',
+                                                url=self._url,
+                                                raw_dir=raw_dir,
+                                                force_reload=force_reload,
+                                                verbose=verbose)
+
+    def download(self):
+        gz_file_path = os.path.join(self.raw_dir, self.name + '.txt.gz')
+        download(self.url, path=gz_file_path)
+        self._extract_gz(gz_file_path, self.raw_path)
+
+    def process(self):
+        filename = os.path.join(self.save_path, '../' + self.name + '.txt.gz')
+        data = np.loadtxt('sx-askubuntu.txt', delimiter=' ').astype(np.int64)
+        srcs, dsts, timestamps = data[:, 0].tolist(), data[:, 1].tolist(), data[:, 2].tolist()
+        
+        edges = set([])
+        uniques = []
+        interactions = zip(srcs, dsts, timestamps)
+        interactions = sorted(interactions, key=lambda x: x[2])
+        for s, d, t in interactions:
+            if (s, d) not in edges and (d, s) not in edges:
+                edges.add((s, d))
+                edges.add((d, s))
+                uniques.append((s, d, t))
+        
+        srcs, dsts, timestamps = zip(*uniques)
+        months = []
+        for t in timestamps:
+            dt = datetime.datetime.utcfromtimestamp(t)
+            months.append(dt.year * 12 + dt.month)
+
+        months = torch.LongTensor(months)
+        srcs, dsts = torch.LongTensor(srcs), torch.LongTensor(dsts)
+        months = months - months.min()
+        
+        chosen_indices = (months >= 18)
+        srcs, dsts, months = srcs[chosen_indices], dsts[chosen_indices], months[chosen_indices]
+        months = months - months.min()
+        bi_srcs = torch.stack((srcs, dsts), dim=-1).view(-1)
+        bi_dsts = torch.stack((dsts, srcs), dim=-1).view(-1)
+        bi_timestamps = torch.repeat_interleave(months, 2, dim=0)
+        
+        self._graphs = []
+        g = dgl.graph((bi_srcs, bi_dsts))
+        g.edata['time'] = bi_timestamps
+        g.ndata['feat'] = g.in_degrees().float()
+        self._graphs.append(g)
+
+    def has_cache(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        return os.path.exists(graph_path)
+
+    def save(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        save_graphs(graph_path, self._graphs)
+
+    def load(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        self._graphs = load_graphs(graph_path)[0]
+
+    @property
+    def graphs(self):
+        return self._graphs
+
+    def __len__(self):
+        return len(self._graphs)
+
+
+    def __getitem__(self, item):
+        return self._graphs[item]
+    
+    @property
+    def is_temporal(self):
+        return True
+
+    def _extract_gz(self, file, target_dir, overwrite=False):
+        if os.path.exists(target_dir) and not overwrite:
+            return
+        print('Extracting file to {}'.format(target_dir))
+        fname = os.path.basename(file)
+        makedirs(target_dir)
+        out_file_path = os.path.join(target_dir, fname[:-3])
+        with gzip.open(file, 'rb') as f_in:
+            with open(out_file_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
