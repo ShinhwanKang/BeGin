@@ -419,7 +419,7 @@ class TwitchGamerNodeDataset(dgl.data.DGLBuiltinDataset):
     _url = 'http://snap.stanford.edu/data/twitch_gamers.zip'
 
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
-        super(TwitchGamerDataset, self).__init__(name='twitch',
+        super(TwitchGamerNodeDataset, self).__init__(name='twitch',
                                                  url=self._url,
                                                  raw_dir=raw_dir,
                                                  force_reload=force_reload,
@@ -631,7 +631,7 @@ class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
             """
             all_srcs.append(torch.LongTensor(srcs) + node_cnt)
             all_dsts.append(torch.LongTensor(dsts) + node_cnt)
-            all_domains.append(torch.ones(srcs.shape[0], dtype=torch.long))
+            all_domains.append(i * torch.ones(srcs.shape[0], dtype=torch.long))
             node_cnt += num_nodes
         
         all_srcs, all_dsts, all_domains = torch.cat(all_srcs), torch.cat(all_dsts), torch.cat(all_domains)
