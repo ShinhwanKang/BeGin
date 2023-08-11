@@ -419,7 +419,7 @@ class TwitchGamerNodeDataset(dgl.data.DGLBuiltinDataset):
     _url = 'http://snap.stanford.edu/data/twitch_gamers.zip'
 
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
-        super(TwitchGamerDataset, self).__init__(name='twitch',
+        super(TwitchGamerNodeDataset, self).__init__(name='twitch',
                                                  url=self._url,
                                                  raw_dir=raw_dir,
                                                  force_reload=force_reload,
