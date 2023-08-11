@@ -83,7 +83,17 @@ def load_linkp_dataset(dataset_name, incr_type, save_path):
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
+    elif dataset_name in ['facebook'] and incr_type in ['domain']:
+        dataset = FacebookLinkDataset(dataset_name=dataset_name, raw_dir=save_path)
+        graph = dataset.graphs[0]
+        num_feats = graph.ndata['feat'].shape[-1]
+        pkl_path = os.path.join(save_path, f'facebook_metadata_domainIL.pkl')
+        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/facebook_metadata_domainIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
+        neg_edges = metadata['neg_edges']
         
+        print(graph.num_edges())
         print(graph.edges()[0][:10], graph.edges()[1][:10], tvt_splits[:10])
         print(neg_edges['val'][:10], neg_edges['test'][:10])
     else:

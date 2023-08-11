@@ -12,7 +12,7 @@ from itertools import chain
 
 # FOR DGL DATASETS
 import dgl
-from dgl.data.utils import save_graphs, load_graphs, save_info, load_info, makedirs, _get_dgl_url, download
+from dgl.data.utils import save_graphs, load_graphs, save_info, load_info, makedirs, _get_dgl_url, download, extract_archive
 from ogb.graphproppred import DglGraphPropPredDataset
 
 # for aromaticity dataset
@@ -369,6 +369,7 @@ class BitcoinOTCDataset(dgl.data.DGLBuiltinDataset):
         fname = os.path.basename(file)
         makedirs(target_dir)
         out_file_path = os.path.join(target_dir, fname[:-3])
+        print(out_file_path)
         with gzip.open(file, 'rb') as f_in:
             with open(out_file_path, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
@@ -414,7 +415,7 @@ class AromaticityDataset(MoleculeCSVDataset):
                 elif idx.dim() == 1:
                     return Subset(self, idx.cpu())
                 
-class TwitchGamerDataset(dgl.data.DGLBuiltinDataset):
+class TwitchGamerNodeDataset(dgl.data.DGLBuiltinDataset):
     _url = 'http://snap.stanford.edu/data/twitch_gamers.zip'
 
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
@@ -513,9 +514,10 @@ class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
         download(self.url, path=gz_file_path)
         self._extract_gz(gz_file_path, self.raw_path)
 
+
     def process(self):
-        filename = os.path.join(self.save_path, '../' + self.name + '.txt.gz')
-        data = np.loadtxt('sx-askubuntu.txt', delimiter=' ').astype(np.int64)
+        filename = os.path.join(self.save_path, '../askubuntu.txt')
+        data = np.loadtxt(filename, delimiter=' ').astype(np.int64)
         srcs, dsts, timestamps = data[:, 0].tolist(), data[:, 1].tolist(), data[:, 2].tolist()
         
         edges = set([])
@@ -541,6 +543,7 @@ class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
         chosen_indices = (months >= 18)
         srcs, dsts, months = srcs[chosen_indices], dsts[chosen_indices], months[chosen_indices]
         months = months - months.min()
+        print(srcs.shape, months.shape, months.max())
         bi_srcs = torch.stack((srcs, dsts), dim=-1).view(-1)
         bi_dsts = torch.stack((dsts, srcs), dim=-1).view(-1)
         bi_timestamps = torch.repeat_interleave(months, 2, dim=0)
@@ -548,7 +551,7 @@ class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
         self._graphs = []
         g = dgl.graph((bi_srcs, bi_dsts))
         g.edata['time'] = bi_timestamps
-        g.ndata['feat'] = g.in_degrees().float()
+        g.ndata['feat'] = g.in_degrees().float().unsqueeze(-1)
         self._graphs.append(g)
 
     def has_cache(self):
@@ -585,6 +588,93 @@ class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
         fname = os.path.basename(file)
         makedirs(target_dir)
         out_file_path = os.path.join(target_dir, fname[:-3])
+        print(out_file_path)
         with gzip.open(file, 'rb') as f_in:
             with open(out_file_path, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
+        print("DONE")
+        
+class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'http://snap.stanford.edu/data/gemsec_facebook_dataset.tar.gz'
+    
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(FacebookLinkDataset, self).__init__(name='facebook',
+                                                  url=self._url,
+                                                  raw_dir=raw_dir,
+                                                  force_reload=force_reload,
+                                                  verbose=verbose)
+
+    def download(self):
+        gz_file_path = os.path.join(self.raw_dir, self.name + '.tar.gz')
+        download(self.url, path=gz_file_path)
+        extract_archive(gz_file_path, self.raw_path)
+
+    def process(self):
+        domains = ['artist', 'athletes', 'company', 'government', 'new_sites', 'politician', 'public_figure', 'tvshow']
+        node_cnt = 0
+        all_srcs, all_dsts, all_domains = [], [], []
+        # all_neg_edges = []
+        for i, domain in enumerate(domains):
+            filename = os.path.join(self.save_path, 'facebook_clean_data/' + domain + '_edges.csv')
+            y = pd.read_csv(filename)
+            srcs, dsts = y['node_1'].values, y['node_2'].values
+            num_nodes = max(srcs.max(), dsts.max())
+            """
+            edges = set(zip(srcs, dsts)).union(set(zip(dsts, srcs)))
+            neg_edges = []
+            while len(neg_edges) < 25000:
+                s, d = np.random.randint(num_nodes), np.random.randint(num_nodes)
+                if s >= d: continue
+                if (s, d) not in edges:
+                    neg_edges.append((s, d))
+            all_neg_edges.append(torch.LongTensor(neg_edges) + node_cnt)
+            """
+            all_srcs.append(torch.LongTensor(srcs) + node_cnt)
+            all_dsts.append(torch.LongTensor(dsts) + node_cnt)
+            all_domains.append(torch.ones(srcs.shape[0], dtype=torch.long))
+            node_cnt += num_nodes
+        
+        all_srcs, all_dsts, all_domains = torch.cat(all_srcs), torch.cat(all_dsts), torch.cat(all_domains)
+        bi_srcs = torch.stack((all_srcs, all_dsts), dim=-1).view(-1)
+        bi_dsts = torch.stack((all_dsts, all_srcs), dim=-1).view(-1)
+        bi_domains = torch.repeat_interleave(all_domains, 2, dim=0)
+        self._graphs = []
+        graph = dgl.graph((bi_srcs, bi_dsts))
+        graph.edata['domain'] = bi_domains
+        graph.ndata['feat'] = graph.in_degrees().float().unsqueeze(-1)
+        
+        """
+        all_neg_edges = torch.cat(all_neg_edges, dim=0)
+        metadata = {}
+        metadata['inner_tvt_splits'] = torch.randperm(all_domains.shape[0]) % 10
+        metadata['neg_edges'] = {'val': all_neg_edges[0::2], 'test': all_neg_edges[1::2]}
+        pickle.dump(metadata, open('facebook_metadata_domainIL.pkl', 'wb'))
+        """
+        self._graphs.append(graph)
+        
+    def has_cache(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        return os.path.exists(graph_path)
+
+    def save(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        save_graphs(graph_path, self._graphs)
+
+    def load(self):
+        graph_path = os.path.join(self.save_path, 'dgl_graph.bin')
+        self._graphs = load_graphs(graph_path)[0]
+
+    @property
+    def graphs(self):
+        return self._graphs
+
+    def __len__(self):
+        return len(self._graphs)
+
+
+    def __getitem__(self, item):
+        return self._graphs[item]
+    
+    @property
+    def is_temporal(self):
+        return True

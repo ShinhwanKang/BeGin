@@ -156,7 +156,7 @@ def load_node_dataset(dataset_name, incr_type, save_path):
             graph.ndata['time'] = _graph.ndata['year']['paper'].squeeze() - 2010
             
     elif dataset_name in ['twitch'] and incr_type in ['domain']:
-        dataset = TwitchGamerDataset(dataset_name, raw_dir=save_path)
+        dataset = TwitchGamerNodeDataset(dataset_name, raw_dir=save_path)
         graph = dataset[0]
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         
