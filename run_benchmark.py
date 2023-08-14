@@ -153,66 +153,69 @@ if __name__ == '__main__':
                     print(f'Current Hyperparameter: lr={lr} dropout={dr} weight_decay={wd} {(str(special_param_name) + "=" + str(special_param)) if special_param_name != "none" else ""}')
                     try:
                         for seed in tqdm.tqdm(seeds):
-                            torch.manual_seed(seed)
-                            random.seed(seed)
-                            np.random.seed(seed)
-                            torch.backends.cudnn.benchmark = False
-                            torch.backends.cudnn.deterministic = True
-                            
-                            scenario = _scenario_loader(dataset_name=args.dataset_name,
-                                                        num_tasks=num_task,
-                                                        metric=metric,
-                                                        save_path='data',
-                                                        incr_type=args.incr,
-                                                        task_shuffle=1)
+                            pickle_path = f'{log_path}/result_{lr}_{dr}_{wd}_{str(special_param)}_{seed}.pkl'
+                            if not os.path.exists(pickle_path):
+                                torch.manual_seed(seed)
+                                random.seed(seed)
+                                np.random.seed(seed)
+                                torch.backends.cudnn.benchmark = False
+                                torch.backends.cudnn.deterministic = True
 
-                            if args.task_type == 'GC':
-                                edge_encoder_fn = None
-                                if args.dataset_name == 'nyctaxi':
-                                    edge_encoder_fn = lambda: torch.nn.Linear(1, n_hidden)
-                                elif args.dataset_name == 'ogbg-molhiv':
-                                    edge_encoder_fn = lambda: BondEncoder(emb_dim = n_hidden)
-                                elif args.dataset_name == 'ogbg-ppa':
-                                    edge_encoder_fn = lambda: torch.nn.Linear(7, n_hidden)
-                                
-                                model = _model(scenario.num_feats,
-                                               scenario.num_classes,
-                                               n_hidden,
-                                               dropout=dr,
-                                               n_layers=n_layers,
-                                               incr_type=args.incr,
-                                               node_encoder_fn = None if args.dataset_name != 'ogbg-molhiv' else (lambda: AtomEncoder(emb_dim = n_hidden)),
-                                               edge_encoder_fn = edge_encoder_fn)
-                            else:
-                                model = _model(scenario.num_feats,
-                                               scenario.num_classes,
-                                               n_hidden,
-                                               dropout=dr,
-                                               n_layers=n_layers,
-                                               incr_type=args.incr)
+                                scenario = _scenario_loader(dataset_name=args.dataset_name,
+                                                            num_tasks=num_task,
+                                                            metric=metric,
+                                                            save_path='data',
+                                                            incr_type=args.incr,
+                                                            task_shuffle=1)
 
-                            algo_kwargs = copy.deepcopy(special_kwargs[args.algo])
-                            if special_param_name in algo_kwargs:
-                                algo_kwargs[special_param_name] = special_param
-                            if args.algo == 'GEM':
-                                algo_kwargs['num_memories'] = num_memories[args.dataset_name]
-                            if args.algo == 'CGNN':
-                                algo_kwargs['memory_size'] = num_memories[args.dataset_name]
-                                algo_kwargs['new_nodes_size'] = num_memories[args.dataset_name]
-                            if args.algo == 'ERGNN':
-                                algo_kwargs['num_experience_nodes'] = num_memories[args.dataset_name] // (num_task if args.incr in ['time', 'domain'] else scenario.num_classes)
+                                if args.task_type == 'GC':
+                                    edge_encoder_fn = None
+                                    if args.dataset_name == 'nyctaxi':
+                                        edge_encoder_fn = lambda: torch.nn.Linear(1, n_hidden)
+                                    elif args.dataset_name == 'ogbg-molhiv':
+                                        edge_encoder_fn = lambda: BondEncoder(emb_dim = n_hidden)
+                                    elif args.dataset_name == 'ogbg-ppa':
+                                        edge_encoder_fn = lambda: torch.nn.Linear(7, n_hidden)
 
-                            benchmark = _trainer(model = model,
-                                                 scenario = scenario,
-                                                 optimizer_fn = lambda x: torch.optim.Adam(x, lr=lr, weight_decay=wd),
-                                                 loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1) if metric == 'accuracy' else (lambda preds, gt: torch.nn.BCEWithLogitsLoss()(preds, gt.float())),
-                                                 device = torch.device(f'cuda:{args.gpu}'),
-                                                 scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='max' if args.dataset_name in ['wikics', 'ogbl-collab'] else 'min', patience=patience, min_lr= lr * min_scale * 2., verbose=False),
-                                                 benchmark = True, seed = seed, verbose=True, binary = (metric != 'accuracy'), **algo_kwargs)
+                                    model = _model(scenario.num_feats,
+                                                   scenario.num_classes,
+                                                   n_hidden,
+                                                   dropout=dr,
+                                                   n_layers=n_layers,
+                                                   incr_type=args.incr,
+                                                   node_encoder_fn = None if args.dataset_name != 'ogbg-molhiv' else (lambda: AtomEncoder(emb_dim = n_hidden)),
+                                                   edge_encoder_fn = edge_encoder_fn)
+                                else:
+                                    model = _model(scenario.num_feats,
+                                                   scenario.num_classes,
+                                                   n_hidden,
+                                                   dropout=dr,
+                                                   n_layers=n_layers,
+                                                   incr_type=args.incr)
 
-                            benchmark.run(epoch_per_task = max_num_epochs)
-                            shutil.copy(f'{benchmark.result_path}/{benchmark.save_file_name}.pkl', f'{log_path}/result_{lr}_{dr}_{wd}_{str(special_param)}_{seed}.pkl')
-                            with open(f'{log_path}/result_{lr}_{dr}_{wd}_{str(special_param)}_{seed}.pkl', 'rb') as f:    
+                                algo_kwargs = copy.deepcopy(special_kwargs[args.algo])
+                                if special_param_name in algo_kwargs:
+                                    algo_kwargs[special_param_name] = special_param
+                                if args.algo == 'GEM':
+                                    algo_kwargs['num_memories'] = num_memories[args.dataset_name]
+                                if args.algo == 'CGNN':
+                                    algo_kwargs['memory_size'] = num_memories[args.dataset_name]
+                                    algo_kwargs['new_nodes_size'] = num_memories[args.dataset_name]
+                                if args.algo == 'ERGNN':
+                                    algo_kwargs['num_experience_nodes'] = num_memories[args.dataset_name] // (num_task if args.incr in ['time', 'domain'] else scenario.num_classes)
+
+                                benchmark = _trainer(model = model,
+                                                     scenario = scenario,
+                                                     optimizer_fn = lambda x: torch.optim.Adam(x, lr=lr, weight_decay=wd),
+                                                     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=-1) if metric == 'accuracy' else (lambda preds, gt: torch.nn.BCEWithLogitsLoss()(preds, gt.float())),
+                                                     device = torch.device(f'cuda:{args.gpu}'),
+                                                     scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='max' if args.dataset_name in ['wikics', 'ogbl-collab'] else 'min', patience=patience, min_lr= lr * min_scale * 2., verbose=False),
+                                                     benchmark = True, seed = seed, verbose=True, binary = (metric != 'accuracy'), **algo_kwargs)
+
+                                benchmark.run(epoch_per_task = max_num_epochs)
+
+                                shutil.copy(f'{benchmark.result_path}/{benchmark.save_file_name}.pkl', f'{log_path}/result_{lr}_{dr}_{wd}_{str(special_param)}_{seed}.pkl')
+                            with open(pickle_path, 'rb') as f:    
                                 result = pickle.load(f)
                                 total_val_ap.append(result['exp_val'][-1][:-1].sum() / result['exp_val'].shape[0])
                                 total_test_ap.append(result['exp_test'][-1][:-1].sum() / result['exp_test'].shape[0])
