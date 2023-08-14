@@ -1,6 +1,6 @@
 import torch
 import copy
-import chain
+from itertools import chain
 import torch.nn.functional as F
 from begin.trainers.graphs import GCTrainer
 from .utils import project2cone2
