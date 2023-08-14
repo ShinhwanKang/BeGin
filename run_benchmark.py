@@ -222,5 +222,4 @@ if __name__ == '__main__':
                             f_log.write(f'{args.dataset_name}_{args.algo}_{args.incr}_lr={lr}_dropout={dr}_weightdecay={wd}_{special_param_name}={str(special_param)} val_AP: {np.round(np.mean(total_val_ap), 4)}±{np.round(np.std(total_val_ap, ddof=1), 4)} test_AP: {np.round(np.mean(total_test_ap), 4)}±{np.round(np.std(total_test_ap, ddof=1), 4)} val_AF: {np.round(np.mean(total_val_af), 4)}±{np.round(np.std(total_val_af, ddof=1), 4)} test_AF: {np.round(np.mean(total_test_af), 4)}±{np.round(np.std(total_test_af, ddof=1), 4)}\n')
                             f_log.flush()
                     except:
-                        print(ee)
                         pass
