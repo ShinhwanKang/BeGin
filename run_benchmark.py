@@ -43,7 +43,8 @@ exp_settings = {('cora', 'task'): (3, 'accuracy', 1000, 20, 0.001),
                 ('aromaticity', 'class'): (10, 'accuracy', 100, 10, 0.01),
                 ('ogbg-molhiv', 'domain'): (20, 'rocauc', 100, 10, 0.01),
                 ('ogbg-ppa', 'domain'): (11, 'accuracy', 100, 10, 0.01),
-                ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01)}
+                ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01),
+                ('sentiment', 'time'): (11, 'accuracy', 100, 10, 0.01)}
 
 num_memories = {'cora': 12,
                 'citeseer': 12,
@@ -63,7 +64,8 @@ num_memories = {'cora': 12,
                 'twitch': 2000,
                 'ogbg-ppa': 500,
                 'askubuntu': 2000,
-                'facebook': 20000}
+                'facebook': 20000,
+                'sentiment': 60}
 
 special_kwargs = {'Bare': {},
                   'LwF': {'lamb': None, 'T': 2.},

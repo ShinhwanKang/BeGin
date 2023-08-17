@@ -74,7 +74,11 @@ def load_graph_dataset(dataset_name, incr_type, save_path):
         dataset._val_masks = (inner_tvt_splits % 10) == 8
         dataset._test_masks = (inner_tvt_splits % 10) > 8
         domain_info = metadata['domain_info']
-        
+    elif dataset_name in ['sentiment'] and incr_type in ['time']:
+        dataset = SentimentGraphDataset(dataset_name='sentiment', raw_dir=save_path)
+        num_feats, num_classes = dataset._num_feats, dataset._num_classes
+        time_info = dataset._time_info
+        delattr(dataset, "_time_info")
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     

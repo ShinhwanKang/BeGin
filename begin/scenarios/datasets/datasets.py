@@ -678,3 +678,104 @@ class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
     @property
     def is_temporal(self):
         return True
+
+class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
+    
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(SentimentGraphDataset, self).__init__(name='sentiment',
+                                                  url=self._url,
+                                                  raw_dir=raw_dir,
+                                                  force_reload=force_reload,
+                                                  verbose=verbose)
+
+    def download(self):
+        pkl_file_path = os.path.join(self.save_path, self.name + '_metadata_allIL.pkl')
+        download(self.url, path=pkl_file_path)
+        
+    def process(self):
+        metadata = pickle.load(open(os.path.join(self.save_path, 'sentiment_metadata_allIL.pkl'), 'rb'))
+        # {'graphs': graphs, 'inner_tvt_splits': inner_tvt_splits, 'time_info': time_info}
+        
+        self._graphs = []
+        self.labels = []
+        for g_data in metadata['graphs']:
+            # {'idx': idx, 'nfeats': torch.FloatTensor(nfeats), 'srcs': torch.LongTensor(srcs), 'dsts': torch.LongTensor(dsts), 'labels': rats[idx]}
+            nfeats, srcs, dsts, label = g_data['nfeats'], g_data['srcs'], g_data['dsts'], g_data['labels']
+            g = dgl.graph((srcs, dsts), num_nodes=nfeats.shape[0])
+            g.ndata['feat'] = torch.FloatTensor(nfeats)
+            self._graphs.append(dgl.add_self_loop(g))
+            self.labels.append(1 if label > 0 else 0)
+            
+        self.labels = torch.LongTensor(self.labels)
+        print(torch.bincount(self.labels))
+        
+        inner_tvt_splits = metadata['inner_tvt_splits'] 
+        self._train_masks = (inner_tvt_splits % 10) < 6
+        self._val_masks = ((inner_tvt_splits % 10) == 6) | ((inner_tvt_splits % 10) == 7)
+        self._test_masks = (inner_tvt_splits % 10) > 7
+        self._num_classes = self.labels.max().item() + 1
+        self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
+        self._time_info = metadata['time_info']
+        
+    def has_cache(self):
+        graph_path = os.path.join(self.save_path,
+                                  self.save_name + '.bin')
+        info_path = os.path.join(self.save_path,
+                                 self.save_name + '.pkl')
+        if os.path.exists(graph_path) and \
+            os.path.exists(info_path):
+            return True
+
+        return False
+
+    def save(self):
+        """save the graph list and the labels"""
+        graph_path = os.path.join(self.save_path,
+                                  self.save_name + '.bin')
+        info_path = os.path.join(self.save_path,
+                                 self.save_name + '.pkl')
+        save_graphs(str(graph_path), self._graphs, {'y': self.labels, 'train_masks': self._train_masks, 'val_masks': self._val_masks, 'test_masks': self._test_masks, 'time_info': self._time_info})
+        save_info(str(info_path), {'num_classes': self._num_classes})
+
+    def load(self):
+        graph_path = os.path.join(self.save_path,
+                                  self.save_name + '.bin')
+        info_path = os.path.join(self.save_path,
+                                 self.save_name + '.pkl')
+        graphs, auxs = load_graphs(str(graph_path))
+        info = load_info(str(info_path))
+        self._num_classes = info['num_classes']
+        
+        self._graphs = graphs
+        self.labels = auxs['y']
+        self._train_masks = auxs['train_masks'].bool()
+        self._val_masks = auxs['val_masks'].bool()
+        self._test_masks = auxs['test_masks'].bool()
+        self._time_info = auxs['time_info'].long()
+        self._num_feats = self._graphs[0].ndata['feat'].shape[-1]
+        
+        if self.verbose:
+            print('num_graphs:', len(self._graphs), ', num_labels:', self.labels.shape, 'num_classes:', self._num_classes)
+            
+    def __getitem__(self, idx):
+        # print(self._task_specific_masks.shape)
+        if hasattr(self, '_task_specific_masks'):
+            return self._graphs[idx], self.labels[idx], self._task_specific_masks[idx]
+        else:
+            return self._graphs[idx], self.labels[idx]
+        
+    def __len__(self):
+        return len(self._graphs)
+
+    @property
+    def save_name(self):
+        return self.name + '_dgl_graph'
+
+    @property
+    def num_classes(self):
+        return self._num_classes
+    
+    @property
+    def num_feats(self):
+        return self._num_feats
