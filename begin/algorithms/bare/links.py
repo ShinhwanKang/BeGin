@@ -1,4 +1,6 @@
 import sys
+import copy
+import dgl
 from begin.trainers.links import LCTrainer, LPTrainer
 
 class LCTaskILBareTrainer(LCTrainer):

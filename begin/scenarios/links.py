@@ -112,15 +112,6 @@ def load_linkp_dataset(dataset_name, incr_type, save_path):
     
     return graph.ndata['feat'].shape[-1], graph, tvt_splits, neg_edges
 
-def load_linkc_dataset(dataset_name, incr_type, save_path):
-    if dataset_name == 'bitcoin' and incr_type in ['task', 'class', 'time']:
-        dataset = BitcoinOTCDataset(dataset_name, raw_dir=save_path)
-        graph = dataset[0]
-    else:
-        raise NotImplementedError("Tried to load unsupported scenario.")
-        
-    return graph.ndata['feat'].shape[-1], graph
-
 class LPScenarioLoader(BaseScenarioLoader):
     """
         The sceanario loader for link prediction.
@@ -293,7 +284,52 @@ class LPScenarioLoader(BaseScenarioLoader):
             else:
                 fwt = None
             return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+
+
+def load_linkc_dataset(dataset_name, incr_type, save_path):
+    domain_info, time_info = None, None
+    if dataset_name == 'bitcoin' and incr_type in ['task', 'class', 'time']:
+        dataset = BitcoinOTCDataset(dataset_name, raw_dir=save_path)
+        graph = dataset[0]
+        num_feats = graph.ndata['feat'].shape[-1]
+        if incr_type == 'time':
+            num_classes = 1
+            num_tasks = 7
+            # make 7 chunks (with same size) for making 7 tasks
+            counts = torch.cumsum(torch.bincount(graph.edata['time']), dim=-1)
+            task_ids = (counts / ((graph.num_edges() + 1.) / num_tasks)).long()
+            time_info = task_ids[graph.edata['time']]
+            # to formulate binary classification problem
+            graph.edata['label'] = (graph.edata.pop('label') < 0).long()
+        else:
+            num_classes = 6
+            label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5]) # for balanced split
+            graph.edata['label'] = label_to_class[graph.edata.pop('label').squeeze(-1) + 10]
+        graph.edata.pop('time')
+        
+        pkl_path = os.path.join(save_path, f'bitcoin_metadata_allIL.pkl')
+        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/bitcoin_metadata_allIL.pkl', pkl_path)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        graph.edata['train_mask'] = ((metadata['inner_tvt_split'] % 10) < 8)
+        graph.edata['val_mask'] = ((metadata['inner_tvt_split'] % 10) == 8)
+        graph.edata['test_mask'] = ((metadata['inner_tvt_split'] % 10) > 8)
+        
+    else:
+        raise NotImplementedError("Tried to load unsupported scenario.")
     
+    print("=====CHECK=====")
+    print("num_classes:", num_classes, ", num_feats:", num_feats)
+    print("graph.edata['train_mask']:", 'train_mask' in graph.edata)
+    print("graph.edata['val_mask']:", 'val_mask' in graph.edata)
+    print("graph.edata['test_mask']:", 'test_mask' in graph.edata)
+    print("graph.edata['label']:", 'label' in graph.edata)
+    if incr_type == 'time':
+        print("graph.edata['time']:", 'time' in graph.edata)
+    if incr_type == 'domain':
+        print("graph.edata['domain']:", 'domain' in graph.edata)
+    print("===============")
+    return num_classes, num_feats, graph, domain_info, time_info
+
 class LCScenarioLoader(BaseScenarioLoader):
     """
         The sceanario loader for link classification.
@@ -309,48 +345,33 @@ class LCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.incr_type, self.save_path)
-        self.num_classes = 1
-        pkl_path = os.path.join(self.save_path, f'{self.dataset_name}_metadata_allIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{self.dataset_name}_metadata_allIL.pkl', pkl_path)
-        metadata = pickle.load(open(pkl_path, 'rb'))
-        self.__inner_tvt_splits = metadata['inner_tvt_split'] % 10
+        self.num_classes, self.num_feats, self.__graph, self.__domain_info, self.__time_splits = load_linkc_dataset(self.dataset_name, self.incr_type, self.save_path)
         
         if self.incr_type in ['domain']:
             raise NotImplementedError
         elif self.incr_type == 'time':
-            # binary classification problem
-            self.num_classes = 1
-            self.num_tasks = 7
             # split into tasks using timestamp
-            counts = torch.cumsum(torch.bincount(self.__graph.edata['time']), dim=-1)
-            self.__task_ids = (counts / ((self.__graph.num_edges() + 1.) / self.num_tasks)).long()
-            self.__task_ids = self.__task_ids[self.__graph.edata['time']]
-            self.__graph.edata.pop('time')
-            self.__graph.edata['label'] = (self.__graph.edata.pop('label') < 0).long()
+            self.num_tasks = self.__time_splits.max().item() + 1
+            print('num_tasks:', self.num_tasks)
+            self.__task_ids = self.__time_splits
         elif self.incr_type in ['class', 'task']:
-            # multi-class classifcation problem
-            self.label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5])
-            self.num_classes = 7
-            self.num_tasks = 3
-            
             # determine task configuration
             if self.kwargs is not None and 'task_orders' in self.kwargs:
                 self.__splits = tuple([torch.LongTensor(class_ids) for class_ids in self.kwargs['task_orders']])
             elif self.kwargs is not None and 'task_shuffle' in self.kwargs and self.kwargs['task_shuffle']:
-                self.__splits = torch.split(torch.randperm(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
+                self.__splits = torch.split(torch.randperm(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             else:
-                self.__splits = torch.split(torch.arange(self.num_classes-1), self.num_classes // self.num_tasks)[:self.num_tasks]
+                self.__splits = torch.split(torch.arange(self.num_classes), self.num_classes // self.num_tasks)[:self.num_tasks]
             
             print('class split information:', self.__splits)
             # compute task ids for each instance and remove time information (since it is unnecessary)
-            id_to_task = self.num_tasks * torch.ones(self.num_classes).long()
+            id_to_task = self.num_tasks * torch.ones(self.__graph.edata['label'].max() + 1).long()
             for i in range(self.num_tasks):
                 id_to_task[self.__splits[i]] = i
-            self.__graph.edata['label'] = self.label_to_class[self.__graph.edata.pop('label').squeeze(-1) + 10]
-            self.__graph.edata.pop('time')
             self.__task_ids = id_to_task[self.__graph.edata['label']]
-        
+            # ignore classes which are not used in the tasks
+            self.__graph.edata['test_mask'] = self.__graph.edata['test_mask'] & (self.__task_ids < self.num_tasks)
+            
         # we need to provide task information (only for task-IL)
         if self.incr_type == 'task':
             self.__task_masks = torch.zeros(self.num_tasks + 1, self.num_classes).bool()
@@ -366,9 +387,9 @@ class LCScenarioLoader(BaseScenarioLoader):
         target_dataset = copy.deepcopy(self.__graph)
         
         # set train/val/test split for the current task
-        target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids == self._curr_task)
-        target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids == self._curr_task)
-        target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        target_dataset.edata['train_mask'] = self.__graph.edata['train_mask'] & (self.__task_ids == self._curr_task)
+        target_dataset.edata['val_mask'] = self.__graph.edata['val_mask'] & (self.__task_ids == self._curr_task)
+        target_dataset.edata['test_mask'] = self.__graph.edata['test_mask']
         
         # hide labels of test nodes
         target_dataset.edata['label'] = self.__graph.edata['label'].clone()
@@ -397,9 +418,9 @@ class LCScenarioLoader(BaseScenarioLoader):
         target_dataset = copy.deepcopy(self.__graph)
         
         # set train/val/test split for the current task
-        target_dataset.edata['train_mask'] = (self.__inner_tvt_splits < 8) & (self.__task_ids <= self._curr_task)
-        target_dataset.edata['val_mask'] = (self.__inner_tvt_splits == 8) & (self.__task_ids <= self._curr_task)
-        target_dataset.edata['test_mask'] = (self.__inner_tvt_splits > 8)
+        target_dataset.edata['train_mask'] = self.__graph.edata['train_mask'] & (self.__task_ids <= self._curr_task)
+        target_dataset.edata['val_mask'] = self.__graph.edata['val_mask'] & (self.__task_ids <= self._curr_task)
+        target_dataset.edata['test_mask'] = self.__graph.edata['test_mask']
         
         # hide labels of test nodes
         target_dataset.edata['label'] = self.__graph.edata['label'].clone()
