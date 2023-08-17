@@ -105,7 +105,7 @@ class GCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_classes, self.num_feats, self.__dataset, self.__domain_info, self.__time_split = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_classes, self.num_feats, self.__dataset, self.__domain_info, self.__time_splits = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
         
         if self.incr_type in ['class', 'task']:
             # determine task configuration

@@ -53,8 +53,8 @@ class BaseTrainer:
         except:
             pass
         
-        self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
-        self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
+        self.__model_weight_path = f'{self.tmp_path}/init_model_{self.__timestamp}.pkt'
+        self.__optim_weight_path = f'{self.tmp_path}/init_optimizer_{self.__timestamp}.pkt'
         self.save_file_name = f'result_{self.__timestamp}'
         
         torch.save(self.__model.state_dict(), self.__model_weight_path)
