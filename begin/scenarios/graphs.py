@@ -9,8 +9,10 @@ from .common import BaseScenarioLoader
 from .datasets import *
 from . import evaluator_map
 
-def load_graph_dataset(dataset_name, incr_type, save_path):
+def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     domain_info, time_info = None, None
+    if dataset_load_func is not None:
+        dataset, num_classes, num_feats, domain_info, time_info = dataset_load_func(save_path=save_path)
     if dataset_name in ['mnist', 'cifar10'] and incr_type in ['task', 'class']:
         dataset = DGLGNNBenchmarkDataset(dataset_name, raw_dir=save_path)
         num_feats, num_classes = dataset.num_feats, dataset.num_classes
@@ -109,7 +111,7 @@ class GCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_classes, self.num_feats, self.__dataset, self.__domain_info, self.__time_splits = load_graph_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_classes, self.num_feats, self.__dataset, self.__domain_info, self.__time_splits = load_graph_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
         
         if self.incr_type in ['class', 'task']:
             # determine task configuration
@@ -213,15 +215,50 @@ class GCScenarioLoader(BaseScenarioLoader):
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):
-        self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
-        super().next_task(preds)
-        if self._curr_task == self.num_tasks:
-            scores = torch.stack(self.__test_results, dim=0)
-            scores_np = scores.detach().cpu().numpy()
-            ap = scores_np[-1, :-1].mean().item()
-            af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
-            if self.initial_test_result is not None:
-                fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
-            else:
-                fwt = None
-            return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+        if self.export_mode:
+            super().next_task(preds)
+        else:
+            self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
+            super().next_task(preds)
+            if self._curr_task == self.num_tasks:
+                scores = torch.stack(self.__test_results, dim=0)
+                scores_np = scores.detach().cpu().numpy()
+                ap = scores_np[-1, :-1].mean().item()
+                af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
+                if self.initial_test_result is not None:
+                    fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
+                else:
+                    fwt = None
+                return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+            
+    def get_current_dataset_for_export(self, _global=False):
+        """
+            Returns:
+                The graph dataset the implemented model uses in the current task
+        """    
+        if _global:
+            metadata = {'num_classes': self.num_classes, 'task': self.__task_ids}
+            if _global and self.incr_type == 'task':  metadata['task_specific_mask'] = self.__task_masks[self.__task_ids]
+            metadata['graphs'] = []
+            metadata['labels'] = []
+            for i in tqdm.trange(len(self.__dataset)):
+                if self.incr_type != 'task':
+                    g, l = self.__dataset[i]
+                else:
+                    g, l, _ = self.__dataset[i]
+                g_data = {}
+                g_data['edges'] = g.edges()
+                g_data['ndata_feat'] = g.ndata['feat']
+                if 'feat' in g.edata: g_data['edata_feat'] = g.edata['feat']
+                metadata['graphs'].append(g_data)
+                metadata['labels'].append(l)
+            metadata['labels'] = torch.LongTensor(metadata['labels'])
+            metadata['train_mask'] = self.__dataset._train_masks
+            metadata['val_mask'] = self.__dataset._val_masks
+            metadata['test_mask'] = self.__dataset._test_masks
+            metadata['test_indices'] = torch.nonzero(self.__dataset._test_masks, as_tuple=True)[0]
+        else:
+            metadata = {}
+            metadata['train_indices'] = torch.nonzero((self.__task_ids == self._curr_task) & self.__dataset._train_masks, as_tuple=True)[0]
+            metadata['val_indices'] = torch.nonzero((self.__task_ids == self._curr_task) & self.__dataset._val_masks, as_tuple=True)[0]
+        return metadata

@@ -141,7 +141,7 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
             # print(node_feats.min(), node_feats.max(), node_feats.shape)
             node_feats = node_feats - 1
             
-        for yy in tqdm.trange(2021, 2021+1):
+        for yy in tqdm.trange(2018, 2021+1):
             for mm in range(1, 12+1):
                 for _dd in range(days[mm] + (1 if ((mm == 2) and (yy % 4 == 0)) else 0)):
                     dd = _dd + 1
@@ -498,7 +498,10 @@ class OgbgPpaSampledDataset:
         raise IndexError(
             'Only integers and long are valid '
             'indices (got {}).'.format(type(idx).__name__))
-        
+    
+    def __len__(self):
+        return len(self.graphs)
+    
 class AskUbuntuDataset(dgl.data.DGLBuiltinDataset):
     _url = 'http://snap.stanford.edu/data/sx-askubuntu.txt.gz'
     

@@ -10,8 +10,10 @@ from .common import BaseScenarioLoader
 from .datasets import *
 from . import evaluator_map
 
-def load_linkp_dataset(dataset_name, incr_type, save_path):
+def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     neg_edges = {}
+    if dataset_load_func is not None:
+        graph, num_feats, tvt_splits, neg_edges = dataset_load_func(save_path=save_path)
     if dataset_name in ['ogbl-collab'] and incr_type in ['time']:
         dataset = DglLinkPropPredDataset('ogbl-collab', root=save_path)
         # load edges and negative edges
@@ -92,10 +94,6 @@ def load_linkp_dataset(dataset_name, incr_type, save_path):
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
-        
-        print(graph.num_edges())
-        print(graph.edges()[0][:10], graph.edges()[1][:10], tvt_splits[:10])
-        print(neg_edges['val'][:10], neg_edges['test'][:10])
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     
@@ -110,7 +108,7 @@ def load_linkp_dataset(dataset_name, incr_type, save_path):
         print("graph.edata['domain']", graph.edata['domain'].shape)
     print("===============")
     
-    return graph.ndata['feat'].shape[-1], graph, tvt_splits, neg_edges
+    return num_feats, graph, tvt_splits, neg_edges
 
 class LPScenarioLoader(BaseScenarioLoader):
     """
@@ -124,7 +122,7 @@ class LPScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_feats, self.__graph, self.__inner_tvt_splits, self.__neg_edges = load_linkp_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_feats, self.__graph, self.__inner_tvt_splits, self.__neg_edges = load_linkp_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
         self.num_classes = 1
         
         if self.incr_type in ['class', 'task']:
@@ -272,22 +270,46 @@ class LPScenarioLoader(BaseScenarioLoader):
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):
-        self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
-        super().next_task(preds)
-        if self._curr_task == self.num_tasks:
-            scores = torch.stack(self.__test_results, dim=0)
-            scores_np = scores.detach().cpu().numpy()
-            ap = scores_np[-1, :-1].mean().item()
-            af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
-            if self.initial_test_result is not None:
-                fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
-            else:
-                fwt = None
-            return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+        if self.export_mode:
+            super().next_task(preds)
+        else:
+            self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
+            super().next_task(preds)
+            if self._curr_task == self.num_tasks:
+                scores = torch.stack(self.__test_results, dim=0)
+                scores_np = scores.detach().cpu().numpy()
+                ap = scores_np[-1, :-1].mean().item()
+                af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
+                if self.initial_test_result is not None:
+                    fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
+                else:
+                    fwt = None
+                return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
 
+    def get_current_dataset_for_export(self, _global=False):
+        """
+            Returns:
+                The graph dataset the implemented model uses in the current task
+        """
+        target_graph = self.__graph if _global else self._target_dataset
+        if _global:
+            metadata = {'ndata_feat': self.__graph.ndata['feat'], 'task': self.__task_ids}
+            metadata['edges'] = self.__graph.edges()
+            metadata['neg_edges'] = self.__neg_edges
+            metadata['test_edges'] = self._target_dataset['test']['edge']
+            metadata['test_labels'] = self.__target_labels['test']
+        else:
+            metadata = {}
+            metadata['edges'] = target_graph['graph'].edges()
+            metadata['train_edges'] = target_graph['train']['edge']
+            metadata['train_labels'] = target_graph['train']['label']
+            metadata['val_edges'] = target_graph['val']['edge']
+            metadata['val_labels'] = target_graph['val']['label']
+        return metadata
 
-def load_linkc_dataset(dataset_name, incr_type, save_path):
-    domain_info, time_info = None, None
+def load_linkc_dataset(dataset_name, dataset_load_func, dataset_load_func, incr_type, save_path):
+    if dataset_load_func is not None:
+        graph, num_classes, num_feats = dataset_load_func(save_path=save_path)
     if dataset_name == 'bitcoin' and incr_type in ['task', 'class', 'time']:
         dataset = BitcoinOTCDataset(dataset_name, raw_dir=save_path)
         graph = dataset[0]
@@ -305,8 +327,7 @@ def load_linkc_dataset(dataset_name, incr_type, save_path):
             num_classes = 6
             label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5]) # for balanced split
             graph.edata['label'] = label_to_class[graph.edata.pop('label').squeeze(-1) + 10]
-        graph.edata.pop('time')
-        
+            
         pkl_path = os.path.join(save_path, f'bitcoin_metadata_allIL.pkl')
         download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/bitcoin_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
@@ -328,7 +349,7 @@ def load_linkc_dataset(dataset_name, incr_type, save_path):
     if incr_type == 'domain':
         print("graph.edata['domain']:", 'domain' in graph.edata)
     print("===============")
-    return num_classes, num_feats, graph, domain_info, time_info
+    return num_classes, num_feats, graph
 
 class LCScenarioLoader(BaseScenarioLoader):
     """
@@ -345,7 +366,9 @@ class LCScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_classes, self.num_feats, self.__graph, self.__domain_info, self.__time_splits = load_linkc_dataset(self.dataset_name, self.incr_type, self.save_path)
+        self.num_classes, self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
+        self.__domain_info = self.__graph.get('domain', None)
+        self.__time_splits = self.__graph.get('time', None)
         
         if self.incr_type in ['domain']:
             raise NotImplementedError
@@ -497,15 +520,33 @@ class LCScenarioLoader(BaseScenarioLoader):
         return self.__evaluator.simple_eval(curr_batch_preds, curr_batch_gts)
     
     def next_task(self, preds=torch.empty(1)):
-        self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
-        super().next_task(preds)
-        if self._curr_task == self.num_tasks:
-            scores = torch.stack(self.__test_results, dim=0)
-            scores_np = scores.detach().cpu().numpy()
-            ap = scores_np[-1, :-1].mean().item()
-            af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
-            if self.initial_test_result is not None:
-                fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
-            else:
-                fwt = None
-            return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+        if self.export_mode:
+            super().next_task(preds)
+        else:
+            self.__test_results.append(self._get_eval_result_inner(preds, target_split='test'))
+            super().next_task(preds)
+            if self._curr_task == self.num_tasks:
+                scores = torch.stack(self.__test_results, dim=0)
+                scores_np = scores.detach().cpu().numpy()
+                ap = scores_np[-1, :-1].mean().item()
+                af = (scores_np[np.arange(self.num_tasks), np.arange(self.num_tasks)] - scores_np[-1, :-1]).sum().item() / (self.num_tasks - 1)
+                if self.initial_test_result is not None:
+                    fwt = (scores_np[np.arange(self.num_tasks-1), np.arange(self.num_tasks-1)+1] - self.initial_test_result.detach().cpu().numpy()[1:-1]).sum() / (self.num_tasks - 1)
+                else:
+                    fwt = None
+                return {'exp_results': scores, 'AP': ap, 'AF': af, 'FWT': fwt}
+    
+    def get_current_dataset_for_export(self, _global=False):
+        """
+            Returns:
+                The graph dataset the implemented model uses in the current task
+        """
+        target_graph = self.__graph if _global else self._target_dataset
+        metadata = {'num_classes': self.num_classes, 'ndata_feat': self.__graph.ndata['feat'], 'task': self.__task_ids} if _global else {}
+        if _global and self.incr_type == 'task':  metadata['task_specific_mask'] = self.__task_masks[self.__task_ids]
+        metadata['edges'] = target_graph.edges()
+        metadata['train_mask'] = target_graph.edata['train_mask']
+        metadata['val_mask'] = target_graph.edata['val_mask']
+        if _global: metadata['test_mask'] = target_graph.edata['test_mask']
+        metadata['label'] = copy.deepcopy(target_graph.edata['label'])
+        return metadata

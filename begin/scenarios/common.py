@@ -1,4 +1,5 @@
 import torch
+import tqdm
 
 class BaseScenarioLoader:
     r"""Base framework for implementing scenario module.
@@ -14,6 +15,7 @@ class BaseScenarioLoader:
     """
     def __init__(self, dataset_name, save_path, num_tasks, incr_type, metric, **kwargs):
         self.dataset_name = dataset_name
+        self.dataset_load_func = kwargs.get('dataset_load_func', None)
         self.save_path = save_path
         self.num_classes = None
         self.num_feats = None
@@ -25,6 +27,7 @@ class BaseScenarioLoader:
         self._curr_task = 0
         self._target_dataset = None
         self.initial_test_result = None
+        self.export_mode = False
         
         self._init_continual_scenario()
         self._update_target_dataset()
@@ -91,3 +94,24 @@ class BaseScenarioLoader:
         """
         if self._curr_task >= self.num_tasks: return None
         return self._accumulated_dataset
+    
+    def get_current_dataset_for_export(self, _global=False):
+        return None
+    
+    def export_dataset(self, full=True):
+        """
+            Returns:
+                The graph dataset the implemented model uses in the current task
+        """
+        exported_data = {'global': self.get_current_dataset_for_export(_global=True)}
+        if full:
+            self.export_mode = True
+            if self._curr_task != 0:
+                print("[ERROR] you can call this function iff current task is the first task!")
+                raise NotImplementedError
+            exported_data['tasks'] = {}
+            for i in tqdm.trange(self.num_tasks):
+                exported_data['tasks'][self._curr_task] = self.get_current_dataset_for_export(_global=False)
+                self.next_task(None)
+                
+        return exported_data
