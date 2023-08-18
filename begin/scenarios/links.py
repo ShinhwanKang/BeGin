@@ -307,7 +307,7 @@ class LPScenarioLoader(BaseScenarioLoader):
             metadata['val_labels'] = target_graph['val']['label']
         return metadata
 
-def load_linkc_dataset(dataset_name, dataset_load_func, dataset_load_func, incr_type, save_path):
+def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     if dataset_load_func is not None:
         graph, num_classes, num_feats = dataset_load_func(save_path=save_path)
     if dataset_name == 'bitcoin' and incr_type in ['task', 'class', 'time']:
