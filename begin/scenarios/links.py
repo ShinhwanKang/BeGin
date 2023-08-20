@@ -13,7 +13,13 @@ from . import evaluator_map
 def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     neg_edges = {}
     if dataset_load_func is not None:
-        graph, num_feats, tvt_splits, neg_edges = dataset_load_func(save_path=save_path)
+        custom_dataset = dataset_load_func(save_path=save_path)
+        graph = custom_dataset['graph']
+        num_feats = custom_dataset['num_feats']
+        tvt_splits = custom_dataset['tvt_splits']
+        neg_edges = custom_dataset['neg_edges']
+        tvt_splits[tvt_splits == 1] = 8
+        tvt_splits[tvt_splits == 2] = 9
     if dataset_name in ['ogbl-collab'] and incr_type in ['time']:
         dataset = DglLinkPropPredDataset('ogbl-collab', root=save_path)
         # load edges and negative edges
@@ -309,7 +315,10 @@ class LPScenarioLoader(BaseScenarioLoader):
 
 def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     if dataset_load_func is not None:
-        graph, num_classes, num_feats = dataset_load_func(save_path=save_path)
+        custom_dataset = dataset_load_func(save_path=save_path)
+        graph = custom_dataset['graph']
+        num_feats = custom_dataset['num_feats']
+        num_classes = custom_dataset['num_classes']
     if dataset_name == 'bitcoin' and incr_type in ['task', 'class', 'time']:
         dataset = BitcoinOTCDataset(dataset_name, raw_dir=save_path)
         graph = dataset[0]

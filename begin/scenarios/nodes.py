@@ -17,7 +17,10 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     """
     cover_rule = {'feat': 'node', 'label': 'node', 'train_mask': 'node', 'val_mask': 'node', 'test_mask': 'node'}
     if dataset_load_func is not None:
-        graph, num_classes, num_feats = dataset_load_func(save_path=save_path)
+        custom_dataset = dataset_load_func(save_path=save_path)
+        graph = custom_dataset['graph']
+        num_feats = custom_dataset['num_feats']
+        num_classes = custom_dataset['num_classes']
     elif dataset_name in ['cora'] and incr_type in ['task', 'class']:
         dataset = dgl.data.CoraGraphDataset(raw_dir=save_path, verbose=False)
         graph = dataset._g

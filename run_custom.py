@@ -9,7 +9,7 @@ def dataset_load_func(save_path):
     dataset = dgl.data.CoraGraphDataset(raw_dir=save_path, verbose=False)
     graph = dataset._g
     num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
-    return graph, num_classes, num_feats
+    return {'graph': graph, 'num_classes': num_classes, 'num_feats': num_feats}
 
 scenario = NCScenarioLoader(dataset_name='customcora', dataset_load_func=dataset_load_func, num_tasks=3, metric='accuracy', save_path='data', incr_type='class', task_shuffle=1)
 

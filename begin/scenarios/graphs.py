@@ -12,7 +12,12 @@ from . import evaluator_map
 def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     domain_info, time_info = None, None
     if dataset_load_func is not None:
-        dataset, num_classes, num_feats, domain_info, time_info = dataset_load_func(save_path=save_path)
+        custom_dataset = dataset_load_func(save_path=save_path)
+        dataset = custom_dataset['graphs']
+        num_feats = custom_dataset['num_feats']
+        num_classes = custom_dataset['num_classes']
+        domain_info = custom_dataset.get('domain_info', None)
+        time_info = custom_dataset.get('time_info', None)
     if dataset_name in ['mnist', 'cifar10'] and incr_type in ['task', 'class']:
         dataset = DGLGNNBenchmarkDataset(dataset_name, raw_dir=save_path)
         num_feats, num_classes = dataset.num_feats, dataset.num_classes
