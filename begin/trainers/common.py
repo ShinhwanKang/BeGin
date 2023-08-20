@@ -53,8 +53,8 @@ class BaseTrainer:
         except:
             pass
         
-        self.__model_weight_path = f'{self.tmp_path}/init_model.pkt'
-        self.__optim_weight_path = f'{self.tmp_path}/init_optimizer.pkt'
+        self.__model_weight_path = f'{self.tmp_path}/init_model_{self.__timestamp}.pkt'
+        self.__optim_weight_path = f'{self.tmp_path}/init_optimizer_{self.__timestamp}.pkt'
         self.save_file_name = f'result_{self.__timestamp}'
         
         torch.save(self.__model.state_dict(), self.__model_weight_path)
@@ -77,6 +77,7 @@ class BaseTrainer:
         self.eval_fn = lambda x, y: scenario.get_simple_eval_result(x, y) # evaluation function for minibatches
         self.full_mode = kwargs.get('full_mode', False) # joint model is used when full_mode=True
         self.verbose = kwargs.get('verbose', True)
+        self.binary = kwargs.get('binary', False)
         
     @property
     def incr_type(self):
@@ -323,6 +324,15 @@ class BaseTrainer:
         """
         pass
     
+    def predictionFormat(self, results):
+        """
+            The helper function for formatting the prediction results before feeding the results to evaluator.
+            
+            Args:
+                results (dict): the dictionary containing the prediction results.
+        """
+        pass
+        
     def beforeInference(self, model, optimizer, curr_batch, curr_training_states):
         """
             The event function to execute some processes right before inference (for training).

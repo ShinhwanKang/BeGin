@@ -65,7 +65,7 @@ class NCTaskILLwFTrainer(NCTrainer):
         total_loss.backward()
         optimizer.step()
         return {'loss': total_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
@@ -121,7 +121,7 @@ class NCClassILLwFTrainer(NCTrainer):
         total_loss.backward()
         optimizer.step()
         return {'loss': total_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
@@ -174,7 +174,7 @@ class NCClassILLwFMinibatchTrainer(NCMinibatchTrainer):
         total_loss.backward()
         optimizer.step()
         return {'loss': total_loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
     
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
@@ -193,99 +193,11 @@ class NCClassILLwFMinibatchTrainer(NCMinibatchTrainer):
         curr_training_states['prev_model'] = copy.deepcopy(curr_model)
         curr_training_states['prev_observed_labels'] = curr_model.get_observed_labels().clone().detach()
         
-class NCDomainILLwFTrainer(NCTrainer):
-    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """
-            LwF needs additional hyperparamters, lamb and T, for knowledge distillation process in :func:`afterInference`.
-        """
-        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.lamb = kwargs['lamb'] if 'lamb' in kwargs else 1.
-        self.T = kwargs['T'] if 'T' in kwargs else 2.
-        
-    def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
-        """
-            The event function to handle every training iteration.
-            
-            LwF performs inference and knowledge distillation process in this function.
-            
-            Args:
-                model (torch.nn.Module): the current trained model.
-                optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_batch (object): the data (or minibatch) for the current iteration.
-                curr_training_states (dict): the dictionary containing the current training states.
-                
-            Returns:
-                A dictionary containing the outcomes (stats) during the training iteration.
-        """
-        curr_batch, mask = _curr_batch
-        optimizer.zero_grad()
-        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
-        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].float().to(self.device))
-        kd_loss = 0.
-        if 'prev_model' in training_states:
-            prev_model = training_states['prev_model']
-            prv_preds = prev_model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask].detach()
-            kd_loss = F.sigmoid((prv_preds / 2) / self.T) * F.logsigmoid((preds / 2) / self.T)
-            kd_loss = kd_loss + F.sigmoid((-prv_preds / 2) / self.T) * F.logsigmoid((-preds / 2) / self.T)
-            kd_loss = (-kd_loss).sum(-1).mean()
-            
-        loss = loss + (self.lamb * kd_loss)
-        loss.backward()
-        optimizer.step()
-        return {'loss': loss.item(), 'acc': self.eval_fn(preds, curr_batch.ndata['label'][mask].to(self.device))}
-    
-    def processEvalIteration(self, model, _curr_batch):
-        """
-            The event function to handle every evaluation iteration.
-            
-            We need to extend the base function since the output format is slightly different from the base trainer.
-            
-            Args:
-                model (torch.nn.Module): the current trained model.
-                curr_batch (object): the data (or minibatch) for the current iteration.
-                
-            Returns:
-                A dictionary containing the outcomes (stats) during the evaluation iteration.
-        """
-        curr_batch, mask = _curr_batch
-        preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))[mask]
-        loss = self.loss_fn(preds, curr_batch.ndata['label'][mask].float().to(self.device))
-        return preds, {'loss': loss.item()}
-        
-    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
-        """
-            The event function to execute some processes before training.
-        
-            We need to store previously learned weights for the knowledge distillation process in :func:`processTrainIteration`.
-        
-            Args:
-                task_id (int): the index of the current task
-                curr_dataset (object): The dataset for the current task.
-                curr_model (torch.nn.Module): the current trained model.
-                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_training_states (dict): the dictionary containing the current training states.
-        """
-        curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
-        curr_training_states['best_val_acc'] = -1.
-        curr_training_states['best_val_loss'] = 1e10
-        curr_model.observe_labels(torch.arange(curr_dataset.ndata['label'].shape[-1]))
-        self._reset_optimizer(curr_optimizer)
-    
-    def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
-        """
-            The event function to execute some processes after training the current task.
-            
-            We need to store previously learned weights for the knowledge distillation process in :func:`processTrainIteration`.
-                
-            Args:
-                task_id (int): the index of the current task.
-                curr_dataset (object): The dataset for the current task.
-                curr_model (torch.nn.Module): the current trained model.
-                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
-                curr_training_states (dict): the dictionary containing the current training states.
-        """
-        curr_model.load_state_dict(curr_training_states['best_weights'])
-        curr_training_states['prev_model'] = copy.deepcopy(curr_model)
+class NCDomainILLwFTrainer(NCClassILLwFTrainer):
+    """
+        This trainer has the same behavior as `NCClassILLwFTrainer`.
+    """
+    pass
         
 class NCTimeILLwFTrainer(NCClassILLwFTrainer):
     """

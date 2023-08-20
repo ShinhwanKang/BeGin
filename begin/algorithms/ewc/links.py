@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import torch
-import copy
+import copy, dgl
 import torch.nn.functional as F
 from begin.trainers.links import LCTrainer, LPTrainer
 

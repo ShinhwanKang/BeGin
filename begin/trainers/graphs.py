@@ -49,9 +49,18 @@ class GCTrainer(BaseTrainer):
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10
         
-        curr_model.observe_labels(torch.LongTensor([curr_dataset['train'][i][1] for i in range(len(curr_dataset['train']))]))
+        if self.binary:
+            curr_model.observe_labels(torch.LongTensor([0]))
+        else:
+            curr_model.observe_labels(torch.LongTensor([curr_dataset['train'][i][1] for i in range(len(curr_dataset['train']))] + [curr_dataset['val'][i][1] for i in range(len(curr_dataset['val']))]))
         self._reset_optimizer(curr_optimizer)
     
+    def predictionFormat(self, results):
+        if self.binary:
+            return results['preds']
+        else:
+            return results['preds'].argmax(-1)
+        
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
         pass
     
@@ -67,7 +76,7 @@ class GCTrainer(BaseTrainer):
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         results['loss'].backward()
         optimizer.step()
-        return {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
+        return {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[1].to(self.device))}
     
     def processTrainIteration(self, model, optimizer, _curr_batch, training_states):
         optimizer.zero_grad()
@@ -78,8 +87,7 @@ class GCTrainer(BaseTrainer):
         
     def processEvalIteration(self, model, _curr_batch):
         results = self.inference(model, _curr_batch, None)
-        return torch.argmax(results['preds'], dim=-1), {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(),
-                                                        'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[1].to(self.device))}
+        return self.predictionFormat(results), {'_num_items': results['preds'].shape[0], 'loss': results['loss'].item(), 'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[1].to(self.device))}
     
     def processTrainingLogs(self, task_id, epoch_cnt, val_metric_result, train_stats, val_stats):
         print('task_id:', task_id, f'Epoch #{epoch_cnt}:', 'train_acc:', round(train_stats['acc'], 4), 'val_acc:', round(val_metric_result, 4), 'train_loss:', round(train_stats['loss'], 4), 'val_loss:', round(val_stats['loss'], 4))
