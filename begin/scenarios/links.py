@@ -332,6 +332,7 @@ def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
             time_info = task_ids[graph.edata['time']]
             # to formulate binary classification problem
             graph.edata['label'] = (graph.edata.pop('label') < 0).long()
+            graph.edata['time'] = time_info
         else:
             num_classes = 6
             label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5]) # for balanced split
@@ -376,8 +377,8 @@ class LCScenarioLoader(BaseScenarioLoader):
     """
     def _init_continual_scenario(self):
         self.num_classes, self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
-        self.__domain_info = self.__graph.get('domain', None)
-        self.__time_splits = self.__graph.get('time', None)
+        if 'domain' in self.__graph.edata: self.__domain_info = self.__graph.edata['domain']
+        if 'time' in self.__graph.edata: self.__time_splits = self.__graph.edata['time']
         
         if self.incr_type in ['domain']:
             raise NotImplementedError
