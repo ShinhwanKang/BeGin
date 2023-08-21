@@ -77,8 +77,7 @@ ogbl-collab (Link Prediction)
 ------------------------------
 
 `ogbl-collab <https://ogb.stanford.edu/docs/linkprop/#ogbl-collab>`_ s a co-authorship network, where nodes are
-authors. We use publication years to form 50 groups for the Time-IL setting. Due to the imbalance on the publication years of the considered papers, we constructed formed the first task using the paper published before 1971. From the second task, we constructed the `i`-th task with the paper published in `1969 + i`.
-Each node feature is obtained by averaging the word embeddings of published papers.
+authors. We use publication years to form 50 groups for the Time-IL setting. Due to the imbalance in the publication years of the considered papers, we constructed the first task using the paper published before the year `1971`. For each subsequent `i`-th task, we used the papers published in the year `(1969 + i)`.
 
 Statistics:
 
@@ -147,7 +146,7 @@ askubuntu (Link Prediction)
 ------------------------------
 
 Nodes in `askubuntu <http://snap.stanford.edu/data/sx-askubuntu.html>`_ are users of askubuntu, and edges indicate there is interaction between the
-users. The edges are divided into 69 groups according to the timestamps for Time-IL. Specifically, we constructed the tasks with the papers published in the same month. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
+users. The edges are divided into 69 groups according to the timestamps for Time-IL. Specifically, we used the interactions occurring within the same month to form each task. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
 
 Statistics:
 
