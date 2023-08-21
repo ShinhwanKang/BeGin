@@ -92,6 +92,8 @@ Statistics:
 
 Citing:
 
+.. code-block::
+
    @inproceedings{hu2020open,
      title={Open graph benchmark: datasets for machine learning on graphs},
      author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
