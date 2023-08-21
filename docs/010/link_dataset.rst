@@ -25,21 +25,22 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{kumar2016edge,
-  title={Edge weight prediction in weighted signed networks},
-  author={Kumar, Srijan and Spezzano, Francesca and Subrahmanian, VS and Faloutsos, Christos},
-  booktitle={ICDM},
-  year={2016},
-}
+.. code-block::
 
-@inproceedings{kumar2018rev2,
-  title={Rev2: Fraudulent user prediction in rating platforms},
-  author={Kumar, Srijan and Hooi, Bryan and Makhija, Disha and Kumar, Mohit and Faloutsos, Christos and Subrahmanian, VS},
-  booktitle={WSDM},
-  year={2018},
-}
-```
+   @inproceedings{kumar2016edge,
+     title={Edge weight prediction in weighted signed networks},
+     author={Kumar, Srijan and Spezzano, Francesca and Subrahmanian, VS and Faloutsos, Christos},
+     booktitle={ICDM},
+     year={2016},
+   }
+   
+   @inproceedings{kumar2018rev2,
+     title={Rev2: Fraudulent user prediction in rating platforms},
+     author={Kumar, Srijan and Hooi, Bryan and Makhija, Disha and Kumar, Mohit and Faloutsos, Christos and Subrahmanian, VS},
+     booktitle={WSDM},
+     year={2018},
+   }
+
 
 ------------------------------
 Wiki-CS (Link Prediction)
@@ -48,7 +49,7 @@ Wiki-CS (Link Prediction)
 `Wiki-CS <https://github.com/pmernyei/wiki-cs-dataset>`_ is a hyperlink network between computer science articles.
 Each article has a label indicating one of the 10 subfields that it belongs to. For Domain-IL, the
 node labels are used as domains, and specifically, the edges are divide into 54 groups, according
-to the labels of their endpoints.
+to the labels of their endpoints. According to the original paper, the node features are computed as the average of pretrained GloVe embeddings.
 
 Statistics:
 
@@ -59,6 +60,17 @@ Statistics:
 - Supported Incremental Settings:
    
    + Domain-IL with 54 tasks
+
+Citing:
+
+.. code-block::
+
+   @article{mernyei2020wiki,
+     title={Wiki-CS: A Wikipedia-Based Benchmark for Graph Neural Networks},
+     author={Mernyei, P{\'e}ter and Cangea, C{\u{a}}t{\u{a}}lina},
+     journal={arXiv preprint arXiv:2007.02901},
+     year={2020}
+   }
 
 ------------------------------
 ogbl-collab (Link Prediction)
@@ -77,6 +89,25 @@ Statistics:
 - Supported Incremental Settings:
    
    + Time-IL with 50 tasks
+
+Citing:
+
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{wang2020microsoft,
+     title={Microsoft academic graph: When experts are not enough},
+     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
+     journal={Quantitative Science Studies},
+     volume={1},
+     number={1},
+     pages={396--413},
+     year={2020}
+   }
 
 ------------------------------
 facebook (Link Prediction)
@@ -99,14 +130,15 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{rozemberczki2019gemsec,    
-                title={GEMSEC: Graph Embedding with Self Clustering},    
-                author={Rozemberczki, Benedek and Davies, Ryan and Sarkar, Rik and Sutton, Charles},    
-                booktitle={ASONAM},    
-                year={2019},    
-}
-```
+.. code-block::
+
+   @inproceedings{rozemberczki2019gemsec,    
+                   title={GEMSEC: Graph Embedding with Self Clustering},    
+                   author={Rozemberczki, Benedek and Davies, Ryan and Sarkar, Rik and Sutton, Charles},    
+                   booktitle={ASONAM},    
+                   year={2019},    
+   }
+
 
 ------------------------------
 askubuntu (Link Prediction)
@@ -127,12 +159,12 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{paranjape2017motifs,
-  title={Motifs in temporal networks},
-  author={Paranjape, Ashwin and Benson, Austin R and Leskovec, Jure},
-  booktitle={Proceedings of the tenth ACM international conference on web search and data mining},
-  pages={601--610},
-  year={2017}
-}
-```
+.. code-block::
+
+   @inproceedings{paranjape2017motifs,
+     title={Motifs in temporal networks},
+     author={Paranjape, Ashwin and Benson, Austin R and Leskovec, Jure},
+     booktitle={Proceedings of the tenth ACM international conference on web search and data mining},
+     pages={601--610},
+     year={2017}
+   }
