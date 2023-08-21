@@ -22,25 +22,25 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{dwivedi2020benchmarking,
-  title={Benchmarking graph neural networks},
-  author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
-  journal={arXiv preprint arXiv:2003.00982},
-  year={2020}
-}
+.. code-block::
 
-@article{achanta2012slic,
-  title={SLIC superpixels compared to state-of-the-art superpixel methods},
-  author={Achanta, Radhakrishna and Shaji, Appu and Smith, Kevin and Lucchi, Aurelien and Fua, Pascal and S{\"u}sstrunk, Sabine},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-  volume={34},
-  number={11},
-  pages={2274--2282},
-  year={2012},
-  publisher={IEEE}
-}
-```
+   @article{dwivedi2020benchmarking,
+     title={Benchmarking graph neural networks},
+     author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
+     journal={arXiv preprint arXiv:2003.00982},
+     year={2020}
+   }
+   
+   @article{achanta2012slic,
+     title={SLIC superpixels compared to state-of-the-art superpixel methods},
+     author={Achanta, Radhakrishna and Shaji, Appu and Smith, Kevin and Lucchi, Aurelien and Fua, Pascal and S{\"u}sstrunk, Sabine},
+     journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+     volume={34},
+     number={11},
+     pages={2274--2282},
+     year={2012},
+     publisher={IEEE}
+   }
 
 -----
 
@@ -65,25 +65,25 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{dwivedi2020benchmarking,
-  title={Benchmarking graph neural networks},
-  author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
-  journal={arXiv preprint arXiv:2003.00982},
-  year={2020}
-}
+.. code-block::
 
-@article{achanta2012slic,
-  title={SLIC superpixels compared to state-of-the-art superpixel methods},
-  author={Achanta, Radhakrishna and Shaji, Appu and Smith, Kevin and Lucchi, Aurelien and Fua, Pascal and S{\"u}sstrunk, Sabine},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-  volume={34},
-  number={11},
-  pages={2274--2282},
-  year={2012},
-  publisher={IEEE}
-}
-```
+   @article{dwivedi2020benchmarking,
+     title={Benchmarking graph neural networks},
+     author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
+     journal={arXiv preprint arXiv:2003.00982},
+     year={2020}
+   }
+   
+   @article{achanta2012slic,
+     title={SLIC superpixels compared to state-of-the-art superpixel methods},
+     author={Achanta, Radhakrishna and Shaji, Appu and Smith, Kevin and Lucchi, Aurelien and Fua, Pascal and S{\"u}sstrunk, Sabine},
+     journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+     volume={34},
+     number={11},
+     pages={2274--2282},
+     year={2012},
+     publisher={IEEE}
+   }
 
 -----
 
@@ -109,28 +109,29 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{wu2018moleculenet,
-  title={MoleculeNet: a benchmark for molecular machine learning},
-  author={Wu, Zhenqin and Ramsundar, Bharath and Feinberg, Evan N and Gomes, Joseph and Geniesse, Caleb and Pappu, Aneesh S and Leswing, Karl and Pande, Vijay},
-  journal={Chemical science},
-  volume={9},
-  number={2},
-  pages={513--530},
-  year={2018},
-  publisher={Royal Society of Chemistry}
-}
+.. code-block::
 
-@article{xiong2019pushing,
-  title={Pushing the boundaries of molecular representation for drug discovery with the graph attention mechanism},
-  author={Xiong, Zhaoping and Wang, Dingyan and Liu, Xiaohong and Zhong, Feisheng and Wan, Xiaozhe and Li, Xutong and Li, Zhaojun and Luo, Xiaomin and Chen, Kaixian and Jiang, Hualiang and others},
-  journal={Journal of Medicinal Chemistry},
-  volume={63},
-  number={16},
-  pages={8749--8760},
-  year={2019}
-}
-```
+   @article{wu2018moleculenet,
+     title={MoleculeNet: a benchmark for molecular machine learning},
+     author={Wu, Zhenqin and Ramsundar, Bharath and Feinberg, Evan N and Gomes, Joseph and Geniesse, Caleb and Pappu, Aneesh S and Leswing, Karl and Pande, Vijay},
+     journal={Chemical science},
+     volume={9},
+     number={2},
+     pages={513--530},
+     year={2018},
+     publisher={Royal Society of Chemistry}
+   }
+   
+   @article{xiong2019pushing,
+     title={Pushing the boundaries of molecular representation for drug discovery with the graph attention mechanism},
+     author={Xiong, Zhaoping and Wang, Dingyan and Liu, Xiaohong and Zhong, Feisheng and Wan, Xiaozhe and Li, Xutong and Li, Zhaojun and Luo, Xiaomin and Chen, Kaixian and Jiang, Hualiang and others},
+     journal={Journal of Medicinal Chemistry},
+     volume={63},
+     number={16},
+     pages={8749--8760},
+     year={2019}
+   }
+
 
 -----
 
@@ -158,31 +159,32 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{wu2018moleculenet,
-  title={MoleculeNet: a benchmark for molecular machine learning},
-  author={Wu, Zhenqin and Ramsundar, Bharath and Feinberg, Evan N and Gomes, Joseph and Geniesse, Caleb and Pappu, Aneesh S and Leswing, Karl and Pande, Vijay},
-  journal={Chemical science},
-  volume={9},
-  number={2},
-  pages={513--530},
-  year={2018},
-  publisher={Royal Society of Chemistry}
-}
+.. code-block::
 
-@misc{landrum2006rdkit,
-  title={RDKit: Open-source cheminformatics},
-  author={Landrum, Greg and others},
-  year={2006}
-}
+   @article{wu2018moleculenet,
+     title={MoleculeNet: a benchmark for molecular machine learning},
+     author={Wu, Zhenqin and Ramsundar, Bharath and Feinberg, Evan N and Gomes, Joseph and Geniesse, Caleb and Pappu, Aneesh S and Leswing, Karl and Pande, Vijay},
+     journal={Chemical science},
+     volume={9},
+     number={2},
+     pages={513--530},
+     year={2018},
+     publisher={Royal Society of Chemistry}
+   }
+   
+   @misc{landrum2006rdkit,
+     title={RDKit: Open-source cheminformatics},
+     author={Landrum, Greg and others},
+     year={2006}
+   }
+   
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
 
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
-```  
    
 -----
 
@@ -210,13 +212,14 @@ Statistics:
    
    + Time-IL with 12 tasks
 
-```bibtex
-@misc{nyctaxi,
-  title={TLC Trip Record Data},
-  author={{NYC Taxi \& Limousine Commission}},
-  howpublished = {https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page},
-}
-```
+.. code-block::
+
+   @misc{nyctaxi,
+     title={TLC Trip Record Data},
+     author={{NYC Taxi \& Limousine Commission}},
+     howpublished = {https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page},
+   }
+
 
 -----
 
@@ -239,44 +242,43 @@ Statistics:
    
    + Domain-IL with 11 tasks
 
-Citing:
+.. code-block::
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{szklarczyk2019string,
+     title={STRING v11: protein--protein association networks with increased coverage, supporting functional discovery in genome-wide experimental datasets},
+     author={Szklarczyk, Damian and Gable, Annika L and Lyon, David and Junge, Alexander and Wyder, Stefan and Huerta-Cepas, Jaime and Simonovic, Milan and Doncheva, Nadezhda T and Morris, John H and Bork, Peer and others},
+     journal={Nucleic Acids Research},
+     volume={47},
+     number={D1},
+     pages={D607--D613},
+     year={2019}
+   }
+   
+   @techreport{hug2016new,
+     title={A new view of the tree of life. Nature Microbiology, 1 (5), 16048},
+     author={Hug, LA and Baker, BJ and Anantharaman, K and Brown, CT and Probst, AJ and Castelle, CJ and Banfield, JF},
+     year={2016},
+     institution={Retrieved 2021-11-04, from http://www. nature. com/articles/nmicrobiol201648~…}
+   }
+   
+   @article{zitnik2019evolution,
+     title={Evolution of resilience in protein interactomes across the tree of life},
+     author={Zitnik, Marinka and Sosi{\v{c}}, Rok and Feldman, Marcus W and Leskovec, Jure},
+     journal={Proceedings of the National Academy of Sciences},
+     volume={116},
+     number={10},
+     pages={4426--4433},
+     year={2019},
+     publisher={National Acad Sciences}
+   }
 
-@article{szklarczyk2019string,
-  title={STRING v11: protein--protein association networks with increased coverage, supporting functional discovery in genome-wide experimental datasets},
-  author={Szklarczyk, Damian and Gable, Annika L and Lyon, David and Junge, Alexander and Wyder, Stefan and Huerta-Cepas, Jaime and Simonovic, Milan and Doncheva, Nadezhda T and Morris, John H and Bork, Peer and others},
-  journal={Nucleic Acids Research},
-  volume={47},
-  number={D1},
-  pages={D607--D613},
-  year={2019}
-}
-
-@techreport{hug2016new,
-  title={A new view of the tree of life. Nature Microbiology, 1 (5), 16048},
-  author={Hug, LA and Baker, BJ and Anantharaman, K and Brown, CT and Probst, AJ and Castelle, CJ and Banfield, JF},
-  year={2016},
-  institution={Retrieved 2021-11-04, from http://www. nature. com/articles/nmicrobiol201648~…}
-}
-
-@article{zitnik2019evolution,
-  title={Evolution of resilience in protein interactomes across the tree of life},
-  author={Zitnik, Marinka and Sosi{\v{c}}, Rok and Feldman, Marcus W and Leskovec, Jure},
-  journal={Proceedings of the National Academy of Sciences},
-  volume={116},
-  number={10},
-  pages={4426--4433},
-  year={2019},
-  publisher={National Acad Sciences}
-}
-```
 
 -----
 
@@ -303,15 +305,16 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{go2009twitter,
-  title={Twitter sentiment classification using distant supervision},
-  author={Go, Alec and Bhayani, Richa and Huang, Lei},
-  journal={CS224N project report, Stanford},
-  volume={1},
-  number={12},
-  pages={2009},
-  year={2009}
-}
-```
+.. code-block::
+
+   @article{go2009twitter,
+     title={Twitter sentiment classification using distant supervision},
+     author={Go, Alec and Bhayani, Richa and Huang, Lei},
+     journal={CS224N project report, Stanford},
+     volume={1},
+     number={12},
+     pages={2009},
+     year={2009}
+   }
+
 
