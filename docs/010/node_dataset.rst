@@ -225,7 +225,8 @@ ogbn-arxiv
 `ogbn-arxiv <https://ogb.stanford.edu/docs/nodeprop/#ogbn-arxiv>`_ is a citation network, where each node is a
 research paper, and its class belongs to 40 subject areas, which are divided into 8 groups for Task-
 IL. Similarly, the number of classes increase by 5 in each task in Class-IL. Publication years are
-used to form 24 groups for the Time-IL setting. Due to the imbalance on the publication years of the considered papers, we constructed formed the first task using the paper published before 1998. From the second task, we constructed the `i`-th task with the paper published in `1996 + i`.
+used to form 24 groups for the Time-IL setting.
+Specifically, we constructed the first task with the paper published before the year $1998$. For each subsequent `i`-th task, we used the papers published in the year `(1996 + i)`.
 
 
 Statistics:
@@ -287,19 +288,11 @@ Citing:
 
 .. code-block::
 
-   @inproceedings{hu2020open,
-     title={Open graph benchmark: datasets for machine learning on graphs},
-     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-     booktitle={NeurIPS},
-     year={2020}
-   }
-   
-   @article{wang2020microsoft,
-     title={Microsoft academic graph: When experts are not enough},
-     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
-     journal={Quantitative Science Studies},
-     volume={1},
-     number={1},
-     pages={396--413},
-     year={2020}
+   @misc{rozemberczki2021twitch,
+       title = {Twitch Gamers: a Dataset for Evaluating Proximity Preserving and Structural Role-based Node Embeddings}, 
+       author = {Benedek Rozemberczki and Rik Sarkar},
+       year = {2021},
+       eprint = {2101.03091},
+       archivePrefix = {arXiv},
+       primaryClass = {cs.SI}
    }
