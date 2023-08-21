@@ -287,19 +287,11 @@ Citing:
 
 .. code-block::
 
-   @inproceedings{hu2020open,
-     title={Open graph benchmark: datasets for machine learning on graphs},
-     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-     booktitle={NeurIPS},
-     year={2020}
-   }
-   
-   @article{wang2020microsoft,
-     title={Microsoft academic graph: When experts are not enough},
-     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
-     journal={Quantitative Science Studies},
-     volume={1},
-     number={1},
-     pages={396--413},
-     year={2020}
+   @misc{rozemberczki2021twitch,
+       title = {Twitch Gamers: a Dataset for Evaluating Proximity Preserving and Structural Role-based Node Embeddings}, 
+       author = {Benedek Rozemberczki and Rik Sarkar},
+       year = {2021},
+       eprint = {2101.03091},
+       archivePrefix = {arXiv},
+       primaryClass = {cs.SI}
    }
