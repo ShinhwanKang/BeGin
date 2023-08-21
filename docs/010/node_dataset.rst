@@ -21,17 +21,17 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{sen2008collective,
-  title={Collective classification in network data},
-  author={Sen, Prithviraj and Namata, Galileo and Bilgic, Mustafa and Getoor, Lise and Galligher, Brian and Eliassi-Rad, Tina},
-  journal={AI magazine},
-  volume={29},
-  number={3},
-  pages={93--93},
-  year={2008}
-}
-```
+.. code-block::
+
+   @article{sen2008collective,
+     title={Collective classification in network data},
+     author={Sen, Prithviraj and Namata, Galileo and Bilgic, Mustafa and Getoor, Lise and Galligher, Brian and Eliassi-Rad, Tina},
+     journal={AI magazine},
+     volume={29},
+     number={3},
+     pages={93--93},
+     year={2008}
+   }
 
 -----
 
@@ -55,17 +55,17 @@ Statistics:
    
 Citing:
 
-```bibtex
-@article{sen2008collective,
-  title={Collective classification in network data},
-  author={Sen, Prithviraj and Namata, Galileo and Bilgic, Mustafa and Getoor, Lise and Galligher, Brian and Eliassi-Rad, Tina},
-  journal={AI magazine},
-  volume={29},
-  number={3},
-  pages={93--93},
-  year={2008}
-}
-```
+.. code-block::
+
+   @article{sen2008collective,
+     title={Collective classification in network data},
+     author={Sen, Prithviraj and Namata, Galileo and Bilgic, Mustafa and Getoor, Lise and Galligher, Brian and Eliassi-Rad, Tina},
+     journal={AI magazine},
+     volume={29},
+     number={3},
+     pages={93--93},
+     year={2008}
+   }
 
 -----
 
@@ -88,14 +88,14 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{bojchevski2018deep,
-title={Deep Gaussian Embedding of Graphs: Unsupervised Inductive Learning via Ranking},
-author={Aleksandar Bojchevski and Stephan Günnemann},
-booktitle={ICLR},
-year={2018},
-}
-```
+.. code-block::
+
+   @inproceedings{bojchevski2018deep,
+      title={Deep Gaussian Embedding of Graphs: Unsupervised Inductive Learning via Ranking},
+      author={Aleksandar Bojchevski and Stephan Günnemann},
+      booktitle={ICLR},
+      year={2018},
+   }
 
 -----
 
@@ -119,24 +119,24 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+.. code-block::
 
-@article{wang2020microsoft,
-  title={Microsoft academic graph: When experts are not enough},
-  author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
-  journal={Quantitative Science Studies},
-  volume={1},
-  number={1},
-  pages={396--413},
-  year={2020}
-}
-```
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{wang2020microsoft,
+     title={Microsoft academic graph: When experts are not enough},
+     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
+     journal={Quantitative Science Studies},
+     volume={1},
+     number={1},
+     pages={396--413},
+     year={2020}
+   }
 
 -----
 
@@ -159,21 +159,21 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+.. code-block::
 
-@inproceedings{chiang2019cluster,
-  title={Cluster-gcn: An efficient algorithm for training deep and large graph convolutional networks},
-  author={Chiang, Wei-Lin and Liu, Xuanqing and Si, Si and Li, Yang and Bengio, Samy and Hsieh, Cho-Jui},
-  booktitle={KDD},
-  year={2019}
-}
-```
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @inproceedings{chiang2019cluster,
+     title={Cluster-gcn: An efficient algorithm for training deep and large graph convolutional networks},
+     author={Chiang, Wei-Lin and Liu, Xuanqing and Si, Si and Li, Yang and Bengio, Samy and Hsieh, Cho-Jui},
+     booktitle={KDD},
+     year={2019}
+   }
 
 -----
 
@@ -197,23 +197,24 @@ Statistics:
    
    + Domain-IL with 8 tasks
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+.. code-block::
 
-@article{szklarczyk2019string,
-  title={STRING v11: protein--protein association networks with increased coverage, supporting functional discovery in genome-wide experimental datasets},
-  author={Szklarczyk, Damian and Gable, Annika L and Lyon, David and Junge, Alexander and Wyder, Stefan and Huerta-Cepas, Jaime and Simonovic, Milan and Doncheva, Nadezhda T and Morris, John H and Bork, Peer and others},
-  journal={Nucleic Acids Research},
-  volume={47},
-  number={D1},
-  pages={D607--D613},
-  year={2019}
-}
+@inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{szklarczyk2019string,
+     title={STRING v11: protein--protein association networks with increased coverage, supporting functional discovery in genome-wide experimental datasets},
+     author={Szklarczyk, Damian and Gable, Annika L and Lyon, David and Junge, Alexander and Wyder, Stefan and Huerta-Cepas, Jaime and Simonovic, Milan and Doncheva, Nadezhda T and Morris, John H and Bork, Peer and others},
+     journal={Nucleic Acids Research},
+     volume={47},
+     number={D1},
+     pages={D607--D613},
+     year={2019}
+   }
 
 -----
 
@@ -241,24 +242,24 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+.. code-block::
 
-@article{wang2020microsoft,
-  title={Microsoft academic graph: When experts are not enough},
-  author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
-  journal={Quantitative Science Studies},
-  volume={1},
-  number={1},
-  pages={396--413},
-  year={2020}
-}
-```
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{wang2020microsoft,
+     title={Microsoft academic graph: When experts are not enough},
+     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
+     journal={Quantitative Science Studies},
+     volume={1},
+     number={1},
+     pages={396--413},
+     year={2020}
+   }
 
 -----
 
@@ -284,21 +285,21 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{hu2020open,
-  title={Open graph benchmark: datasets for machine learning on graphs},
-  author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
-  booktitle={NeurIPS},
-  year={2020}
-}
+.. code-block::
 
-@article{wang2020microsoft,
-  title={Microsoft academic graph: When experts are not enough},
-  author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
-  journal={Quantitative Science Studies},
-  volume={1},
-  number={1},
-  pages={396--413},
-  year={2020}
-}
-```
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{wang2020microsoft,
+     title={Microsoft academic graph: When experts are not enough},
+     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
+     journal={Quantitative Science Studies},
+     volume={1},
+     number={1},
+     pages={396--413},
+     year={2020}
+   }
