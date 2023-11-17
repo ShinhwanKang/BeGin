@@ -361,9 +361,11 @@ class NCClassILCGNNTrainer(NCTrainer):
             
             curr_training_states['memory_h'].update(curr_training_states['train_nodes'], curr_dataset, x=train_output[curr_dataset.ndata['train_mask']], y=curr_dataset.ndata['label'].numpy())
         
-class NCDomainILCGNNTrainer(NCTrainer):
-    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        raise NotImplementedError
+class NCDomainILCGNNTrainer(NCClassILCGNNTrainer):
+    """
+        This trainer has the same behavior as `NCClassILCGNNTrainer`.
+    """
+    pass
         
 class NCTimeILCGNNTrainer(NCClassILCGNNTrainer):
     """
