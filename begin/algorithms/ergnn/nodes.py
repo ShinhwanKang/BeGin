@@ -304,7 +304,7 @@ class NCClassILERGNNMinibatchTrainer(NCMinibatchTrainer):
             num_workers=1, worker_init_fn=self._dataloader_seed_worker, generator=g_buf)
         curr_training_states['buffered_loader'] = buf_loader
         
-class NCDomainILERGNNTrainer(NCTrainer):
+class NCDomainILERGNNTrainer(NCClassILERGNNTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
         """
             `num_experience_nodes` is the hyperparameter for size of the memory.
