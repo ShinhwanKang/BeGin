@@ -96,11 +96,12 @@ class TWPGraphConv(nn.Module):
                 # mult W first to reduce the feature size for aggregation.
                 if weight is not None:
                     feat_src = torch.matmul(feat_src, weight)
+                    
                 graph.srcdata['h'] = feat_src
                     
                 if return_elist:
                     graph.srcdata['rst_h_src'] = feat_src
-                    graph.dstdata['rst_h_dst'] = torch.tanh(feat_dst)
+                    graph.dstdata['rst_h_dst'] = torch.tanh(feat_src)
                     graph.apply_edges(fn.u_mul_v('rst_h_src', 'rst_h_dst', 'new_e'))
                     new_e = self.leaky_relu(torch.sum(graph.edata.pop('new_e'), 1))
                     # print(e.shape, new_e.shape, (new_e - e).abs().sum())
