@@ -49,7 +49,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         # load time split and train/val/test split information
         pkl_path = os.path.join(save_path, f'ogbl-collab_metadata_timeIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbl-collab_metadata_timeIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbl-collab_metadata_timeIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = metadata['inner_tvt_splits']    
         # choose negative edges
@@ -62,7 +62,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         # load tvt_splits and negative edges
         pkl_path = os.path.join(save_path, f'wikics_metadata_domainIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/wikics_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/wikics_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = metadata['inner_tvt_splits']
         neg_edges = metadata['neg_edges']
@@ -87,7 +87,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         
         pkl_path = os.path.join(save_path, f'askubuntu_metadata_timeIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/askubuntu_metadata_timeIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/askubuntu_metadata_timeIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
@@ -96,7 +96,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         graph = dataset.graphs[0]
         num_feats = graph.ndata['feat'].shape[-1]
         pkl_path = os.path.join(save_path, f'facebook_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/facebook_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/facebook_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
@@ -338,7 +338,7 @@ def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
             graph.edata['label'] = label_to_class[graph.edata.pop('label').squeeze(-1) + 10]
             
         pkl_path = os.path.join(save_path, f'bitcoin_metadata_allIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/bitcoin_metadata_allIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/bitcoin_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         graph.edata['train_mask'] = ((metadata['inner_tvt_split'] % 10) < 8)
         graph.edata['val_mask'] = ((metadata['inner_tvt_split'] % 10) == 8)
