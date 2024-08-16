@@ -376,8 +376,8 @@ class LCScenarioLoader(BaseScenarioLoader):
     """
     def _init_continual_scenario(self):
         self.num_classes, self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
-        self.__domain_info = self.__graph.get('domain', None)
-        self.__time_splits = self.__graph.get('time', None)
+        self.__domain_info = self.__graph.edata.get('domain', None)
+        self.__time_splits = self.__graph.edata.get('time', None)
         
         if self.incr_type in ['domain']:
             raise NotImplementedError
