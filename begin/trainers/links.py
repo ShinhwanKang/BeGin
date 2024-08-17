@@ -38,11 +38,11 @@ class LPTrainer(BaseTrainer):
         return train_loader, [(graph, node_feats, *datasets['val'])], [(graph, node_feats, *datasets['test'])]
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        self._reset_optimizer(curr_optimizer)
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_score'] = -1.
         curr_model.observe_labels(torch.LongTensor([0]))
-        self._reset_optimizer(curr_optimizer)
-    
+        
     def predictionFormat(self, results):
         return results['preds']
         

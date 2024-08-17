@@ -27,9 +27,9 @@ class NCTrainer(BaseTrainer):
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         # initialize scheduler, optimizer, and best_val_loss
+        self._reset_optimizer(curr_optimizer, curr_model)
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_loss'] = 1e10
-        self._reset_optimizer(curr_optimizer)
         
         if self.binary:
             # it uses all outputs for every task

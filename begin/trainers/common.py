@@ -64,11 +64,11 @@ class BaseTrainer:
         self.__base_model = copy.deepcopy(model)
         self.__base_optimizer = optimizer_fn(self.__base_model.parameters())
         self._reset_model(self.__base_model)
-        self._reset_optimizer(self.__base_optimizer)
+        self._reset_optimizer(self.__base_optimizer, self.__base_model)
         self.__accum_model = copy.deepcopy(model)
         self.__accum_optimizer = optimizer_fn(self.__accum_model.parameters())
         self._reset_model(self.__accum_model)
-        self._reset_optimizer(self.__accum_optimizer)
+        self._reset_optimizer(self.__accum_optimizer, self.__accum_model)
         
         # other initialization settings 
         self.loss_fn = loss_fn if loss_fn is not None else (lambda x: None) # loss function
@@ -105,14 +105,22 @@ class BaseTrainer:
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
         
-    def _reset_optimizer(self, target_optimizer):
+    def _reset_optimizer(self, target_optimizer, target_model):
         """ 
             Reinitialize an optimizer.
             
             Args:
                 target_model (torch.optim.Optimizer): an optimizer needed to re-initialize
         """
+        # target_optimizer = self.optimizer_fn(target_model.parameters())
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
+
+    """
+    def add_parameters(self, target_optimizer, target_model):
+        self._reset_optimizer(target_optimizer, target_model)
+        # target_optimizer.add_param_group({'params': target_params})
+        # torch.save(target_optimizer.state_dict(), self.__optim_weight_path)
+    """
         
     def run(self, epoch_per_task = 1):
         """
@@ -147,10 +155,10 @@ class BaseTrainer:
             # re-initialize base model and joint model (at the every beginning of training)
             training_states['base'] = copy.deepcopy(initial_training_state)
             self._reset_model(self.__base_model)
-            self._reset_optimizer(self.__base_optimizer)
+            self._reset_optimizer(self.__base_optimizer, self.__base_model)
             training_states['accum'] = copy.deepcopy(initial_training_state)
             self._reset_model(self.__accum_model)
-            self._reset_optimizer(self.__accum_optimizer)
+            self._reset_optimizer(self.__accum_optimizer, self.__accum_model)
             
             # dictionaries to store current models and optimizers
             models = {'exp': self.__model, 'base': self.__base_model, 'accum': self.__accum_model}

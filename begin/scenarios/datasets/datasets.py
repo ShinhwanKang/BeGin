@@ -782,3 +782,35 @@ class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
     @property
     def num_feats(self):
         return self._num_feats
+
+class ZINCGraphDataset:
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        self.data = [dgl.data.ZINCDataset(mode='train', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='valid', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='test', raw_dir=raw_dir)]
+        self._graphs = [*(self.data[0]._graphs), *(self.data[1]._graphs), *(self.data[2]._graphs)]
+        self.labels = torch.cat([(self.data[0]._labels['g_label']), (self.data[1]._labels['g_label']), (self.data[2]._labels['g_label'])], dim=-1).unsqueeze(-1)
+        self.metadata = torch.LongTensor([g.num_nodes() for g in self._graphs]) - 18
+        self._train_masks = ((torch.arange(12000) % 10) <= 8)
+        self._val_masks = ((torch.arange(12000) % 10) == 8)
+        self._test_masks = ((torch.arange(12000) % 10) > 8)
+        self.metadata[self.metadata < 0] = 0
+        self.metadata[self.metadata > 10] = 10
+    @property
+    def num_atom_types(self):
+        return 28
+
+    @property
+    def num_bond_types(self):
+        return 4
+
+    def __len__(self):
+        return len(self._graphs)
+        
+    def __getitem__(self, idx):
+        return self._graphs[idx], self.labels[idx]
+        
+    def __len__(self):
+        return len(self._graphs)
+
+    @property
+    def num_classes(self):
+        return 1

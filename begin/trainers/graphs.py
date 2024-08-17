@@ -53,8 +53,8 @@ class GCTrainer(BaseTrainer):
             curr_model.observe_labels(torch.LongTensor([0]))
         else:
             curr_model.observe_labels(torch.LongTensor([curr_dataset['train'][i][1] for i in range(len(curr_dataset['train']))] + [curr_dataset['val'][i][1] for i in range(len(curr_dataset['val']))]))
-        self._reset_optimizer(curr_optimizer)
-    
+        self._reset_optimizer(curr_optimizer, curr_model)
+        
     def predictionFormat(self, results):
         if self.binary:
             return results['preds']
