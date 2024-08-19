@@ -202,7 +202,7 @@ class GCClassILGEMTrainer(GCTrainer):
                 model.zero_grad()
                 pre_results = self.inference(model, saved_batch, training_states)
                 pre_results['loss'].backward()
-                all_grads.append(torch.cat([p.grad.data.clone().view(-1) for p in model.parameters()]))
+                all_grads.append(torch.cat([p.grad.data.clone().view(-1) for p in model.parameters() if p.grad is not None]))
             training_states['all_grads'] = torch.stack(all_grads, dim=0)
         model.zero_grad()
     
@@ -225,14 +225,15 @@ class GCClassILGEMTrainer(GCTrainer):
         """
         results['loss'].backward()
         if len(training_states['memories']) > 0:
-            curr_grad = torch.cat([p.grad.data.view(-1) for p in model.parameters()])
+            curr_grad = torch.cat([p.grad.data.view(-1) for p in model.parameters() if p.grad is not None])
             if ((training_states['all_grads'] * curr_grad).sum(-1) < 0).any():
                 new_gradient = project2cone2(curr_grad, training_states['all_grads'], self.lamb)
                 curr_idx = 0
                 for p in model.parameters():
                     p_size = p.data.numel()
-                    p.grad.copy_(new_gradient[curr_idx:(curr_idx + p_size)].view_as(p.data))
-                    curr_idx += p_size            
+                    if p.grad is not None:
+                        p.grad.copy_(new_gradient[curr_idx:(curr_idx + p_size)].view_as(p.data))
+                        curr_idx += p_size            
         optimizer.step()
         
         graphs, labels = _curr_batch
