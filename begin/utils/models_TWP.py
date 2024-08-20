@@ -434,6 +434,11 @@ class FullGCN(nn.Module):
         self.readout_mode = readout
         
     def forward(self, graph, feat, return_elist=False, task_masks=None, edge_weight=None, edge_attr=None):
+        if len(feat.shape) == 1:
+            feat = feat.unsqueeze(-1)
+        if edge_attr is not None and len(edge_attr.shape) == 1:
+            edge_attr = edge_attr.unsqueeze(-1)
+            
         h = self.enc(feat)
         h = self.dropout(h)
         e_list = []

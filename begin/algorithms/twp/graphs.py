@@ -63,7 +63,7 @@ class GCTaskILTWPTrainer(GCTrainer):
         cls_loss.backward(retain_graph=True)
         cur_importance_score = 0.
         for gs in model.parameters():
-            cur_importance_score += torch.norm(gs.grad.data.clone(), p=1) 
+            if gs.grad is not None: cur_importance_score += torch.norm(gs.grad.data.clone(), p=1) 
         old_importance_score = 0.
         for tt in range(0, training_states['current_task']):
             for i, p in enumerate(model.parameters()):
@@ -116,11 +116,11 @@ class GCTaskILTWPTrainer(GCTrainer):
             
             for idx, (name, p) in enumerate(curr_model.named_parameters()):
                 optpars[idx] = p.data.clone().detach()
-                cls_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
+                if p.grad is not None: cls_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
             eloss = torch.norm(results['elist'][0]) 
             eloss.backward()
             for idx, (name, p) in enumerate(curr_model.named_parameters()):
-                topology_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
+                if p.grad is not None: topology_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
         
         for idx, (name, p) in enumerate(curr_model.named_parameters()):
             cls_scores[idx] /= total_num_items
@@ -190,7 +190,7 @@ class GCClassILTWPTrainer(GCTrainer):
         cls_loss.backward(retain_graph=True)
         cur_importance_score = 0.
         for gs in model.parameters():
-            cur_importance_score += torch.norm(gs.grad.data.clone(), p=1) 
+            if gs.grad is not None: cur_importance_score += torch.norm(gs.grad.data.clone(), p=1) 
         old_importance_score = 0.
         for tt in range(0, training_states['current_task']):
             for i, p in enumerate(model.parameters()):
@@ -243,11 +243,13 @@ class GCClassILTWPTrainer(GCTrainer):
             
             for idx, (name, p) in enumerate(curr_model.named_parameters()):
                 optpars[idx] = p.data.clone().detach()
-                cls_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
+                if p.grad is not None:
+                    cls_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
             eloss = torch.norm(results['elist'][0]) 
             eloss.backward()
             for idx, (name, p) in enumerate(curr_model.named_parameters()):
-                topology_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
+                if p.grad is not None:
+                    topology_scores[idx] += p.grad.data.clone().pow(2).detach() * curr_sz
         
         for idx, (name, p) in enumerate(curr_model.named_parameters()):
             cls_scores[idx] /= total_num_items
