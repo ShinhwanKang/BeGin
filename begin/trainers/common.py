@@ -7,6 +7,7 @@ import numpy as np
 import sys
 import dgl
 import os
+import logging
 
 class BaseTrainer:
     r""" Base framework for implementing trainer module.
@@ -69,6 +70,8 @@ class BaseTrainer:
         self.__accum_optimizer = optimizer_fn(self.__accum_model.parameters())
         self._reset_model(self.__accum_model)
         self._reset_optimizer(self.__accum_optimizer, self.__accum_model)
+
+        self.init_lrs = [pg['lr'] for pg in self.__base_optimizer.param_groups]
         
         # other initialization settings 
         self.loss_fn = loss_fn if loss_fn is not None else (lambda x: None) # loss function
@@ -104,7 +107,7 @@ class BaseTrainer:
                 target_model (torch.nn.Module): a model needed to re-initialize
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
-        
+            
     def _reset_optimizer(self, target_optimizer, target_model):
         """ 
             Reinitialize an optimizer.
@@ -113,15 +116,40 @@ class BaseTrainer:
                 target_model (torch.optim.Optimizer): an optimizer needed to re-initialize
         """
         # target_optimizer = self.optimizer_fn(target_model.parameters())
+        # print('after lr:', target_optimizer.param_groups[0]['lr'])
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
+    
+    def add_parameters(self, target_model, target_optimizer):
+        original_weights = torch.load(self.__model_weight_path)
+        changed = 0
 
-    """
-    def add_parameters(self, target_optimizer, target_model):
-        self._reset_optimizer(target_optimizer, target_model)
-        # target_optimizer.add_param_group({'params': target_params})
-        # torch.save(target_optimizer.state_dict(), self.__optim_weight_path)
-    """
-        
+        registered_params = set()
+        for group in target_optimizer.param_groups:
+            registered_params.update(set(group["params"]))
+            
+        really_new_parameters = []
+        unregistered_params = []
+        for k, v in target_model.state_dict().items():
+            if k not in original_weights:
+                changed += 1
+                original_weights[k] = v
+                really_new_parameters.append(v)
+
+        for p in target_model.parameters():
+            if p not in registered_params:
+                unregistered_params.append(p)
+                
+        if changed > 0:
+            print(f"DETECTED {changed} PARAM CHANGE(S) / {len(unregistered_params)} UNREGISTERED PARAM(S)")
+            torch.save(original_weights, self.__model_weight_path)
+            self._reset_optimizer(target_optimizer, target_model)
+            target_optimizer.add_param_group({'params': unregistered_params})
+            torch.save(target_optimizer.state_dict(), self.__optim_weight_path)
+        elif len(unregistered_params) > 0:
+            print(f"DETECTED {len(unregistered_params)} UNREGISTERED PARAM(S)")
+            target_optimizer.add_param_group({'params': unregistered_params})
+            self._reset_optimizer(target_optimizer, target_model)
+            
     def run(self, epoch_per_task = 1):
         """
             Run the overall process of graph continual learning optimization.
@@ -153,12 +181,13 @@ class BaseTrainer:
                 break
             
             # re-initialize base model and joint model (at the every beginning of training)
-            training_states['base'] = copy.deepcopy(initial_training_state)
-            self._reset_model(self.__base_model)
-            self._reset_optimizer(self.__base_optimizer, self.__base_model)
-            training_states['accum'] = copy.deepcopy(initial_training_state)
-            self._reset_model(self.__accum_model)
-            self._reset_optimizer(self.__accum_optimizer, self.__accum_model)
+            if self.curr_task == 0 or self.full_mode:
+                training_states['base'] = copy.deepcopy(initial_training_state)
+                self._reset_model(self.__base_model)
+                self._reset_optimizer(self.__base_optimizer, self.__base_model)
+                training_states['accum'] = copy.deepcopy(initial_training_state)
+                self._reset_model(self.__accum_model)
+                self._reset_optimizer(self.__accum_optimizer, self.__accum_model)
             
             # dictionaries to store current models and optimizers
             models = {'exp': self.__model, 'base': self.__base_model, 'accum': self.__accum_model}

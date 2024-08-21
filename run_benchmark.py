@@ -45,7 +45,7 @@ exp_settings = {('cora', 'task'): (3, 'accuracy', 1000, 20, 0.001),
                 ('ogbg-ppa', 'domain'): (11, 'accuracy', 100, 10, 0.01),
                 ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01),
                 ('sentiment', 'time'): (11, 'accuracy', 100, 10, 0.01),
-                ('zinc', 'domain'): (11, 'mae', 100, 10, 0.01)}
+                ('zinc', 'domain'): (11, 'mae', 5, 10, 0.01)}
 
 num_memories = {'cora': 12,
                 'citeseer': 12,
@@ -198,7 +198,7 @@ if __name__ == '__main__':
                                                    n_hidden,
                                                    dropout=dr,
                                                    n_layers=n_layers,
-                                                   incr_type=args.incr)
+                                                   incr_type=args.incr, num_tasks = num_task)
 
                                 algo_kwargs = copy.deepcopy(special_kwargs[args.algo])
                                 if special_param_name in algo_kwargs:

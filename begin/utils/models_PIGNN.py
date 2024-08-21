@@ -83,9 +83,9 @@ class AdaptiveLinear(nn.Module):
                 task_masks (torch.Tensor or None): If task_masks is provided, the layer uses the tensor for masking the outputs. Otherwise, the layer uses the mask managed by the layer.
         """
         xs = torch.split(x, self.input_lengths, dim=-1)
-        outs = 0.
+        out = 0.
         for _x, lin in zip(xs, self.lins):
-            outs = outs + lin(_x)
+            out = out + lin(_x)
         
         if task_masks is None:
             out[..., ~self.observed] = -1e12
@@ -110,11 +110,13 @@ class ProgressiveGraphConv(nn.Module):
                            ' But got "{}".'.format(norm))
         self._in_feats = in_feats
         self._out_feats = out_feats
+        
         self._norm = norm
         self._allow_zero_in_degree = allow_zero_in_degree
         self.leaky_relu = nn.LeakyReLU(negative_slope)
 
         self.weights = nn.ParameterList()
+        self.norms = nn.ModuleList()
         self.in_feats_len = []
         self.out_feats_len = []
         self._activation = activation
@@ -126,8 +128,9 @@ class ProgressiveGraphConv(nn.Module):
             self.in_feats_len.append(self.in_feats_len[-1] + in_feats_delta)
         self.out_feats_len.append(out_feats_delta)
         self.weights.append(nn.Parameter(torch.Tensor(self.in_feats_len[-1], self.out_feats_len[-1])).to(device))
+        self.norms.append(nn.BatchNorm1d(self.out_feats_len[-1]).to(device))
         self.reset_parameters(self.weights[-1])
-        return self.weights[-1]
+        return [self.weights[-1]] + list(self.norms[-1].parameters())
         
     def reset_parameters(self, target_weight=None):
         if target_weight is not None:
@@ -216,8 +219,10 @@ class ProgressiveGraphConv(nn.Module):
 
             if self._activation is not None:
                 rst = self._activation(rst)
-            
-            return rst
+
+            rsts = torch.split(rst, self.out_feats_len, dim=-1)
+            final_rst = torch.cat([bn(_rst) for _rst, bn in zip(rsts, self.norms)], dim=-1)
+            return final_rst
             
     def extra_repr(self):
         summary = 'in={_in_feats}, out={_out_feats}'
@@ -228,18 +233,30 @@ class ProgressiveGraphConv(nn.Module):
         
             
 class GCN(nn.Module):
-    def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class', use_classifier=True):
+    def __init__(self, in_feats, n_classes, n_hidden, activation = F.relu, dropout=0.0, n_layers=3, incr_type='class', use_classifier=True, num_tasks = 0):
         super().__init__()
         self.n_layers = n_layers
         self.n_hidden = n_hidden
         self.n_classes = n_classes
+        self.not_empty = nn.Parameter(torch.FloatTensor([0]))
         self.convs = nn.ModuleList()
-        self.norms = nn.ModuleList()
+        # self.norms = nn.ModuleList()
+
+        original_num_params = in_feats * n_hidden + n_hidden * n_hidden * (n_layers - 1) + 2 * n_layers * n_hidden + n_hidden * n_classes + n_classes
+        while True:
+            curr_num_params = in_feats * n_hidden + (num_tasks + 1) / (2 * num_tasks) * n_hidden * n_hidden * (n_layers - 1) + 2 * n_layers * n_hidden + num_tasks * n_classes + n_hidden * n_classes
+            if curr_num_params < original_num_params:
+                n_hidden += 1
+            else:
+                break
+        self.n_hidden = n_hidden
+        print(self.n_hidden)
+        
         for i in range(n_layers):
             in_hidden = n_hidden if i > 0 else in_feats
             out_hidden = n_hidden
             self.convs.append(ProgressiveGraphConv(in_hidden, out_hidden, "both", bias=False, allow_zero_in_degree=True))
-            self.norms.append(nn.BatchNorm1d(out_hidden))
+            # self.norms.append(nn.BatchNorm1d(out_hidden))
         self.dropout = nn.Dropout(dropout)
         self.activation = activation
         if use_classifier:
@@ -253,7 +270,7 @@ class GCN(nn.Module):
         for i in range(self.n_layers):
             conv = self.convs[i](graph, h)
             h = conv
-            h = self.norms[i](h)
+            # h = self.norms[i](h)
             h = self.activation(h)
             h = self.dropout(h)
         if self.classifier is not None:
@@ -262,18 +279,13 @@ class GCN(nn.Module):
 
     def expand_parameters(self, delta, device):
         new_parameters = []
-        print("BEFORE expand_parameters")
-        for k, v in self.named_parameters():
-            print(k, v.shape)
         for i, conv in enumerate(self.convs):
             if i == 0:
-                new_parameters.append(conv.expand_parameters(0, delta, device))
+                new_parameters = new_parameters + conv.expand_parameters(0 if (len(conv.weights) > 0) else conv._in_feats, delta, device)
+                print(conv.in_feats_len)
             else:
-                new_parameters.append(conv.expand_parameters(delta, delta, device))
+                new_parameters = new_parameters + conv.expand_parameters(delta, delta, device)
         new_parameters = new_parameters + self.classifier.expand_parameters(delta, device)
-        print("AFTER expand_parameters")
-        for k, v in self.named_parameters():
-            print(k, v.shape)
             
         return new_parameters
         
