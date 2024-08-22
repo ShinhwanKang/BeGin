@@ -192,6 +192,13 @@ if __name__ == '__main__':
                                                    incr_type=args.incr,
                                                    node_encoder_fn = None if args.dataset_name not in ['ogbg-molhiv', 'zinc'] else (lambda: AtomEncoder(emb_dim = n_hidden)),
                                                    edge_encoder_fn = edge_encoder_fn)
+                                elif args.algo not in ['PIGNN']:
+                                    model = _model(scenario.num_feats,
+                                                   scenario.num_classes,
+                                                   n_hidden,
+                                                   dropout=dr,
+                                                   n_layers=n_layers,
+                                                   incr_type=args.incr)
                                 else:
                                     model = _model(scenario.num_feats,
                                                    scenario.num_classes,

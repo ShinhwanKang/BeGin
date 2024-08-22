@@ -1,6 +1,7 @@
 import sys
 import torch
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
+import copy
 
 class NCTaskILPIGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
@@ -22,17 +23,21 @@ class NCTaskILPIGNNTrainer(NCTrainer):
             curr_model.done_masks = []    
         new_classes = curr_dataset.ndata['task_specific_mask'][curr_dataset.ndata['train_mask']][0]
         curr_model.class_to_task[new_classes > 0] = self.curr_task
-        
+    
     def initTrainingStates(self, scenario, model, optimizer):
         return {'memories': [], 'class_to_task': -torch.ones(model.classifier.num_outputs, dtype=torch.long)}
         
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
-        for name, p in model.named_parameters():
-            p.requires_grad_(False)
+        model.train()
+        model.requires_grad_(False)
         for conv in model.convs:
             conv.weights[-1].requires_grad_(True)
+            for norm in conv.norms[:-1]:
+                norm.eval()
+            conv.norms[-1].train()
             conv.norms[-1].requires_grad_(True)
         model.classifier.lins[-1].requires_grad_(True)
+        model.curr_task = -1
         
     def afterInference(self, results, model, optimizer, _curr_batch, training_states):
         """
@@ -78,7 +83,7 @@ class NCTaskILPIGNNTrainer(NCTrainer):
                 curr_model (torch.nn.Module): the current trained model.
                 curr_optimizer (torch.optim.Optimizer): the current optimizer function.
                 curr_training_states (dict): the dictionary containing the current training states.
-        """
+        """    
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         train_loader = self.prepareLoader(curr_dataset, curr_training_states)[0]
         chosen_nodes = []
@@ -105,6 +110,42 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))
         loss = self.loss_fn(preds[mask], curr_batch.ndata['label'][mask].to(self.device))
         return {'preds': preds[mask], 'loss': loss, 'preds_full': preds}
+
+    def processEvalIteration(self, model, _curr_batch):
+        """
+            The event function to handle every evaluation iteration.
+            
+            Piggyback has to use different masks to evaluate the performance for each task.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                task_id (int): the id of a task
+                
+            Returns:
+                A dictionary containing the outcomes (stats) during the evaluation iteration.
+        """
+
+        curr_batch, mask = _curr_batch
+        task_ids = torch.max(curr_batch.ndata['task_specific_mask'][mask] * model.class_to_task, dim=-1).values
+        task_checks = torch.min(curr_batch.ndata['task_specific_mask'][mask] * model.class_to_task, dim=-1).values
+        test_nodes = torch.arange(mask.shape[0])[mask]
+        task_ids[task_checks < 0] = self.curr_task
+        
+        num_samples = torch.bincount(task_ids.detach().cpu(), minlength=self.curr_task+1)
+        total_results = torch.zeros_like(test_nodes).to(self.device)
+        total_loss = 0.
+        # handle the samples with different tasks separately
+        for i in range(self.curr_task, -1, -1):
+            if num_samples[i].item() == 0: continue
+            model.curr_task = i
+            eval_mask = torch.zeros(mask.shape[0])
+            eval_mask[test_nodes[task_ids == i]] = 1
+            results = self.inference(model, (curr_batch, eval_mask.bool()), None)
+            total_results[task_ids == i] = torch.argmax(results['preds'], dim=-1)
+            total_loss += results['loss'].item() * num_samples[i].item()
+        total_loss /= torch.sum(num_samples).item()
+        return total_results, {'loss': total_loss}
         
 class NCClassILPIGNNTrainer(NCTrainer):
     """
@@ -124,13 +165,17 @@ class NCClassILPIGNNTrainer(NCTrainer):
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
 
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
-        for name, p in model.named_parameters():
-            p.requires_grad_(False)
+        model.train()
+        model.requires_grad_(False)
         for conv in model.convs:
             conv.weights[-1].requires_grad_(True)
+            for norm in conv.norms[:-1]:
+                norm.eval()
+            conv.norms[-1].train()
             conv.norms[-1].requires_grad_(True)
         model.classifier.lins[-1].requires_grad_(True)
-
+        model.curr_task = -1
+    
     def initTrainingStates(self, scenario, model, optimizer):
         return {'memories': []}
 

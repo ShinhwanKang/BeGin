@@ -74,7 +74,7 @@ class AdaptiveLinear(nn.Module):
             mask[observed_mask] = torch.stack(self.output_masks, dim=0)[task_ids[observed_mask]]
             return mask
     
-    def forward(self, x, task_masks=None):
+    def forward(self, x, task_masks=None, task_specific_id=None):
         r"""
             Returns the masked results of the inner linear layer.
             
@@ -82,11 +82,18 @@ class AdaptiveLinear(nn.Module):
                 x (torch.Tensor): the input features.
                 task_masks (torch.Tensor or None): If task_masks is provided, the layer uses the tensor for masking the outputs. Otherwise, the layer uses the mask managed by the layer.
         """
-        xs = torch.split(x, self.input_lengths, dim=-1)
-        out = 0.
-        for _x, lin in zip(xs, self.lins):
-            out = out + lin(_x)
-        
+        if task_specific_id < 0:
+            xs = torch.split(x, self.input_lengths, dim=-1)
+            out = 0.
+            for _x, lin in zip(xs, self.lins):
+                out = out + lin(_x)
+            
+        else:
+            xs = torch.split(x, self.input_lengths[:task_specific_id+1], dim=-1)
+            out = 0.
+            for _x, lin in zip(xs, self.lins[:task_specific_id+1]):
+                out = out + lin(_x)
+            
         if task_masks is None:
             out[..., ~self.observed] = -1e12
         else:
@@ -141,7 +148,7 @@ class ProgressiveGraphConv(nn.Module):
     def set_allow_zero_in_degree(self, set_value):
         self._allow_zero_in_degree = set_value
 
-    def forward(self, graph, feat, weight=None, edge_weight=None):
+    def forward(self, graph, feat, weight=None, edge_weight=None, task_specific_id=None):
         with graph.local_scope():
             if not self._allow_zero_in_degree:
                 if (graph.in_degrees() == 0).any():
@@ -185,10 +192,14 @@ class ProgressiveGraphConv(nn.Module):
             if self._in_feats > self._out_feats:
                 # mult W first to reduce the feature size for aggregation.
                 transformed_feats = []
-                for w, feat_len in zip(self.weights, self.in_feats_len):
-                    transformed_feats.append(torch.matmul(feat_src[..., :feat_len], w))
-                feat_src = torch.cat(transformed_feats, dim=-1)
-                    
+                if task_specific_id < 0:
+                    for w, feat_len in zip(self.weights, self.in_feats_len):
+                        transformed_feats.append(torch.matmul(feat_src[..., :feat_len], w))
+                else:
+                    for w, feat_len in zip(self.weights[:task_specific_id+1], self.in_feats_len[:task_specific_id+1]):
+                        transformed_feats.append(torch.matmul(feat_src[..., :feat_len], w))
+                
+                feat_src = torch.cat(transformed_feats, dim=-1)    
                 graph.srcdata['h'] = feat_src
                 graph.update_all(aggregate_fn, fn.sum(msg='m', out='h'))
                 rst = graph.dstdata['h']
@@ -199,8 +210,13 @@ class ProgressiveGraphConv(nn.Module):
                 rst = graph.dstdata['h']
                 
                 transformed_rsts = []
-                for w, feat_len in zip(self.weights, self.in_feats_len):
-                    transformed_rsts.append(torch.matmul(rst[..., :feat_len], w))
+                if task_specific_id < 0:
+                    for w, feat_len in zip(self.weights, self.in_feats_len):
+                        transformed_rsts.append(torch.matmul(rst[..., :feat_len], w))
+                else:
+                    for w, feat_len in zip(self.weights[:task_specific_id+1], self.in_feats_len[:task_specific_id+1]):
+                        transformed_rsts.append(torch.matmul(rst[..., :feat_len], w))
+                
                 rst = torch.cat(transformed_rsts, dim=-1)
                 # rst = torch.matmul(rst, weight)
 
@@ -220,8 +236,12 @@ class ProgressiveGraphConv(nn.Module):
             if self._activation is not None:
                 rst = self._activation(rst)
 
-            rsts = torch.split(rst, self.out_feats_len, dim=-1)
-            final_rst = torch.cat([bn(_rst) for _rst, bn in zip(rsts, self.norms)], dim=-1)
+            if task_specific_id < 0:
+                rsts = torch.split(rst, self.out_feats_len, dim=-1)
+                final_rst = torch.cat([bn(_rst) for _rst, bn in zip(rsts, self.norms)], dim=-1)
+            else:
+                rsts = torch.split(rst, self.out_feats_len[:task_specific_id+1], dim=-1)
+                final_rst = torch.cat([bn(_rst) for _rst, bn in zip(rsts, self.norms[:task_specific_id+1])], dim=-1)
             return final_rst
             
     def extra_repr(self):
@@ -250,7 +270,6 @@ class GCN(nn.Module):
             else:
                 break
         self.n_hidden = n_hidden
-        print(self.n_hidden)
         
         for i in range(n_layers):
             in_hidden = n_hidden if i > 0 else in_feats
@@ -263,18 +282,20 @@ class GCN(nn.Module):
             self.classifier = AdaptiveLinear(n_hidden, n_classes, bias=True, accum = False if incr_type == 'task' else True)
         else:
             self.classifier = None
-            
+        self.curr_task = -1
+        
     def forward(self, graph, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
+        if self.training: self.curr_task = -1
         for i in range(self.n_layers):
-            conv = self.convs[i](graph, h)
+            conv = self.convs[i](graph, h, task_specific_id=self.curr_task)
             h = conv
             # h = self.norms[i](h)
             h = self.activation(h)
             h = self.dropout(h)
         if self.classifier is not None:
-            h = self.classifier(h, task_masks)
+            h = self.classifier(h, task_masks = task_masks, task_specific_id = self.curr_task)
         return h
 
     def expand_parameters(self, delta, device):

@@ -120,9 +120,9 @@ class BaseTrainer:
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
     
     def add_parameters(self, target_model, target_optimizer):
+        target_model.zero_grad()
         original_weights = torch.load(self.__model_weight_path)
         changed = 0
-
         registered_params = set()
         for group in target_optimizer.param_groups:
             registered_params.update(set(group["params"]))
