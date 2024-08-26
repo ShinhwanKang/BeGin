@@ -259,9 +259,11 @@ class NCClassILERGNNMinibatchTrainer(NCMinibatchTrainer):
         if len(training_states['buffered_nodes'])>0:
             buffer_size = len(training_states['buffered_nodes'])
             beta = buffer_size/(buffer_size+results['preds'].shape[0])
+            buffered_loss = 0.
             for _buf_batch in training_states['buffered_loader']:
                 buf_results = self.inference(model, _buf_batch, training_states)
-            buffered_loss = buf_results['loss']
+                buffered_loss = buffered_loss + buf_results['loss']
+            buffered_loss = buffered_loss / len(training_states['buffered_nodes'])
             loss = (1-beta) * loss + beta * buffered_loss
         loss.backward()
         optimizer.step()

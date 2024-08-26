@@ -214,7 +214,6 @@ class NCClassILPIGNNTrainer(NCTrainer):
             loss = loss + self.retrain_beta * buffered_loss
         loss.backward()
         optimizer.step()
-        print(mask.shape, results['preds'].shape, curr_batch.ndata['label'][mask].shape)
         return {'loss': loss.item(),
                 'acc': self.eval_fn(self.predictionFormat(results), curr_batch.ndata['label'][mask].to(self.device))}
         
@@ -245,8 +244,102 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
     """
         This trainer has the same behavior as `NCMinibatchTrainer`.
     """
-    pass
+    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
+        self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
+        self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
+        self.num_memories = (self.num_memories // self.num_tasks)
+        
+    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
+        n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
+        new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
+        self.add_parameters(curr_model, curr_optimizer)
+        super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
 
+    def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        model.train()
+        model.requires_grad_(False)
+        for conv in model.convs:
+            conv.weights[-1].requires_grad_(True)
+            for norm in conv.norms[:-1]:
+                norm.eval()
+            conv.norms[-1].train()
+            conv.norms[-1].requires_grad_(True)
+        model.classifier.lins[-1].requires_grad_(True)
+        model.curr_task = -1
+    
+    def initTrainingStates(self, scenario, model, optimizer):
+        return {'memories': []}
+
+    def afterInference(self, results, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+            
+            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
+        loss = results['loss']
+        curr_batch, mask = _curr_batch
+        if len(training_states['memories'])>0:
+            buffered_loss = 0.
+            for _buf_batch in training_states['memories']:
+                buf_results = self.inference(model, _buf_batch, training_states)
+                buffered_loss = buffered_loss + buf_results['loss']
+            buffered_loss = buffered_loss / len(training_states['memories'])    
+            """
+            # retrain phase
+            buffered = torch.cat(training_states['memories'], dim=0)
+            buffered_mask = torch.zeros(curr_batch.srcdata['feat'].shape[0]).to(self.device)
+            buffered_mask[buffered] = 1.
+            buffered_mask = buffered_mask.to(torch.bool)
+            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask.cpu()].to(self.device), _curr_batch[0].dstdata['label'][buffered_mask.cpu()].to(self.device))
+            """
+            loss = loss + self.retrain_beta * buffered_loss
+        loss.backward()
+        optimizer.step()
+        return {'loss': loss.item(),
+                'acc': self.eval_fn(self.predictionFormat(results), curr_batch.dstdata['label'][mask].to(self.device))}
+        
+    def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+
+            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
+        super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+        candidates = torch.nonzero(curr_dataset.ndata['train_mask'], as_tuple=True)[0]
+        perm = torch.randperm(candidates.shape[0])
+        
+        g_train = torch.Generator()
+        g_train.manual_seed(0)
+        train_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
+        train_loader = dgl.dataloading.NodeDataLoader(
+            curr_dataset, candidates[perm[:self.num_memories]], train_sampler,
+            batch_size=131072,
+            shuffle=True,
+            drop_last=False,
+            num_workers=1, worker_init_fn=self._dataloader_seed_worker, generator=g_train)
+        
+        curr_training_states['memories'].append(train_loader)
+        
 class NCDomainILPIGNNTrainer(NCClassILPIGNNTrainer):
     """
         This trainer has the same behavior as `NCTrainer`.
