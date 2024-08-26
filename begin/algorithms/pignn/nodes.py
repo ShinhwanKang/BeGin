@@ -214,8 +214,9 @@ class NCClassILPIGNNTrainer(NCTrainer):
             loss = loss + self.retrain_beta * buffered_loss
         loss.backward()
         optimizer.step()
+        print(mask.shape, results['preds'].shape, curr_batch.ndata['label'][mask].shape)
         return {'loss': loss.item(),
-                'acc': self.eval_fn(results['preds'].argmax(-1), curr_batch.ndata['label'][mask].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), curr_batch.ndata['label'][mask].to(self.device))}
         
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
