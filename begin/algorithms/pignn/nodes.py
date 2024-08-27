@@ -293,9 +293,12 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
         loss = results['loss']
         if len(training_states['memories'])>0:
             buffered_loss = 0.
-            for _buf_batch in training_states['memories']:
-                buf_results = self.inference(model, _buf_batch, training_states)
-                buffered_loss = buffered_loss + buf_results['loss']
+            for tid in range(len(training_states['memories'])):
+                _buffered_task_loss = 0.
+                for _buf_batch in training_states['memories'][tid]:
+                    buf_results = self.inference(model, _buf_batch, training_states)
+                    _buffered_task_loss = _buffered_task_loss + buf_results['loss']
+                buffered_loss = buffered_loss + (_buffered_task_loss / len(training_states['memories'][tid]))
             buffered_loss = buffered_loss / len(training_states['memories'])    
             """
             # retrain phase
