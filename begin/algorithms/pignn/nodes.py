@@ -1,5 +1,6 @@
 import sys
 import torch
+import dgl
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 import copy
 
