@@ -298,7 +298,7 @@ class GCN(nn.Module):
             h = self.classifier(h, task_masks = task_masks, task_specific_id = self.curr_task)
         return h
 
-    def bforward(self, graph, feat, task_masks=None):
+    def bforward(self, blocks, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
         if self.training: self.curr_task = -1
