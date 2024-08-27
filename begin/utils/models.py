@@ -25,6 +25,9 @@ class AdaptiveLinear(nn.Module):
         self.num_outputs = out_channels
         self.output_masks = None
         self.observed = torch.zeros(out_channels, dtype=torch.bool)
+
+    def reset_parameters(self):
+        self.lin.reset_parameters()
         
     def observe_outputs(self, new_outputs, verbose=True):
         r"""
@@ -111,12 +114,23 @@ class GCNNode(nn.Module):
             self.classifier = AdaptiveLinear(n_hidden, n_classes, bias=True, accum = False if incr_type == 'task' else True)
         else:
             self.classifier = None
-            
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+        for norm in self.norms:
+            norm.reset_parameters()
+        self.classifier.reset_parameters()
+        
     def forward(self, graph, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](graph, h)
+            if graph is not None:
+                conv = self.convs[i](graph, h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)  
+            # conv = self.convs[i](graph, h)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
@@ -146,7 +160,10 @@ class GCNNode(nn.Module):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](graph, h)
+            if graph is not None:
+                conv = self.convs[i](graph, h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)

@@ -80,7 +80,8 @@ special_kwargs = {'Bare': {},
                   'PackNet': {},
                   'Piggyback': {'threshold': None},
                   'HAT': {'lamb': 0.75, 'smax': 400.},
-                  'PIGNN': {'retrain': None}}
+                  'PIGNN': {'retrain': None},
+                  'CaT': {'num_memories': None}}
 
 special_params = {'Bare': ('none', [None]),
                   'LwF': ('lamb', [1.]),
@@ -93,14 +94,15 @@ special_params = {'Bare': ('none', [None]),
                   'PackNet': ('none', [None]),
                   'Piggyback': ('threshold', [1e-1, 1e-2]),
                   'HAT': ('none', [None]),
-                  'PIGNN': ('retrain', [0.1, 1.])}
+                  'PIGNN': ('retrain', [0.1, 1.]),
+                  'CaT': ('none', [None])}
                        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Graph CL Benchmark Example')
     parser.add_argument("--dataset-name", type=str, default="cora",
                         help="dataset name (cora, citeseer, ogbn-arxiv, corafull, ogbn-mag, ogbn-products, ogbn-proteins, bitcoin, ogbl-collab, wikics, mnist, cifar10, aromaticity, nyctaxi, ogbg-molhiv, zinc)")
     parser.add_argument("--algo", type=str, default="Bare",
-                        help="algorithm name (Bare, LwF, EWC, MAS, GEM, TWP, ERGNN, CGNN, PackNet, Piggyback, HAT)") 
+                        help="algorithm name (Bare, LwF, EWC, MAS, GEM, TWP, ERGNN, CGNN, PackNet, Piggyback, HAT, CaT)") 
     parser.add_argument("--incr", type=str, default="class",
                         help="incremental setting (task, class, domain, or time)")
     parser.add_argument("--gpu", type=int, default=0,
@@ -113,7 +115,7 @@ if __name__ == '__main__':
     
     _scenario_loader_path = f'begin.scenarios.{task_level[args.task_type]}'
     _scenario_loader_module = f'{args.task_type}ScenarioLoader'
-    if args.algo.lower() in ['bare', 'lwf', 'ewc', 'mas', 'gem', 'packnet', 'piggyback', 'hat']:
+    if args.algo.lower() in ['bare', 'lwf', 'ewc', 'mas', 'gem', 'packnet', 'piggyback', 'hat', 'cat']:
         _model_path = f'begin.utils.models'
         _model_module = f'GCN{model_suffix[args.task_type]}'
     elif args.algo.lower() in ['twp', 'ergnn', 'cgnn', 'pignn']:
@@ -210,7 +212,7 @@ if __name__ == '__main__':
                                 algo_kwargs = copy.deepcopy(special_kwargs[args.algo])
                                 if special_param_name in algo_kwargs:
                                     algo_kwargs[special_param_name] = special_param
-                                if args.algo in ['GEM', 'PIGNN']:
+                                if args.algo in ['GEM', 'PIGNN', 'CaT']:
                                     algo_kwargs['num_memories'] = num_memories[args.dataset_name]
                                 if args.algo == 'CGNN':
                                     algo_kwargs['memory_size'] = num_memories[args.dataset_name]
