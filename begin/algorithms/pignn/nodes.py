@@ -290,7 +290,6 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
                 A dictionary containing the information from the `results`.
         """
         loss = results['loss']
-        curr_batch, mask = _curr_batch
         if len(training_states['memories'])>0:
             buffered_loss = 0.
             for _buf_batch in training_states['memories']:
@@ -309,7 +308,7 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
         loss.backward()
         optimizer.step()
         return {'loss': loss.item(),
-                'acc': self.eval_fn(self.predictionFormat(results), curr_batch.dstdata['label'][mask].to(self.device))}
+                'acc': self.eval_fn(self.predictionFormat(results), _curr_batch[-1][-1].dstdata['label'].to(self.device))}
         
     def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
