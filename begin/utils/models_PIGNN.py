@@ -298,6 +298,20 @@ class GCN(nn.Module):
             h = self.classifier(h, task_masks = task_masks, task_specific_id = self.curr_task)
         return h
 
+    def bforward(self, graph, feat, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        if self.training: self.curr_task = -1
+        for i in range(self.n_layers):
+            conv = self.convs[i](blocks[i], h, task_specific_id = self.curr_task)
+            h = conv
+            # h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+        if self.classifier is not None:
+            h = self.classifier(h, task_masks, task_specific_id = self.curr_task)
+        return h
+        
     def expand_parameters(self, delta, device):
         new_parameters = []
         for i, conv in enumerate(self.convs):
