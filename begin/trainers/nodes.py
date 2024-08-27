@@ -144,7 +144,7 @@ class NCMinibatchTrainer(NCTrainer):
         g_train = torch.Generator()
         g_train.manual_seed(0)
         train_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
-        train_loader = dgl.dataloading.NodeDataLoader(
+        train_loader = dgl.dataloading.DataLoader(
             dataset, torch.nonzero(train_mask, as_tuple=True)[0], train_sampler,
             batch_size=131072,
             shuffle=True,
@@ -155,7 +155,7 @@ class NCMinibatchTrainer(NCTrainer):
         g_val.manual_seed(0)
         val_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
         # use fixed order (shuffle=False)
-        val_loader = dgl.dataloading.NodeDataLoader(
+        val_loader = dgl.dataloading.DataLoader(
             dataset, torch.nonzero(val_mask, as_tuple=True)[0], val_sampler,
             batch_size=131072,
             shuffle=False,
@@ -166,7 +166,7 @@ class NCMinibatchTrainer(NCTrainer):
         g_test.manual_seed(0)
         test_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
         # use fixed order (shuffle=False)
-        test_loader = dgl.dataloading.NodeDataLoader(
+        test_loader = dgl.dataloading.DataLoader(
             dataset, torch.nonzero(test_mask, as_tuple=True)[0], test_sampler,
             batch_size=131072,
             shuffle=False,
