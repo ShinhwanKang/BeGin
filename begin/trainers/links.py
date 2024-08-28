@@ -24,7 +24,40 @@ class LPTrainer(BaseTrainer):
     
     def initTrainingStates(self, scenario, model, optimizer):
         return {}
-    
+
+    def preparePretrainLoader(self, curr_dataset, curr_training_states):
+        srcs, dsts = curr_dataset.edges()
+        graph = dgl.graph((copy.deepcopy(srcs), copy.deepcopy(dsts)))
+        graph.ndata['feat'] = curr_dataset.ndata['feat']
+        isolated_nodes = torch.nonzero((graph.in_degrees() <= 1) & (graph.out_degrees() <= 1), as_tuple=True)[0]
+        graph.remove_nodes(isolated_nodes)
+        return [graph]
+        
+    def processPretraining(self, pretrain_loader, curr_model, curr_training_states):
+        pre_model = self.pretraining(copy.deepcopy(curr_model)).to(self.device)
+        pre_optimizer = self.optimizer_fn(pre_model.parameters())
+        pre_scheduler = self.scheduler_fn(pre_optimizer)
+        
+        best_loss = 1e10
+        for epoch_cnt in range(self.max_num_epochs):
+            total_loss = 0.
+            for _curr_batch in pretrain_loader:
+                pre_optimizer.zero_grad()
+                loss = pre_model.inference(_curr_batch.to(self.device))
+                loss.backward()
+                pre_optimizer.step()    
+                total_loss = total_loss + loss.item()
+            total_loss /= len(pretrain_loader)
+            
+            if total_loss < best_loss:
+                best_loss = total_loss
+                pre_model.update()
+                pre_checkpoint = copy.deepcopy(pre_model.encoder.state_dict())
+            pre_scheduler.step(total_loss)
+            if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
+                break
+        pre_model.processAfterTraining(curr_model)
+        
     def prepareLoader(self, curr_dataset, curr_training_states):
         graph = curr_dataset['graph'].clone()
         node_feats = graph.ndata.pop('feat')
@@ -128,7 +161,40 @@ class LCTrainer(BaseTrainer):
         
     def initTrainingStates(self, scenario, model, optimizer):
         return {}
-    
+
+    def preparePretrainLoader(self, curr_dataset, curr_training_states):
+        srcs, dsts = curr_dataset.edges()
+        graph = dgl.graph((copy.deepcopy(srcs), copy.deepcopy(dsts)))
+        graph.ndata['feat'] = curr_dataset.ndata['feat']
+        isolated_nodes = torch.nonzero((graph.in_degrees() == 0) & (graph.out_degrees() == 0), as_tuple=True)[0]
+        graph.remove_nodes(isolated_nodes)
+        return [graph]
+
+    def processPretraining(self, pretrain_loader, curr_model, curr_training_states):
+        pre_model = self.pretraining(copy.deepcopy(curr_model)).to(self.device)
+        pre_optimizer = self.optimizer_fn(pre_model.parameters())
+        pre_scheduler = self.scheduler_fn(pre_optimizer)
+        
+        best_loss = 1e10
+        for epoch_cnt in range(self.max_num_epochs):
+            total_loss = 0.
+            for _curr_batch in pretrain_loader:
+                pre_optimizer.zero_grad()
+                loss = pre_model.inference(_curr_batch.to(self.device))
+                loss.backward()
+                pre_optimizer.step()    
+                total_loss = total_loss + loss.item()
+            total_loss /= len(pretrain_loader)
+            
+            if total_loss < best_loss:
+                best_loss = total_loss
+                pre_model.update()
+                pre_checkpoint = copy.deepcopy(pre_model.encoder.state_dict())
+            pre_scheduler.step(total_loss)
+            if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
+                break
+        pre_model.processAfterTraining(curr_model)
+        
     def prepareLoader(self, _curr_dataset, curr_training_states):
         curr_dataset = copy.deepcopy(_curr_dataset)
         srcs, dsts = curr_dataset.edges()

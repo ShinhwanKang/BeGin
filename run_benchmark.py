@@ -10,6 +10,7 @@ import os
 import shutil
 import tqdm
 from ogb.graphproppred.mol_encoder import AtomEncoder, BondEncoder
+from begin.utils.pretraining import *
 
 task_level = {'NC': 'nodes', 'LC': 'links', 'LP': 'links', 'GC': 'graphs'}
 model_suffix = {'NC': 'Node', 'LC': 'Link', 'LP': 'Link', 'GC': 'Graph'}
@@ -78,7 +79,7 @@ special_kwargs = {'Bare': {},
                   'ERGNN': {'num_experience_nodes': None, 'sampler_name': 'CM', 'distance_threshold': 0.5},
                   'CGNN': {'detect_strategy': 'bfs', 'memory_strategy': 'class', 'p': 1, 'alpha': 0.0, 'ewc_lambda': 80.0, 'ewc_type': 'ewc', 'memory_size': None, 'new_nodes_size': None},
                   'PackNet': {},
-                  'Piggyback': {'threshold': None},
+                  'Piggyback': {'threshold': None, 'pretraining': InfoGraph},
                   'HAT': {'lamb': 0.75, 'smax': 400.},
                   'PIGNN': {'retrain': None},
                   'CaT': {'num_memories': None}}
