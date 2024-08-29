@@ -20,7 +20,7 @@ class PretrainingMethod(nn.Module):
     def processAfterTraining(self, original_model):
         original_model.load_state_dict(self.best_checkpoint)
 
-class DGINode(PretrainingMethod):
+class DGI(PretrainingMethod):
     class Discriminator(nn.Module):
         def __init__(self, n_hidden):
             super().__init__()
@@ -40,56 +40,25 @@ class DGINode(PretrainingMethod):
             features = torch.matmul(features, torch.matmul(self.weight, summary))
             return features
             
-    def __init__(self, encoder):
+    def __init__(self, encoder, link_level=True):
         super().__init__(encoder)
         print("PRETRAINING_ALGO: DGI")
         self.discriminator = self.Discriminator(encoder.n_hidden)
         self.loss_fn = nn.BCEWithLogitsLoss()
-
+        self.link_level = link_level
+        
     def inference(self, inputs):
         graph, features = inputs, inputs.ndata['feat']
-        positive = self.encoder.forward_without_classifier(graph, features)
-        perm = torch.randperm(graph.number_of_nodes()).to(features.device)
-        negative = self.encoder.forward_without_classifier(graph, features[perm])
-        summary = torch.sigmoid(positive.mean(dim=0))
-        positive = self.discriminator(positive, summary)
-        negative = self.discriminator(negative, summary)
-        l1 = self.loss_fn(positive, torch.ones_like(positive))
-        l2 = self.loss_fn(negative, torch.zeros_like(negative))
-        return l1 + l2
-
-class DGILink(PretrainingMethod):
-    class Discriminator(nn.Module):
-        def __init__(self, n_hidden):
-            super().__init__()
-            self.weight = nn.Parameter(torch.Tensor(n_hidden, n_hidden))
-            self.reset_parameters()
-    
-        def uniform(self, size, tensor):
-            bound = 1.0 / math.sqrt(size)
-            if tensor is not None:
-                tensor.data.uniform_(-bound, bound)
-    
-        def reset_parameters(self):
-            size = self.weight.size(0)
-            self.uniform(size, self.weight)
-    
-        def forward(self, features, summary):
-            features = torch.matmul(features, torch.matmul(self.weight, summary))
-            return features
+        if self.link_level:
+            srcs, dsts = graph.edges()
+            positive = self.encoder.forward_without_classifier(graph, features, srcs, dsts)
+            perm = torch.randperm(graph.number_of_nodes()).to(features.device)
+            negative = self.encoder.forward_without_classifier(graph, features[perm], srcs, dsts)
+        else:
+            positive = self.encoder.forward_without_classifier(graph, features)
+            perm = torch.randperm(graph.number_of_nodes()).to(features.device)
+            negative = self.encoder.forward_without_classifier(graph, features[perm])
             
-    def __init__(self, encoder):
-        super().__init__(encoder)
-        print("PRETRAINING_ALGO: DGI")
-        self.discriminator = self.Discriminator(encoder.n_hidden)
-        self.loss_fn = nn.BCEWithLogitsLoss()
-
-    def inference(self, inputs):
-        graph, features = inputs, inputs.ndata['feat']
-        srcs, dsts = graph.edges()
-        positive = self.encoder.forward_without_classifier(graph, features, srcs, dsts)
-        perm = torch.randperm(graph.number_of_nodes()).to(features.device)
-        negative = self.encoder.forward_without_classifier(graph, features[perm], srcs, dsts)
         summary = torch.sigmoid(positive.mean(dim=0))
         positive = self.discriminator(positive, summary)
         negative = self.discriminator(negative, summary)
@@ -97,6 +66,14 @@ class DGILink(PretrainingMethod):
         l2 = self.loss_fn(negative, torch.zeros_like(negative))
         return l1 + l2
 
+class LightGCL(PretrainingMethod):
+    def __init__(self, encoder, link_level=True):
+        super().__init__(encoder)
+
+    def inference(self, inputs):
+        graph, features = inputs, inputs.ndata['feat']
+        return None
+        
 class InfoGraph(PretrainingMethod):
     class FeedforwardNetwork(nn.Module):
         def __init__(self, in_dim, hid_dim, out_dim):
