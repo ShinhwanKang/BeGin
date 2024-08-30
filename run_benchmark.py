@@ -46,7 +46,10 @@ exp_settings = {('cora', 'task'): (3, 'accuracy', 1000, 20, 0.001),
                 ('ogbg-ppa', 'domain'): (11, 'accuracy', 100, 10, 0.01),
                 ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01),
                 ('sentiment', 'time'): (11, 'accuracy', 100, 10, 0.01),
-                ('zinc', 'domain'): (11, 'mae', 5, 10, 0.01)}
+                ('zinc', 'domain'): (11, 'mae', 5, 10, 0.01),
+                ('gowalla', 'time'): (10, 'hits@50', 200, 10, 0.01),
+                ('movielens', 'time'): (10, 'hits@50', 200, 10, 0.01),
+                }
 
 num_memories = {'cora': 12,
                 'citeseer': 12,
@@ -65,7 +68,9 @@ num_memories = {'cora': 12,
                 'ogbn-mag': 8000,
                 'twitch': 2000,
                 'ogbg-ppa': 500,
-                'askubuntu': 2000,
+                'askubuntu': 5000,
+                'gowalla': 10000,
+                'movielens': 10000,
                 'facebook': 20000,
                 'sentiment': 60,
                 'zinc': 120}
@@ -235,7 +240,7 @@ if __name__ == '__main__':
                                                      optimizer_fn = lambda x: torch.optim.Adam(x, lr=lr, weight_decay=wd),
                                                      loss_fn = metric_fn,
                                                      device = torch.device(f'cuda:{args.gpu}'),
-                                                     scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='max' if args.dataset_name in ['wikics', 'ogbl-collab'] else 'min', patience=patience, min_lr= lr * min_scale * 2., verbose=False),
+                                                     scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='max' if args.dataset_name in ['wikics', 'ogbl-collab', 'facebook', 'askubuntu', 'gowalla', 'movielens'] else 'min', patience=patience, min_lr= lr * min_scale * 2., verbose=False),
                                                      benchmark = True, seed = seed, verbose=True, binary = (metric != 'accuracy'), **algo_kwargs)
 
                                 benchmark.run(epoch_per_task = max_num_epochs)
