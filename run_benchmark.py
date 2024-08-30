@@ -47,8 +47,8 @@ exp_settings = {('cora', 'task'): (3, 'accuracy', 1000, 20, 0.001),
                 ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01),
                 ('sentiment', 'time'): (11, 'accuracy', 100, 10, 0.01),
                 ('zinc', 'domain'): (11, 'mae', 5, 10, 0.01),
-                ('gowalla', 'time'): (10, 'hits@50', 200, 10, 0.01),
-                ('movielens', 'time'): (10, 'hits@50', 200, 10, 0.01),
+                ('gowalla', 'time'): (10, 'hits@100', 200, 10, 0.01),
+                ('movielens', 'time'): (10, 'hits@100', 200, 10, 0.01),
                 }
 
 num_memories = {'cora': 12,
