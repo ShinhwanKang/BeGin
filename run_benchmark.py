@@ -46,7 +46,8 @@ exp_settings = {('cora', 'task'): (3, 'accuracy', 1000, 20, 0.001),
                 ('ogbg-ppa', 'domain'): (11, 'accuracy', 100, 10, 0.01),
                 ('nyctaxi', 'time'): (12, 'accuracy', 100, 10, 0.01),
                 ('sentiment', 'time'): (11, 'accuracy', 100, 10, 0.01),
-                ('zinc', 'domain'): (11, 'mae', 5, 10, 0.01),
+                ('zinc', 'domain'): (11, 'mae', 100, 10, 0.01),
+                ('aqsol', 'domain'): (5, 'mae', 100, 10, 0.01),
                 ('gowalla', 'time'): (10, 'hits@100', 200, 10, 0.01),
                 ('movielens', 'time'): (10, 'hits@100', 200, 10, 0.01),
                 }
@@ -73,7 +74,8 @@ num_memories = {'cora': 12,
                 'movielens': 10000,
                 'facebook': 20000,
                 'sentiment': 60,
-                'zinc': 120}
+                'zinc': 120,
+                'aqsol': 100}
 
 special_kwargs = {'Bare': {},
                   'LwF': {'lamb': None, 'T': 2.},
@@ -187,7 +189,7 @@ if __name__ == '__main__':
                                     edge_encoder_fn = None
                                     if args.dataset_name == 'nyctaxi':
                                         edge_encoder_fn = lambda: torch.nn.Linear(1, n_hidden)
-                                    elif args.dataset_name in ['ogbg-molhiv', 'zinc']:
+                                    elif args.dataset_name in ['ogbg-molhiv', 'zinc', 'aqsol']:
                                         edge_encoder_fn = lambda: BondEncoder(emb_dim = n_hidden)
                                     elif args.dataset_name == 'ogbg-ppa':
                                         edge_encoder_fn = lambda: torch.nn.Linear(7, n_hidden)
@@ -198,7 +200,7 @@ if __name__ == '__main__':
                                                    dropout=dr,
                                                    n_layers=n_layers,
                                                    incr_type=args.incr,
-                                                   node_encoder_fn = None if args.dataset_name not in ['ogbg-molhiv', 'zinc'] else (lambda: AtomEncoder(emb_dim = n_hidden)),
+                                                   node_encoder_fn = None if args.dataset_name not in ['ogbg-molhiv', 'zinc', 'aqsol'] else (lambda: AtomEncoder(emb_dim = n_hidden)),
                                                    edge_encoder_fn = edge_encoder_fn)
                                 elif args.algo not in ['PIGNN']:
                                     model = _model(scenario.num_feats,

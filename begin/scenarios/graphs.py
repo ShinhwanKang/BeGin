@@ -90,6 +90,10 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         dataset = ZINCGraphDataset(dataset_name='zinc', raw_dir=save_path)
         num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
         domain_info = dataset.metadata
+    elif dataset_name in ['aqsol'] and incr_type in ['domain']:
+        dataset = AQSOLGraphDataset(dataset_name='aqsol', raw_dir=save_path)
+        num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
+        domain_info = dataset.metadata
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     

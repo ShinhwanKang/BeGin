@@ -814,3 +814,37 @@ class ZINCGraphDataset:
     @property
     def num_classes(self):
         return 1
+
+class AQSOLGraphDataset:
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        pkl_path = os.path.join(raw_dir, f'aqsol_metadata_domainIL.pkl')
+        download(f'https://github.com/jihoon-ko/BeGin/raw/pretrain/metadata/aqsol_metadata_domainIL.pkl', pkl_path, overwrite=False)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        
+        self._graphs = []
+        self.labels = []
+        for g in chain.from_iterable(metadata):
+            curr_g = dgl.graph((torch.LongTensor(g[2][0]), torch.LongTensor(g[2][1])), num_nodes=g[0].shape[0])
+            curr_g.ndata['feat'] = torch.LongTensor(g[0])
+            curr_g.edata['edge_attr'] = torch.LongTensor(g[1])
+            curr_g.add_self_loop()
+            self._graphs.append(curr_g)
+            self.labels.append(g[3])
+        self.labels = torch.FloatTensor(self.labels).unsqueeze(-1)
+        self._train_masks = ((torch.arange(9982) % 10) <= 8)
+        self._val_masks = ((torch.arange(9982) % 10) == 8)
+        self._test_masks = ((torch.arange(9982) % 10) > 8)
+        self.metadata = torch.LongTensor(list(chain.from_iterable([[i for _ in range(len(metadata[i]))] for i in range(5)])))
+        
+    def __len__(self):
+        return len(self._graphs)
+        
+    def __getitem__(self, idx):
+        return self._graphs[idx], self.labels[idx]
+        
+    def __len__(self):
+        return len(self._graphs)
+
+    @property
+    def num_classes(self):
+        return 1
