@@ -223,20 +223,21 @@ class NCClassILCaTMinibatchTrainer(NCMinibatchTrainer):
         
         gt_x = curr_dataset.ndata['feat'][curr_dataset.ndata['train_mask']]
         gt_y = curr_dataset.ndata['label'][curr_dataset.ndata['train_mask']].squeeze()
-        # gt_mask = curr_dataset.ndata['task_specific_mask'][curr_dataset.ndata['train_mask']]
+        real_num_memories = min(self.num_memories, gt_x.shape[0])
+        
         num_target_nodes = gt_y.shape[0]
         candidates = []
         gt_bincount = torch.bincount(gt_y).tolist()
         
         for class_id, cnt in enumerate(gt_bincount):
             if cnt > 0:
-                new_condensed_y = new_condensed_y + [class_id for _ in range(max(1, (cnt * self.num_memories) // num_target_nodes))]
-                if cnt * self.num_memories >= num_target_nodes:
-                    candidates.append(( ( (cnt * self.num_memories) % num_target_nodes ) / num_target_nodes , class_id))
+                new_condensed_y = new_condensed_y + [class_id for _ in range(max(1, (cnt * real_num_memories) // num_target_nodes))]
+                if cnt * real_num_memories >= num_target_nodes:
+                    candidates.append(( ( (cnt * real_num_memories) % num_target_nodes ) / num_target_nodes , class_id))
         candidates = sorted(candidates, reverse=True)
-        if len(new_condensed_y) < self.num_memories:
+        if len(new_condensed_y) < real_num_memories:
             # keep balance as possible
-            new_condensed_y += [k for v, k in candidates[:self.num_memories - len(new_condensed_y)]]
+            new_condensed_y += [k for v, k in candidates[:real_num_memories - len(new_condensed_y)]]
         
         new_condensed_y = torch.LongTensor(new_condensed_y)
         new_condensed_x = torch.zeros(len(new_condensed_y), gt_x.shape[-1])
@@ -262,8 +263,8 @@ class NCClassILCaTMinibatchTrainer(NCMinibatchTrainer):
                 pre_optimizer.zero_grad()
                 input_nodes, output_nodes, blocks = _curr_batch
                 blocks = [b.to(self.device) for b in blocks]
-                real_output = F.normalize(init_model.forward_without_classifier(blocks, blocks[0].srcdata['feat'].to(self.device)), dim=-1)
-                fake_output = F.normalize(init_model.forward_without_classifier(None, new_condensed_x.to(self.device)), dim=-1)
+                real_output = F.normalize(init_model.bforward_without_classifier(blocks, blocks[0].srcdata['feat'].to(self.device)), dim=-1)
+                fake_output = F.normalize(init_model.bforward_without_classifier(None, new_condensed_x.to(self.device)), dim=-1)
                 
                 _loss = 0.
                 for class_id, cnt in enumerate(gt_bincount):
