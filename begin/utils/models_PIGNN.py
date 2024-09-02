@@ -287,7 +287,7 @@ class GCN(nn.Module):
     def forward(self, graph, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
-        if self.training: self.curr_task = -1
+        # if self.training: self.curr_task = -1
         for i in range(self.n_layers):
             conv = self.convs[i](graph, h, task_specific_id=self.curr_task)
             h = conv
@@ -301,7 +301,7 @@ class GCN(nn.Module):
     def bforward(self, blocks, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
-        if self.training: self.curr_task = -1
+        # if self.training: self.curr_task = -1
         for i in range(self.n_layers):
             conv = self.convs[i](blocks[i], h, task_specific_id = self.curr_task)
             h = conv
