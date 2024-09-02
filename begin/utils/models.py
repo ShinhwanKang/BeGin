@@ -169,12 +169,29 @@ class GCNNode(nn.Module):
             h = self.activation(h)
             h = self.dropout(h)
         return h
+
+    def bforward_without_classifier(self, blocks, feat, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            if blocks is not None:
+                conv = self.convs[i](blocks[i], h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+        return h
     
     def bforward(self, blocks, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](blocks[i], h)
+            if blocks is not None:
+                conv = self.convs[i](blocks[i], h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
