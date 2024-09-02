@@ -3,6 +3,7 @@ import torch
 import dgl
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 import copy
+import dgl.function as fn
 
 class NCTaskILPIGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
@@ -349,8 +350,139 @@ class NCDomainILPIGNNTrainer(NCClassILPIGNNTrainer):
     """
     pass
         
-class NCTimeILPIGNNTrainer(NCTrainer):
+class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
     """
         This trainer has the same behavior as `NCTrainer`.
     """
-    pass
+    def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+        curr_training_states['task_id'] = task_id
+        curr_training_states['n_epochs'] = 0
+        if task_id == 0: curr_training_states['phase'] = 'retrain'
+        else: curr_training_states['phase'] = 'rectify'
+        
+        print(torch.bincount(curr_dataset.in_degrees()))
+        if task_id == 0:
+            curr_training_states['prv_degs'] = torch.zeros_like(curr_dataset.in_degrees())
+        else:
+            with curr_dataset.local_scope():
+                new_degs = curr_dataset.in_degrees()
+                curr_dataset.ndata['changed'] = (curr_training_states['prv_degs'] != new_degs).float()
+                for i in range(curr_model.n_layers):
+                    curr_dataset.update_all(fn.copy_u('changed', 'm'), fn.max('m', 'changed'))
+                    curr_dataset.ndata['changed'][new_degs == 0] = 0.           
+                curr_training_states['unchanged'] = torch.cat(curr_training_states['memories'], dim=-1)[((curr_dataset.ndata['changed'] < 0.5) & (new_degs > 0))[torch.cat(curr_training_states['memories'], dim=-1)]]
+                print('num_unchanged:', curr_training_states['unchanged'])
+                
+    def beforeInference(self, model, optimizer, _curr_batch, curr_training_states):
+        if curr_training_states['phase'] == 'retrain':
+            model.train()
+            model.requires_grad_(False)
+            for conv in model.convs:
+                conv.weights[-1].requires_grad_(True)
+                for norm in conv.norms[:-1]:
+                    norm.eval()
+                conv.norms[-1].train()
+                conv.norms[-1].requires_grad_(True)
+            model.classifier.lins[-1].requires_grad_(True)
+            model.curr_task = -1
+        else:
+            model.train()
+            model.requires_grad_(True)
+            model.curr_task = curr_training_states['task_id'] - 1
+
+    def afterInference(self, results, model, optimizer, _curr_batch, curr_training_states):
+        """
+            The event function to execute some processes right after the inference step (for training).
+            We recommend performing backpropagation in this event function.
+            
+            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            
+            Args:
+                results (dict): the returned dictionary from the event function `inference`.
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+                
+            Returns:
+                A dictionary containing the information from the `results`.
+        """
+        if curr_training_states['phase'] == 'retrain':
+            loss = results['loss']
+            curr_batch, mask = _curr_batch
+            if len(curr_training_states['memories'])>0:
+                # retrain phase
+                buffered = torch.cat(curr_training_states['memories'], dim=0)
+                buffered_mask = torch.zeros(curr_batch.ndata['feat'].shape[0]).to(self.device)
+                buffered_mask[buffered] = 1.
+                buffered_mask = buffered_mask.to(torch.bool)
+                buffered_loss = self.loss_fn(results['preds_full'][buffered_mask.cpu()].to(self.device), _curr_batch[0].ndata['label'][buffered_mask.cpu()].to(self.device))
+                loss = loss + self.retrain_beta * buffered_loss
+            loss.backward()
+            optimizer.step()
+            return {'loss': loss.item(),
+                    'acc': self.eval_fn(self.predictionFormat(results), curr_batch.ndata['label'][mask].to(self.device))}
+        else:
+            buffered_loss = self.loss_fn(results['preds_full'][curr_training_states['unchanged']].to(self.device), _curr_batch[0].ndata['label'][curr_training_states['unchanged']].to(self.device))
+            loss = buffered_loss
+            loss.backward()
+            optimizer.step()
+            return {'loss': loss.item(), 'acc': loss.item()} # self.eval_fn(self.predictionFormat(results), curr_batch.ndata['label'][mask].to(self.device))}
+            
+    def processAfterTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            The event function to execute some processes after training the current task.
+
+            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+                
+            Args:
+                task_id (int): the index of the current task.
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
+        super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+        curr_training_states['prv_degs'] = curr_dataset.in_degrees()
+        # self.max_num_epochs
+
+    def processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
+        if curr_training_states['phase'] == 'retrain':
+            curr_training_states['n_epochs'] += 1
+            val_loss = curr_iter_results['val_stats']['loss']
+            # maintain the best parameter
+            if val_loss < curr_training_states['best_val_loss']:
+                curr_training_states['best_val_loss'] = val_loss
+                curr_training_states['best_weights'] = copy.deepcopy(curr_model.state_dict())
+            
+            # integration with scheduler
+            scheduler = curr_training_states['scheduler']
+            scheduler.step(val_loss)
+            
+            # stopping criteria for training
+            if -1e-9 < (curr_optimizer.param_groups[0]['lr'] - scheduler.min_lrs[0]) < 1e-9:
+                # earlystopping!
+                return False
+            return True
+        else:
+            curr_training_states['n_epochs'] += 1
+            val_loss = curr_iter_results['train_stats']['loss']
+            # maintain the best parameter
+            if val_loss < curr_training_states['best_val_loss']:
+                curr_training_states['best_val_loss'] = val_loss
+                curr_training_states['best_weights'] = copy.deepcopy(curr_model.state_dict())
+            
+            # integration with scheduler
+            scheduler = curr_training_states['scheduler']
+            scheduler.step(val_loss)
+            
+            # stopping criteria for training
+            if (-1e-9 < (curr_optimizer.param_groups[0]['lr'] - scheduler.min_lrs[0]) < 1e-9) or (curr_training_states['n_epochs'] >= (self.max_num_epochs // 10)):
+                print("MOVE_TO_RETRAIN_PHASE")
+                curr_training_states['phase'] = 'retrain'
+                curr_model.load_state_dict(curr_training_states['best_weights'])
+                self._reset_optimizer(curr_optimizer)
+                curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
+                curr_training_states['best_val_loss'] = 1e10
+            return True
