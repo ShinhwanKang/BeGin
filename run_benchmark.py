@@ -86,7 +86,7 @@ special_kwargs = {'Bare': {},
                   'ERGNN': {'num_experience_nodes': None, 'sampler_name': 'CM', 'distance_threshold': 0.5},
                   'CGNN': {'detect_strategy': 'bfs', 'memory_strategy': 'class', 'p': 1, 'alpha': 0.0, 'ewc_lambda': 80.0, 'ewc_type': 'ewc', 'memory_size': None, 'new_nodes_size': None},
                   'PackNet': {},
-                  'Piggyback': {'threshold': None, 'pretraining': InfoGraph},
+                  'Piggyback': {'threshold': None},
                   'HAT': {'lamb': 0.75, 'smax': 400.},
                   'PIGNN': {'retrain': None},
                   'CaT': {'num_memories': None}}
@@ -117,6 +117,7 @@ if __name__ == '__main__':
                         help="gpu_id")
     parser.add_argument("--task-type", type=str, default="NC",
                         help="target task (NC, LC, LP, or GC)")
+    parser.add_argument("--pretrain", type=str, default=None)
     parser.add_argument("--save-path", type=str, default="./",
                         help="result save path (default: '.')")
     args = parser.parse_args()
@@ -236,6 +237,12 @@ if __name__ == '__main__':
                                     metric_fn = torch.nn.L1Loss()
                                 else:
                                     metric_fn = lambda preds, gt: torch.nn.BCEWithLogitsLoss()(preds, gt.float())
+
+                                pretrain_fn = None
+                                if args.pretrain == 'DGI':
+                                    pretrain_fn = lambda x: DGI(x, link_level=(args.task_type in ['LC', 'LP']))
+                                elif args.pretrain == 'InfoGraph':
+                                    pretrain_fn = InfoGraph
                                     
                                 benchmark = _trainer(model = model,
                                                      scenario = scenario,
@@ -243,7 +250,7 @@ if __name__ == '__main__':
                                                      loss_fn = metric_fn,
                                                      device = torch.device(f'cuda:{args.gpu}'),
                                                      scheduler_fn = lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='max' if args.dataset_name in ['wikics', 'ogbl-collab', 'facebook', 'askubuntu', 'gowalla', 'movielens'] else 'min', patience=patience, min_lr= lr * min_scale * 2., verbose=False),
-                                                     benchmark = True, seed = seed, verbose=True, binary = (metric != 'accuracy'), **algo_kwargs)
+                                                     benchmark = True, seed = seed, verbose=True, binary = (metric != 'accuracy'), pretraining=pretrain_fn, **algo_kwargs)
 
                                 benchmark.run(epoch_per_task = max_num_epochs)
 

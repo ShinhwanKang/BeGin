@@ -152,6 +152,7 @@ class InfoGraph(PretrainingMethod):
     
     def __init__(self, encoder):
         super().__init__(encoder)
+        print("PRETRAINING_ALGO: InfoGraph")
         self.local_d = self.FeedforwardNetwork(encoder.n_hidden * encoder.n_layers, encoder.n_hidden, encoder.n_hidden // (1 << encoder.n_mlp_layers))
         
     def inference(self, inputs):
