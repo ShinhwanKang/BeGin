@@ -344,14 +344,14 @@ class LightGCL(PretrainingMethod):
                 # self.dsts = dsts
                 self.num_srcs = srcs.max() + 1
                 self.num_dsts = dsts.max() + 1 - self.num_srcs
-                self.svd_u, self.svd_s, self.svd_v = torch.svd_lowrank(torch.sparse_coo_tensor([srcs.tolist(), (dsts - self.num_srcs).tolist()], srcs.float().tolist()), q=5)
+                self.svd_u, self.svd_s, self.svd_v = torch.svd_lowrank(torch.sparse_coo_tensor([srcs.tolist(), (dsts - self.num_srcs).tolist()], torch.ones_like(srcs).float().tolist()), q=5)
             else:
                 srcs, dsts = graph.edges()
                 self.srcs = srcs
                 self.dsts = dsts
                 valid = srcs != dsts
                 srcs, dsts = srcs[valid], dsts[valid]
-                self.svd_u, self.svd_s, self.svd_v = torch.svd_lowrank(torch.sparse_coo_tensor([srcs.tolist(), dsts.tolist()], torch.ones_like(srcs).to(srcs.device), (graph.num_nodes(), graph.num_nodes())), q=5)
+                self.svd_u, self.svd_s, self.svd_v = torch.svd_lowrank(torch.sparse_coo_tensor([srcs.tolist(), dsts.tolist()], torch.ones_like(srcs).float().tolist(), (graph.num_nodes(), graph.num_nodes())), q=5)
 
         if self.bipartite and self.link_level:
             return self.PretrainIterator(inputs, self.batch_size, torch.stack((self.srcs, self.dsts), dim=-1), device)

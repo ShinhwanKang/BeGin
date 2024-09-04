@@ -244,12 +244,12 @@ if __name__ == '__main__':
                                 elif args.pretrain == 'InfoGraph':
                                     pretrain_fn = InfoGraph
                                 elif args.pretrain == 'LightGCL':
-                                    pretrain_fn = lambda x: LightGCL(x, link_level=True, bipartite=True)
+                                    pretrain_fn = lambda x: LightGCL(x, link_level=(args.task_type in ['LC', 'LP']), bipartite=(args.dataset_name in ['gowalla', 'movielens']))
                                 elif args.pretrain == 'GraphCL':
                                     if args.task_type in ['NC']:
-                                        pretrain_fn = lambda x: DGICL(x, link_level=False)
+                                        pretrain_fn = lambda x: DGISubgraphCL(x, link_level=False)
                                     elif args.task_type in ['LC', 'LP']:
-                                        pretrain_fn = lambda x: DGICL(x, link_level=True)
+                                        pretrain_fn = lambda x: DGISubgraphCL(x, link_level=True)
                                     elif args.task_type in ['GC']:
                                         pretrain_fn = SubgraphCL
                                     
