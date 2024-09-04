@@ -42,12 +42,12 @@ class GCTrainer(BaseTrainer):
         for epoch_cnt in range(self.max_num_epochs):
             total_loss = 0.
             for _curr_batch in pretrain_loader:
-                curr_batch, labels, _2 = _curr_batch
+                curr_batch, labels = _curr_batch
                 pre_optimizer.zero_grad()
                 loss = pre_model.inference(curr_batch.to(self.device))
                 loss.backward()
                 pre_optimizer.step()
-                total_loss = total_loss + (labels.shape[0] * loss.item())    
+                total_loss = total_loss + (labels.shape[0] * loss.item())
             if total_loss < best_loss:
                 best_loss = total_loss
                 pre_model.update()

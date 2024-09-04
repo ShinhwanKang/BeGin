@@ -26,9 +26,9 @@ class LPTrainer(BaseTrainer):
         return {}
 
     def preparePretrainLoader(self, curr_dataset, curr_training_states):
-        srcs, dsts = curr_dataset.edges()
+        srcs, dsts = curr_dataset['graph'].edges()
         graph = dgl.graph((copy.deepcopy(srcs), copy.deepcopy(dsts)))
-        graph.ndata['feat'] = curr_dataset.ndata['feat']
+        graph.ndata['feat'] = curr_dataset['graph'].ndata['feat']
         isolated_nodes = torch.nonzero((graph.in_degrees() <= 1) & (graph.out_degrees() <= 1), as_tuple=True)[0]
         graph.remove_nodes(isolated_nodes)
         return [graph]
@@ -37,23 +37,26 @@ class LPTrainer(BaseTrainer):
         pre_model = self.pretraining(copy.deepcopy(curr_model)).to(self.device)
         pre_optimizer = self.optimizer_fn(pre_model.parameters())
         pre_scheduler = self.scheduler_fn(pre_optimizer)
-        
+
+        import tqdm
         best_loss = 1e10
         for epoch_cnt in range(self.max_num_epochs):
             total_loss = 0.
+            num_iters = 0.
             for _curr_batch in pretrain_loader:
-                pre_optimizer.zero_grad()
-                loss = pre_model.inference(_curr_batch.to(self.device))
-                loss.backward()
-                pre_optimizer.step()    
-                total_loss = total_loss + loss.item()
-            total_loss /= len(pretrain_loader)
-            
+                for inputs in pre_model.iterator(_curr_batch, self.device):
+                    pre_optimizer.zero_grad()
+                    loss = pre_model.inference(inputs)
+                    loss.backward()
+                    pre_optimizer.step()
+                    total_loss = total_loss + loss.item()
+                    num_iters += 1
+            total_loss /= num_iters
             if total_loss < best_loss:
                 best_loss = total_loss
                 pre_model.update()
                 pre_checkpoint = copy.deepcopy(pre_model.encoder.state_dict())
-            pre_scheduler.step(total_loss)
+            pre_scheduler.step(-total_loss)
             if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
                 break
         pre_model.processAfterTraining(curr_model)
@@ -178,14 +181,16 @@ class LCTrainer(BaseTrainer):
         best_loss = 1e10
         for epoch_cnt in range(self.max_num_epochs):
             total_loss = 0.
+            num_iters = 0.
             for _curr_batch in pretrain_loader:
-                pre_optimizer.zero_grad()
-                loss = pre_model.inference(_curr_batch.to(self.device))
-                loss.backward()
-                pre_optimizer.step()    
-                total_loss = total_loss + loss.item()
-            total_loss /= len(pretrain_loader)
-            
+                for inputs in pre_model.iterator(_curr_batch, self.device):
+                    pre_optimizer.zero_grad()
+                    loss = pre_model.inference(inputs)
+                    loss.backward()
+                    pre_optimizer.step()    
+                    total_loss = total_loss + loss.item()
+                    num_iters += 1
+            total_loss /= num_iters
             if total_loss < best_loss:
                 best_loss = total_loss
                 pre_model.update()

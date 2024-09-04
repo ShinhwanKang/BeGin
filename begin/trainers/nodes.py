@@ -37,14 +37,16 @@ class NCTrainer(BaseTrainer):
         best_loss = 1e10
         for epoch_cnt in range(self.max_num_epochs):
             total_loss = 0.
+            num_iters = 0.
             for _curr_batch in pretrain_loader:
-                pre_optimizer.zero_grad()
-                loss = pre_model.inference(_curr_batch.to(self.device))
-                loss.backward()
-                pre_optimizer.step()    
-                total_loss = total_loss + loss.item()
-            total_loss /= len(pretrain_loader)
-            
+                for inputs in pre_model.iterator(_curr_batch, self.device):
+                    pre_optimizer.zero_grad()
+                    loss = pre_model.inference(inputs)
+                    loss.backward()
+                    pre_optimizer.step()
+                    total_loss = total_loss + loss.item()
+                    num_iters += 1
+            total_loss /= num_iters
             if total_loss < best_loss:
                 best_loss = total_loss
                 pre_model.update()
@@ -53,7 +55,7 @@ class NCTrainer(BaseTrainer):
             if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
                 break
         pre_model.processAfterTraining(curr_model)
-        
+            
     def prepareLoader(self, curr_dataset, curr_training_states):
         # the default setting for NC is full-batch training
         return [(curr_dataset, curr_dataset.ndata['train_mask'])], [(curr_dataset, curr_dataset.ndata['val_mask'])], [(curr_dataset, curr_dataset.ndata['test_mask'])]

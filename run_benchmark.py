@@ -243,6 +243,15 @@ if __name__ == '__main__':
                                     pretrain_fn = lambda x: DGI(x, link_level=(args.task_type in ['LC', 'LP']))
                                 elif args.pretrain == 'InfoGraph':
                                     pretrain_fn = InfoGraph
+                                elif args.pretrain == 'LightGCL':
+                                    pretrain_fn = lambda x: LightGCL(x, link_level=True, bipartite=True)
+                                elif args.pretrain == 'GraphCL':
+                                    if args.task_type in ['NC']:
+                                        pretrain_fn = lambda x: DGICL(x, link_level=False)
+                                    elif args.task_type in ['LC', 'LP']:
+                                        pretrain_fn = lambda x: DGICL(x, link_level=True)
+                                    elif args.task_type in ['GC']:
+                                        pretrain_fn = SubgraphCL
                                     
                                 benchmark = _trainer(model = model,
                                                      scenario = scenario,
