@@ -133,7 +133,7 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
         days = [None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         graphs, labels, times = [], [], []
         
-        map_to_id = {'"Bronx"': 1, '"Brooklyn"': 2, '"EWR"': 3, '"Manhattan"': 4, '"Queens"': 5, '"Staten Island"': 6, '"Unknown"': 7}
+        map_to_id = {'"Bronx"': 1, '"Brooklyn"': 2, '"EWR"': 3, '"Manhattan"': 4, '"Queens"': 5, '"Staten Island"': 6, '"Unknown"': 7, '"N/A"': 7}
         download('https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv', path=os.path.join(root, 'lookup.csv'))
         with open(os.path.join(root, 'lookup.csv'), 'r') as fcsv:
             fcsv.readline()

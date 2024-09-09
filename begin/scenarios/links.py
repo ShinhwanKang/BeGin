@@ -370,7 +370,7 @@ def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
             # make 7 chunks (with same size) for making 7 tasks
             counts = torch.cumsum(torch.bincount(graph.edata['time']), dim=-1)
             task_ids = (counts / ((graph.num_edges() + 1.) / num_tasks)).long()
-            time_info = task_ids[graph.edata['time']]
+            graph.edata['time'] = task_ids[graph.edata['time']]
             # to formulate binary classification problem
             graph.edata['label'] = (graph.edata.pop('label') < 0).long()
         else:
