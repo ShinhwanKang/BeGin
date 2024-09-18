@@ -276,10 +276,6 @@ class LightGCL(PretrainingMethod):
             h = self.target_module.dropout(h)
         return final_h
         
-        """
-        return self.target_module.forward_without_classifier(graph, feats)
-        """
-        
     def approx_conv(self, conv, graph, feat):
         with graph.local_scope():
             feat_src, feat_dst = expand_as_pair(feat, graph)

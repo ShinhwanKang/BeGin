@@ -848,3 +848,88 @@ class AQSOLGraphDataset:
     @property
     def num_classes(self):
         return 1
+
+class MovielensDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'https://files.grouplens.org/datasets/movielens/ml-1m.zip'
+
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(MovielensDataset, self).__init__(name='movielens',
+                                                 url=self._url,
+                                                 raw_dir=raw_dir,
+                                                 force_reload=force_reload,
+                                                 verbose=verbose)
+    def process(self):
+        logs = []
+        negs = []
+        banned = {}
+        valid = torch.ones(6040, 3952)
+        with open(os.path.join(self.save_path, 'ml-1m/ratings.dat'), 'r') as f:
+            for line in f:
+                tokens = line.strip().split('::')
+                if tokens[2] in ['4', '5']:
+                    logs.append((int(tokens[0]), int(tokens[1]), int(tokens[-1])))
+                valid[int(tokens[0]) - 1, int(tokens[1]) - 1] = 0
+                
+        ufeats = np.zeros((6040, 24))
+        with open(os.path.join(self.save_path, 'ml-1m/users.dat'), 'r') as f:
+            for i, line in enumerate(f):
+                tokens = line.strip().split('::')
+                if 'F' in tokens[1]:
+                    ufeats[i, 0] = 1.
+                else:
+                    ufeats[i, 1] = 1.
+                ufeats[i, 2] = int(tokens[2]) / 56.0
+                ufeats[i, 3 + int(tokens[3])] = 1.
+
+        genres =["Action",
+                 "Adventure", 
+            	"Animation",
+            	"Children's",
+            	"Comedy",
+            	"Crime",
+            	"Documentary",
+            	"Drama",
+            	"Fantasy",
+            	"Film-Noir",
+            	"Horror",
+            	"Musical",
+            	"Mystery",
+            	"Romance",
+            	"Sci-Fi",
+            	"Thriller",
+            	"War",
+            	"Western"]
+        gmap = {k: i for i, k in enumerate(genres)}
+        ifeats = np.zeros((3952, 18))
+        with open(os.path.join(self.save_path, 'ml-1m/movies.dat'), 'r', encoding='latin1') as f:
+            for i, line in enumerate(f):
+                tokens = line.strip().split('::')
+                for mov in tokens[-1].split('|'):
+                    ifeats[i, gmap[mov]] = 1.
+        
+        self.metadata = {}
+        self.metadata['edges'] = logs
+        self.metadata['feats'] = (ufeats, ifeats)
+        
+    def has_cache(self):
+        return False
+
+    def save(self):
+        pass
+        
+    def load(self):
+        pass
+        
+    @property
+    def graphs(self):
+        return self._graphs
+
+    @property
+    def num_classes(self):
+        return 2
+
+    def __len__(self):
+        return len(self.graphs)
+
+    def __getitem__(self, item):
+        return self.graphs[item]

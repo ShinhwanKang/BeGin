@@ -41,7 +41,9 @@ Currently, BeGin supports the following event functions. Note that implementing 
 
 - :func:`initTrainingStates`: This function is called only once, when the training procedure begins. 
 - :func:`prepareLoader`: This function is called once for each task when generating dataloaders for train/validation/test. Given dataset for each task, it should return dataloaders for training, validation, and test.
+- :func:`preparePretrainingLoader`: This function is called once before the main training step, and if users opt for a pretraining phase, it should return the dataloaders needed for pretraining.
 - :func:`processBeforeTraining`: This function is called once for each task, right after the :func:`prepareLoader` event function.
+- :func:`processPretraining`: This function is called once right after the :func:`preparePretrainingLoader` event terminates, and if users opt for a pretraining phase, it should handle the pretraining process.
 - :func:`processTrainIteration`: This function is called for every training iteration. When the current batched inputs, model, and optimizer are given, it should perform single training iteration and return the information or outcome during the iteration.  
 - :func:`processEvalIteration`: This function is called for every evaluation iteration. When the current batched inputs and trained model are given, it should perform single evaluation iteration and return the information or outcome during the iteration.
 - :func:`inference`: This function is called for every inference step in the training procedure. 
@@ -195,3 +197,37 @@ In BeGin, at the end of each task, the trainer measures the performance of all t
 - Average Forgetting (AF): Average forgetting on all tasks. We measure the forgetting on task i by the difference between the performance on task i after learning all  tasks and the performance on task i right after learning task i
 - Forward Transfer (FWT) : Average forward transfer on tasks. We measure the forward transfer on task i by the difference between the performance on task i after learning task (i-1) and the performance of initialized model on task i.
 - Intransigence (INT): Average intransigence on all tasks. We measure the intransigence on task i by the difference between the performances of the Joint model and the the target mode on task i after learning task i. BeGin provides this metric if and only if `full_mode = True`, which simultaneously runs the bare model and the joint model, is enabled.
+
+-------------
+Pretraining
+-------------
+
+From v0.4.0, BeGin supports various pretraining methods, allowing users to integrate them with existing CL methods by adding `pretraining` arguments.
+
+.. code-block:: python
+
+  from begin.scenarios.nodes import NCScenarioLoader
+  from begin.utils.pretraining import *
+
+  scenario = NCScenarioLoader(dataset_name='ogbn-arxiv', num_tasks=8, metric='accuracy', save_path='./data', incr_type='class')
+  benchmark = NCClassILEWCTrainer(
+      model=GCN(scenario.num_feats, scenario.num_classes, 256, dropout=0.25),
+      scenario=scenario,
+      optimizer_fn=lambda x: torch.optim.Adam(x, lr=1e-3),
+      loss_fn=torch.nn.CrossEntropyLoss(ignore_index=-1),
+      device=torch.device('cuda:0'),
+      scheduler_fn=lambda x: torch.optim.lr_scheduler.ReduceLROnPlateau(x, mode='min', patience=20, min_lr=args.lr * 0.001 * 2., verbose=True),
+      pretraining=DGI
+  )
+  results = benchmark.run(epoch_per_task=1000)
+
+Implementing Custom Pretraining Method 
+================================================
+
+Similar to the trainer, BeGin provides a basic implementation of pretraining methods. To implement a new pretraining method, you need to extend the `PretrainingMethod` class to streamline the process. Currently, BeGin supports the following event functions. Note that implementing each event function is optional. If user-defined functions are not provided, the default pre-implemented base functions will be utilized.
+
+- :class:`PretrainIterator`: This class is required for training on node-level and link-level tasks. The default implementation assumes full-batch training.
+- :func:`iterator`: This function is invoked for every epoch when the trainer requires an iterator for pretraining. The default implementation returns a :class:`PretrainIterator` object.
+- :func:`inference`: This function is called during each inference step in the pretraining process. Implementing this function is mandatory to operate the pretraining procedure.
+- :func:`update`: This function is called when the best checkpoint needs to be updated. The default implementation stores the current `state_dict` of the model in `self.best_checkpoint`.
+- :func:`processAfterTraining`: This function is called once when the trainer concludes pretraining. The default implementation initializes the model using the saved best checkpoint (spec., `self.best_checkpoint`) before the main training begins.

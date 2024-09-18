@@ -122,10 +122,14 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         neg_edges['test'][:, 1] += num_srcs
     elif dataset_name in ['movielens'] and incr_type in ['time']:
         is_bipartite = True
+        dataset = MovielensDataset(dataset_name=dataset_name, raw_dir=save_path)
         num_srcs, num_dsts = 6040, 3952
         pkl_path = os.path.join(save_path, f'movielens_metadata_domainIL.pkl')
         download(f'https://github.com/jihoon-ko/BeGin/raw/pretrain/metadata/movielens_metadata_timeIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
+        metadata['edges'] = dataset.metadata['edges']
+        metadata['feats'] = dataset.metadata['feats']
+        
         num_feats = metadata['feats'][0].shape[-1] + metadata['feats'][1].shape[-1]
         srcs, dsts, _ = zip(*metadata['edges'])
         metadata['feats'] = list(map(torch.FloatTensor, metadata['feats']))
