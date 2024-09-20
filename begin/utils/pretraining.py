@@ -9,7 +9,14 @@ from dgl.utils import expand_as_pair
 import dgl.function as fn
 
 class PretrainingMethod(nn.Module):
+    r""" Base framework for implementing pretraining methods.
+    
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
     class PretrainIterator:
+        r""" Base itearator for pretraining iterations. This class assumes full-batch training.
+        """
         def __init__(self, inputs, device):
             self.inputs = inputs
             self.count = 0
@@ -31,18 +38,52 @@ class PretrainingMethod(nn.Module):
         self.loss_fn = None
         
     def iterator(self, inputs, device):
+        """
+            Return iterator for the given input dataset.
+            
+            Args:
+                inputs (object): the input graph dataset.
+                device (str): target GPU device.
+                
+            Returns:
+                An iterator for pretraining epoch.
+        """
         return self.PretrainIterator(inputs, device)
         
     def inference(self, inputs):
+        """
+            Return iterator for the given input dataset.
+            Implementing this function is mandatory to operate the pretraining procedure.
+            
+            Args:
+                inputs (object): the input sample drawn from iterator.
+                
+            Returns:
+                a scalar which represents loss for pretraining.
+        """
         raise NotImplementedError
 
     def update(self):
+        """
+            This function is called when the best checkpoint needs to be updated.
+            The default implementation stores the current `state_dict` of the model in `self.best_checkpoint`.
+        """
         self.best_checkpoint = copy.deepcopy(self.encoder.state_dict())
 
     def processAfterTraining(self, original_model):
+        """
+            This function is called once when the trainer concludes pretraining.
+            The default implementation initializes the model using the saved best checkpoint (spec., `self.best_checkpoint`) before the main training begins.
+        """
         original_model.load_state_dict(self.best_checkpoint)
 
 class DGI(PretrainingMethod):
+    r""" An implementation of DGL for node-level and link-level problems. This code was implemented based on the official implementation by authors.
+    For the details, see the `original paper <https://arxiv.org/pdf/1809.10341>`_.
+    
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
     class Discriminator(nn.Module):
         def __init__(self, n_hidden):
             super().__init__()
@@ -89,6 +130,13 @@ class DGI(PretrainingMethod):
         return l1 + l2
 
 class DGISubgraphCL(PretrainingMethod):
+    r""" An implementation of GraphCL (utilized with DGI, subgraph augmentation) for node-level and link-level problems. This code was implemented based on the official implementation by authors.
+    For the details, see the `original paper <https://proceedings.neurips.cc/paper_files/paper/2020/file/3fe230348e9a12c13120749e3f9fa4cd-Paper.pdf>`_.
+
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
+    
     class Discriminator(nn.Module):
         def __init__(self, n_hidden):
             super().__init__()
@@ -179,6 +227,13 @@ class DGISubgraphCL(PretrainingMethod):
         return aug1_loss + aug2_loss
 
 class SubgraphCL(PretrainingMethod):        
+    r""" An implementation of GraphCL (subgraph augmentation) for graph-level problems. This code was implemented based on the official implementation by authors.
+    For the details, see the `original paper <https://proceedings.neurips.cc/paper_files/paper/2020/file/3fe230348e9a12c13120749e3f9fa4cd-Paper.pdf>`_.
+
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
+    
     def __init__(self, encoder):
         super().__init__(encoder)
         print("PRETRAINING_ALGO: GraphCL (Graph)")
@@ -236,6 +291,14 @@ class SubgraphCL(PretrainingMethod):
 
 
 class LightGCL(PretrainingMethod):
+    r""" An implementation of LightGCL for node-level and link-level problems. This code was implemented based on the official implementation by authors.
+    Note that this method only supports bipartite graphs.
+    For the details, see the `original paper <https://arxiv.org/pdf/2302.08191>`_.
+
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
+    
     class PretrainIterator(PretrainingMethod.PretrainIterator):
         def __init__(self, inputs, batch_size, samples, device):
             super().__init__(inputs, device)
@@ -375,6 +438,13 @@ class LightGCL(PretrainingMethod):
         return loss
         
 class InfoGraph(PretrainingMethod):
+    r""" An implementation of InfoGraph for graph-level problems. This code was implemented based on the official implementation by authors.
+    For the details, see the `original paper <https://arxiv.org/pdf/1908.01000>`_.
+
+    Arguments:
+        encoder (torch.nn.Module): Pytorch model for pretraining.
+    """
+    
     class FeedforwardNetwork(nn.Module):
         def __init__(self, in_dim, hid_dim, out_dim):
             super().__init__()
@@ -394,13 +464,6 @@ class InfoGraph(PretrainingMethod):
             return out
 
     def get_positive_expectation(self, p_samples, average=True):
-        """Computes the positive part of a JS Divergence.
-        Args:
-            p_samples: Positive samples.
-            average: Average the result over samples.
-        Returns:
-            th.Tensor
-        """
         log_2 = math.log(2.0)
         Ep = log_2 - F.softplus(-p_samples)
     
@@ -411,13 +474,6 @@ class InfoGraph(PretrainingMethod):
     
     
     def get_negative_expectation(self, q_samples, average=True):
-        """Computes the negative part of a JS Divergence.
-        Args:
-            q_samples: Negative samples.
-            average: Average the result over samples.
-        Returns:
-            th.Tensor
-        """
         log_2 = math.log(2.0)
         Eq = F.softplus(-q_samples) + q_samples - log_2
     
