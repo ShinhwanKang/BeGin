@@ -401,16 +401,6 @@ class NCDomainILPIGNNTrainer(NCClassILPIGNNTrainer):
     pass
         
 class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
-    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
-        """
-            `num_memories` is the hyperparameter for size of the memory.
-            `retrain_beta` is the hyperparameter for handling the size imbalance problem in the parameter-isolation phase.
-        """
-        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
-        self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
-        self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
-        self.num_memories = (self.num_memories // self.num_tasks)
-        
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
             PI-GNN requires extending the network before running each task.
@@ -422,10 +412,6 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
                 curr_optimizer (torch.optim.Optimizer): the current optimizer function.
                 curr_training_states (dict): the dictionary containing the current training states.
         """
-        n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
-        n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
-        new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
-        self.add_parameters(curr_model, curr_optimizer)
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         curr_training_states['task_id'] = task_id
