@@ -231,3 +231,97 @@ Similar to the trainer, BeGin provides a basic implementation of pretraining met
 - :func:`inference`: This function is called during each inference step in the pretraining process. Implementing this function is mandatory to operate the pretraining procedure.
 - :func:`update`: This function is called when the best checkpoint needs to be updated. The default implementation stores the current `state_dict` of the model in `self.best_checkpoint`.
 - :func:`processAfterTraining`: This function is called once when the trainer concludes pretraining. The default implementation initializes the model using the saved best checkpoint (spec., `self.best_checkpoint`) before the main training begins.
+
+Suppose we implement Deep Graph Infomax (DGI) method for node-level problems. DGI is a method for learning useful representations from graph data. It generates node embeddings that capture structural information from the graph. Unlike traditional autoencoders, DGI aligns local node embeddings with a global representation to extract richer information from the graph. DGI uses an encoder, typically a Graph Convolutional Network (GCN), to create node embeddings from graph features. A global readout function (e.g., mean or max pooling) summarizes these embeddings. The discriminator then maximizes mutual information between the node embeddings and the global summary, learning better graph representations.
+
+Step 1. Extending the base and Implementing discriminator
+============================================================
+
+First, we need to create a new class by extending ``PretrainingMethod`` and passi the encoder to perform pretraining (GCN) to the superclass constructor in the ``__init__`` method. Next, we need to implement the discriminator in this subclass to distinguish between real and corrupted node embeddings, maximizing the mutual information between the node embeddings and the global summary.
+
+.. code-block:: python
+
+  class DGI(PretrainingMethod):
+    class Discriminator(nn.Module):
+        def __init__(self, n_hidden):
+            super().__init__()
+            self.weight = nn.Parameter(torch.Tensor(n_hidden, n_hidden))
+            self.reset_parameters()
+    
+        def uniform(self, size, tensor):
+            bound = 1.0 / math.sqrt(size)
+            if tensor is not None:
+                tensor.data.uniform_(-bound, bound)
+    
+        def reset_parameters(self):
+            size = self.weight.size(0)
+            self.uniform(size, self.weight)
+    
+        def forward(self, features, summary):
+            features = torch.matmul(features, torch.matmul(self.weight, summary))
+            return features
+            
+    def __init__(self, encoder):
+        super().__init__(encoder)
+        self.discriminator = self.Discriminator(encoder.n_hidden)
+        self.loss_fn = nn.BCEWithLogitsLoss()
+        
+    def inference(self, inputs):
+        pass
+
+
+Step 2. Implementating inference process
+============================================================
+
+We need to implement code that maximizes mutual information using the encoder and discriminator. First, the real embeddings, corrupted embeddings, and the global embedding obtained through the readout function can be computed with the following code.
+
+.. code-block:: python
+
+  def inference(self, inputs):
+    graph, features = inputs, inputs.ndata['feat']
+    positive = self.encoder.forward_without_classifier(graph, features)
+    perm = torch.randperm(graph.number_of_nodes()).to(features.device)
+    negative = self.encoder.forward_without_classifier(graph, features[perm])
+    summary = torch.sigmoid(positive.mean(dim=0))
+
+Lastly, we need to input pairs consisting of the real embeddings and global summary, as well as the corrupted embeddings and global summary, into the discriminator. To maximize the difference between the two, use the nn.BCEWithLogitsLoss function to calculate the loss. The final code is as follows. This returned loss is used in the default :func:`processPretraining` to perform backpropagation, facilitating the overall pretraining process.
+
+.. code-block:: python
+
+  class DGI(PretrainingMethod):
+    class Discriminator(nn.Module):
+        def __init__(self, n_hidden):
+            super().__init__()
+            self.weight = nn.Parameter(torch.Tensor(n_hidden, n_hidden))
+            self.reset_parameters()
+    
+        def uniform(self, size, tensor):
+            bound = 1.0 / math.sqrt(size)
+            if tensor is not None:
+                tensor.data.uniform_(-bound, bound)
+    
+        def reset_parameters(self):
+            size = self.weight.size(0)
+            self.uniform(size, self.weight)
+    
+        def forward(self, features, summary):
+            features = torch.matmul(features, torch.matmul(self.weight, summary))
+            return features
+            
+    def __init__(self, encoder):
+        super().__init__(encoder)
+        self.discriminator = self.Discriminator(encoder.n_hidden)
+        self.loss_fn = nn.BCEWithLogitsLoss()
+        
+    def inference(self, inputs):
+        graph, features = inputs, inputs.ndata['feat']
+        positive = self.encoder.forward_without_classifier(graph, features)
+        perm = torch.randperm(graph.number_of_nodes()).to(features.device)
+        negative = self.encoder.forward_without_classifier(graph, features[perm])
+        summary = torch.sigmoid(positive.mean(dim=0))
+
+        positive = self.discriminator(positive, summary)
+        negative = self.discriminator(negative, summary)
+        l1 = self.loss_fn(positive, torch.ones_like(positive))
+        l2 = self.loss_fn(negative, torch.zeros_like(negative))
+        return l1 + l2

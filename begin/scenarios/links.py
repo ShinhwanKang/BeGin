@@ -105,8 +105,8 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         is_bipartite = True
         num_srcs, num_dsts = 29858, 40981
         num_feats = 2
-        pkl_path = os.path.join(save_path, f'gowalla_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/pretrain/metadata/gowalla_metadata_timeIL.pkl', pkl_path, overwrite=False)
+        pkl_path = os.path.join(save_path, f'gowalla_metadata_timeIL.pkl')
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/gowalla_metadata_timeIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
         srcs, dsts, _ = zip(*metadata['edges'])
         srcs, dsts = torch.LongTensor(srcs), (torch.LongTensor(dsts) + num_srcs)
@@ -124,11 +124,13 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         is_bipartite = True
         dataset = MovielensDataset(dataset_name=dataset_name, raw_dir=save_path)
         num_srcs, num_dsts = 6040, 3952
-        pkl_path = os.path.join(save_path, f'movielens_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/pretrain/metadata/movielens_metadata_timeIL.pkl', pkl_path, overwrite=False)
+        pkl_path = os.path.join(save_path, f'movielens_metadata_timeIL.pkl')
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/movielens_metadata_timeIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
+        # edges, feats, time are not in preprocessed file (due to the license)
         metadata['edges'] = dataset.metadata['edges']
         metadata['feats'] = dataset.metadata['feats']
+        metadata['time'] = dataset.metadata['time']
         
         num_feats = metadata['feats'][0].shape[-1] + metadata['feats'][1].shape[-1]
         srcs, dsts, _ = zip(*metadata['edges'])

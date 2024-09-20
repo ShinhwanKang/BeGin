@@ -1,12 +1,11 @@
 Datasets for Graph-Level Problems
 ===================================
 
-----------
-MNIST
-----------
-Images in `MNIST <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to
-graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups,
-which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
+------------------------------
+MNIST (Graph Classification)
+------------------------------
+
+Images in `MNIST <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups, which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
 
 Statistics:
 
@@ -44,12 +43,11 @@ Citing:
 
 -----
 
-----------
-CIFAR10
-----------
-Images in `CIFAR10 <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to
-graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups,
-which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
+-------------------------------
+CIFAR10 (Graph Classification)
+-------------------------------
+
+Images in `CIFAR10 <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups, which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
 
 Statistics:
 
@@ -87,13 +85,11 @@ Citing:
 
 -----
 
---------------
-Aromaticity
---------------
+------------------------------------
+Aromaticity (Graph Classification)
+------------------------------------
 
-Graphs in `Aromaticity <https://lifesci.dgl.ai/api/data.html#pubmed-aromaticity>`_ are molecules consisting of atoms and their chemical bonds.
-The original dataset contains labels representing the number of aromatic atoms in each molecule.
-We divide molecules into 30 groups based on the labels and formulate Task-IL and Class-IL settings with 10 tasks. Since there is no external node feature, we use in-degrees and out-degrees as node features.
+Graphs in `Aromaticity <https://lifesci.dgl.ai/api/data.html#pubmed-aromaticity>`_ are molecules consisting of atoms and their chemical bonds. The original dataset contains labels representing the number of aromatic atoms in each molecule. We divide molecules into 30 groups based on the labels and formulate Task-IL and Class-IL settings with 10 tasks. Since there is no external node feature, we use in-degrees and out-degrees as node features.
 
 Statistics:
 
@@ -134,15 +130,11 @@ Citing:
 
 -----
 
-------------
-ogbg-molhiv
-------------
+------------------------------------
+ogbg-molhiv (Graph Classification)
+------------------------------------
 
-Graphs in  `ogbg-molhiv <https://ogb.stanford.edu/docs/graphprop/#ogbg-mol>`_ are molecules
-consisting of atoms and their chemical bonds. The binary class of each graph indicates whether
-the molecule inhibits HIV virus replication or not. For Domain-IL, we divide molecules into 20
-groups based on structural similarity by the scaffold splitting procedure.
-Input node features are 9-dimensional, containing atomic number and chirality, and edge features are 3-dimensional indicating the types of bonds.
+Graphs in  `ogbg-molhiv <https://ogb.stanford.edu/docs/graphprop/#ogbg-mol>`_ are molecules consisting of atoms and their chemical bonds. The binary class of each graph indicates whether the molecule inhibits HIV virus replication or not. For Domain-IL, we divide molecules into 20 groups based on structural similarity by the scaffold splitting procedure. Input node features are 9-dimensional, containing atomic number and chirality, and edge features are 3-dimensional indicating the types of bonds.
 
 Statistics:
 
@@ -186,9 +178,9 @@ Citing:
    
 -----
 
-----------
-NYC-Taxi
-----------
+---------------------------------
+NYC-Taxi (Graph Classification)
+---------------------------------
 
 Each graph in `NYC-Taxi <https://www1.nyc.gov/site/tlc/about/tlc-trip-record-data.page>`_ shows the amount of taxi traffic between locations in New York City
 during an hour in 2021. Specifically, nodes are locations, and there exist a directed edge between
@@ -220,9 +212,9 @@ Statistics:
 
 -----
 
-----------
-ogbg-ppa
-----------
+----------------------------------
+ogbg-ppa (Graph Classification)
+----------------------------------
 
 Graphs in `ogbg-ppa <https://ogb.stanford.edu/docs/graphprop/#ogbg-ppa>`_ are protein-protein interactions. For Domain-IL, we formulate multi-class classification problem with $37$ classes to predict what taxonomic groups of species the graph comes from. The dataset is sampled so that there are $11$ species for each taxonomic group and $100$ graphs for each species. We formulate $11$ tasks, and each task was formulated to contain graphs of exactly one species per group so that there is no duplicated graph among the tasks. Since there is no external node feature, we use in-degrees
 and out-degrees as node features. According to OGB, the edges are associated with 7-dimensional features, where each element takes a value between 0 and 1 and represents the approximate confidence of a particular type of protein protein association such as gene co-occurrence, gene fusion events, and co-expression.
@@ -280,11 +272,11 @@ Citing:
 
 -----
 
-----------
-sentiment
-----------
+----------------------------------
+Sentiment (Graph Classification)
+----------------------------------
 
-Graphs in `sentiment <http://help.sentiment140.com/for-students>`_ are parsed dependency tree from tweets. Specifically, we used SpaCy
+Graphs in `Sentiment <http://help.sentiment140.com/for-students>`_ are parsed dependency tree from tweets. Specifically, we used SpaCy
 library to parse the dependency trees of tokens and obtain the node embeddings of the trees. The
 binary class of each graph indicates whether the sentiment in tweet is positive or negative. For
 Time-IL, we formulate 11 tasks according to the timestamps of the tweets. Specifically, we constructed the tasks with the tweets posted in the same day.
@@ -314,4 +306,89 @@ Citing:
   year={2009}
 }
 ```
+
+-----
+
+------------------------------------
+ZINC (Graph Regression)
+------------------------------------
+
+Graphs in `ZINC <https://github.com/graphdeeplearning/benchmarking-gnns>`_ are molecules consisting of atoms and their chemical bonds. It contains real values representing aqueous solubility, which are used as ground-truth values for graph regression. For Domain-IL, we divide the molecules in ZINC into 11 groups based on molecular size.
+
+Statistics:
+
+- Number of Graphs: 12,000
+- Average Number of Nodes: 23.16
+- Average Number of Edges: 49.83
+- Number of Node Features: 28
+- Number of Edge Features: 4
+- Supported Incremental Settings:
+   
+   + Domain-IL with 11 tasks
+
+Citing:
+
+```bibtex
+@article{dwivedi2020benchmarking,
+  title={Benchmarking graph neural networks},
+  author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
+  journal={arXiv preprint arXiv:2003.00982},
+  year={2020}
+}
+
+@article{gomez2018automatic,
+  title={Automatic chemical design using a data-driven continuous representation of molecules},
+  author={G{\'o}mez-Bombarelli, Rafael and Wei, Jennifer N and Duvenaud, David and Hern{\'a}ndez-Lobato, Jos{\'e} Miguel and S{\'a}nchez-Lengeling, Benjam{\'\i}n and Sheberla, Dennis and Aguilera-Iparraguirre, Jorge and Hirzel, Timothy D and Adams, Ryan P and Aspuru-Guzik, Al{\'a}n},
+  journal={ACS central science},
+  volume={4},
+  number={2},
+  pages={268--276},
+  doi = {10.1021/acscentsci.7b00572},
+  year={2018},
+  publisher={ACS Publications}
+}
+```
+
+-----
+
+------------------------------------
+AqSol (Graph Regression)
+------------------------------------
+
+Graphs in `AqSol <https://github.com/graphdeeplearning/benchmarking-gnns>`_ are molecules consisting of atoms and their chemical bonds. It contains real values representing aqueous solubility, which are used as ground-truth values for graph regression. For Domain-IL, we divide the molecules in AqSol into 5 groups based on structural similarity, using the scaffold splitting procedure.
+
+Statistics:
+
+- Number of Graphs: 9,823
+- Average Number of Nodes: 17.57
+- Average Number of Edges: 35.76
+- Number of Node Features: 65
+- Number of Edge Features: 6
+- Supported Incremental Settings:
+   
+   + Domain-IL with 5 tasks
+
+Citing:
+
+```bibtex
+@article{dwivedi2020benchmarking,
+  title={Benchmarking graph neural networks},
+  author={Dwivedi, Vijay Prakash and Joshi, Chaitanya K and Laurent, Thomas and Bengio, Yoshua and Bresson, Xavier},
+  journal={arXiv preprint arXiv:2003.00982},
+  year={2020}
+}
+
+@article{sorkun2019aqsoldb,
+  title={AqSolDB, a curated reference set of aqueous solubility and 2D descriptors for a diverse set of compounds},
+  author={Sorkun, Murat Cihan and Khetan, Abhishek and Er, S{\"u}leyman},
+  journal={Scientific data},
+  volume={6},
+  number={1},
+  pages={143},
+  doi = {10.1038/s41597-019-0151-1},
+  year={2019},
+  publisher={Nature Publishing Group UK London}
+}
+```
+
 

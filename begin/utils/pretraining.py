@@ -64,7 +64,7 @@ class DGI(PretrainingMethod):
             
     def __init__(self, encoder, link_level=True):
         super().__init__(encoder)
-        print("PRETRAINING_ALGO: DGI")
+        print("PRETRAINING_METHOD: DGI")
         self.discriminator = self.Discriminator(encoder.n_hidden)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.link_level = link_level
@@ -110,7 +110,7 @@ class DGISubgraphCL(PretrainingMethod):
             
     def __init__(self, encoder, link_level=True):
         super().__init__(encoder)
-        print("PRETRAINING_ALGO: DGI_CL")
+        print("PRETRAINING_METHOD: GraphCL (Node/Link)")
         self.discriminator = self.Discriminator(encoder.n_hidden)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.link_level = link_level
@@ -181,7 +181,7 @@ class DGISubgraphCL(PretrainingMethod):
 class SubgraphCL(PretrainingMethod):        
     def __init__(self, encoder):
         super().__init__(encoder)
-        print("PRETRAINING_ALGO: GraphCL (Subgraph)")
+        print("PRETRAINING_ALGO: GraphCL (Graph)")
         
     def do_augmentation(self, graph):
         device = graph.ndata['feat'].device
@@ -254,6 +254,7 @@ class LightGCL(PretrainingMethod):
                 
     def __init__(self, encoder, link_level=True, bipartite=False):
         super().__init__(encoder)
+        print("PRETRAINING_ALGO: LightGCL (Bipartite Graph Only)")
         self.link_level = link_level
         self.bipartite = bipartite
         self.batch_size = 4096

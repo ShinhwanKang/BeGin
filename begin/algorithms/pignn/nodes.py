@@ -7,12 +7,26 @@ import dgl.function as fn
 
 class NCTaskILPIGNNTrainer(NCTrainer):
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_memories` is the hyperparameter for size of the memory.
+            `retrain_beta` is the hyperparameter for handling the size imbalance problem in the parameter-isolation phase.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
         self.num_memories = (self.num_memories // self.num_tasks)
         
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            PI-GNN requires extending the network before running each task.
+
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
         n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
         new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
@@ -30,6 +44,17 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         return {'memories': [], 'class_to_task': -torch.ones(model.classifier.num_outputs, dtype=torch.long)}
         
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            Before training, PI-GNN needs to freeze parameters from the past tasks in parameter-isolation phase.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         model.train()
         model.requires_grad_(False)
         for conv in model.convs:
@@ -46,7 +71,7 @@ class NCTaskILPIGNNTrainer(NCTrainer):
             The event function to execute some processes right after the inference step (for training).
             We recommend performing backpropagation in this event function.
             
-            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            PI-GNN additionally computes the loss from the buffered nodes and applies it to backpropagation in parameter-isolation phase.
             
             Args:
                 results (dict): the returned dictionary from the event function `inference`.
@@ -77,7 +102,7 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         """
             The event function to execute some processes after training the current task.
 
-            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+            PI-GNN samples the instances in the training dataset for the future tasks.
                 
             Args:
                 task_id (int): the index of the current task.
@@ -97,17 +122,6 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         curr_training_states['memories'].append(torch.cat(chosen_nodes, dim=-1))
 
     def inference(self, model, _curr_batch, training_states):
-        """
-            ERGNN requires node sampler. We use CM sampler as the default sampler.
-            
-            Args:
-                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
-                model (torch.nn.Module): the given model to the trainer
-                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
-                
-            Returns:
-                Initialized training state (dict).
-        """
         curr_batch, mask = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))
         loss = self.loss_fn(preds[mask], curr_batch.ndata['label'][mask].to(self.device))
@@ -117,7 +131,7 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         """
             The event function to handle every evaluation iteration.
             
-            Piggyback has to use different masks to evaluate the performance for each task.
+            PI-GNN has to use different masks to evaluate the performance for each task.
             
             Args:
                 model (torch.nn.Module): the current trained model.
@@ -150,16 +164,27 @@ class NCTaskILPIGNNTrainer(NCTrainer):
         return total_results, {'loss': total_loss}
         
 class NCClassILPIGNNTrainer(NCTrainer):
-    """
-        This trainer has the same behavior as `NCTrainer`.
-    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_memories` is the hyperparameter for size of the memory.
+            `retrain_beta` is the hyperparameter for handling the size imbalance problem in the parameter-isolation phase.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
         self.num_memories = (self.num_memories // self.num_tasks)
         
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            PI-GNN requires extending the network before running each task.
+
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
         n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
         new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
@@ -167,6 +192,17 @@ class NCClassILPIGNNTrainer(NCTrainer):
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
 
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            Before training, PI-GNN needs to freeze parameters from the past tasks in parameter-isolation phase.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         model.train()
         model.requires_grad_(False)
         for conv in model.convs:
@@ -192,7 +228,7 @@ class NCClassILPIGNNTrainer(NCTrainer):
             The event function to execute some processes right after the inference step (for training).
             We recommend performing backpropagation in this event function.
             
-            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            PI-GNN additionally computes the loss from the buffered nodes and applies it to backpropagation in parameter-isolation phase.
             
             Args:
                 results (dict): the returned dictionary from the event function `inference`.
@@ -223,7 +259,7 @@ class NCClassILPIGNNTrainer(NCTrainer):
         """
             The event function to execute some processes after training the current task.
 
-            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+            PI-GNN samples the instances in the training dataset for the future tasks.
                 
             Args:
                 task_id (int): the index of the current task.
@@ -231,7 +267,7 @@ class NCClassILPIGNNTrainer(NCTrainer):
                 curr_model (torch.nn.Module): the current trained model.
                 curr_optimizer (torch.optim.Optimizer): the current optimizer function.
                 curr_training_states (dict): the dictionary containing the current training states.
-        """
+        """ 
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         train_loader = self.prepareLoader(curr_dataset, curr_training_states)[0]
         chosen_nodes = []
@@ -243,16 +279,27 @@ class NCClassILPIGNNTrainer(NCTrainer):
         curr_training_states['memories'].append(torch.cat(chosen_nodes, dim=-1))
         
 class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
-    """
-        This trainer has the same behavior as `NCMinibatchTrainer`.
-    """
     def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_memories` is the hyperparameter for size of the memory.
+            `retrain_beta` is the hyperparameter for handling the size imbalance problem in the parameter-isolation phase.
+        """
         super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
         self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
         self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
         self.num_memories = (self.num_memories // self.num_tasks)
         
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            PI-GNN requires extending the network before running each task.
+
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
         n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
         new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
@@ -260,6 +307,17 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
 
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            Before training, PI-GNN needs to freeze parameters from the past tasks in parameter-isolation phase.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         model.train()
         model.requires_grad_(False)
         for conv in model.convs:
@@ -279,7 +337,7 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
             The event function to execute some processes right after the inference step (for training).
             We recommend performing backpropagation in this event function.
             
-            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            PI-GNN additionally computes the loss from the buffered nodes and applies it to backpropagation in parameter-isolation phase.
             
             Args:
                 results (dict): the returned dictionary from the event function `inference`.
@@ -301,14 +359,6 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
                     _buffered_task_loss = _buffered_task_loss + buf_results['loss']
                 buffered_loss = buffered_loss + (_buffered_task_loss / len(training_states['memories'][tid]))
             buffered_loss = buffered_loss / len(training_states['memories'])    
-            """
-            # retrain phase
-            buffered = torch.cat(training_states['memories'], dim=0)
-            buffered_mask = torch.zeros(curr_batch.srcdata['feat'].shape[0]).to(self.device)
-            buffered_mask[buffered] = 1.
-            buffered_mask = buffered_mask.to(torch.bool)
-            buffered_loss = self.loss_fn(results['preds_full'][buffered_mask.cpu()].to(self.device), _curr_batch[0].dstdata['label'][buffered_mask.cpu()].to(self.device))
-            """
             loss = loss + self.retrain_beta * buffered_loss
         loss.backward()
         optimizer.step()
@@ -319,7 +369,7 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
         """
             The event function to execute some processes after training the current task.
 
-            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+            PI-GNN samples the instances in the training dataset for the future tasks.
                 
             Args:
                 task_id (int): the index of the current task.
@@ -327,7 +377,7 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
                 curr_model (torch.nn.Module): the current trained model.
                 curr_optimizer (torch.optim.Optimizer): the current optimizer function.
                 curr_training_states (dict): the dictionary containing the current training states.
-        """
+        """ 
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         candidates = torch.nonzero(curr_dataset.ndata['train_mask'], as_tuple=True)[0]
         perm = torch.randperm(candidates.shape[0])
@@ -346,22 +396,43 @@ class NCClassILPIGNNMinibatchTrainer(NCMinibatchTrainer):
         
 class NCDomainILPIGNNTrainer(NCClassILPIGNNTrainer):
     """
-        This trainer has the same behavior as `NCTrainer`.
+        This trainer has the same behavior as `NCClassILPIGNNTrainer`.
     """
     pass
         
 class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
-    """
-        This trainer has the same behavior as `NCTrainer`.
-    """
+    def __init__(self, model, scenario, optimizer_fn, loss_fn, device, **kwargs):
+        """
+            `num_memories` is the hyperparameter for size of the memory.
+            `retrain_beta` is the hyperparameter for handling the size imbalance problem in the parameter-isolation phase.
+        """
+        super().__init__(model.to(device), scenario, optimizer_fn, loss_fn, device, **kwargs)
+        self.retrain_beta = kwargs['retrain'] if 'retrain' in kwargs else 0.01
+        self.num_memories = kwargs['num_memories'] if 'num_memories' in kwargs else 100
+        self.num_memories = (self.num_memories // self.num_tasks)
+        
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        """
+            PI-GNN requires extending the network before running each task.
+
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
+        n_hidden_before = (curr_model.n_hidden * task_id) // self.num_tasks
+        n_hidden_after = (curr_model.n_hidden * (task_id + 1)) // self.num_tasks
+        new_parameters = curr_model.expand_parameters(n_hidden_after - n_hidden_before, self.device)
+        self.add_parameters(curr_model, curr_optimizer)
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
+        
         curr_training_states['task_id'] = task_id
         curr_training_states['n_epochs'] = 0
         if task_id == 0: curr_training_states['phase'] = 'retrain'
         else: curr_training_states['phase'] = 'rectify'
-        
-        print(torch.bincount(curr_dataset.in_degrees()))
+            
         if task_id == 0:
             curr_training_states['prv_degs'] = torch.zeros_like(curr_dataset.in_degrees())
         else:
@@ -372,9 +443,19 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
                     curr_dataset.update_all(fn.copy_u('changed', 'm'), fn.max('m', 'changed'))
                     curr_dataset.ndata['changed'][new_degs == 0] = 0.           
                 curr_training_states['unchanged'] = torch.cat(curr_training_states['memories'], dim=-1)[((curr_dataset.ndata['changed'] < 0.5) & (new_degs > 0))[torch.cat(curr_training_states['memories'], dim=-1)]]
-                print('num_unchanged:', curr_training_states['unchanged'])
                 
     def beforeInference(self, model, optimizer, _curr_batch, curr_training_states):
+        """
+            The event function to execute some processes right before inference (for training).
+            
+            Before training, PI-GNN needs to freeze parameters from the past tasks in parameter-isolation phase.
+            
+            Args:
+                model (torch.nn.Module): the current trained model.
+                optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_batch (object): the data (or minibatch) for the current iteration.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
         if curr_training_states['phase'] == 'retrain':
             model.train()
             model.requires_grad_(False)
@@ -396,7 +477,7 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
             The event function to execute some processes right after the inference step (for training).
             We recommend performing backpropagation in this event function.
             
-            ERGNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
+            PI-GNN additionally computes the loss from the buffered nodes and applies it to backpropagation.
             
             Args:
                 results (dict): the returned dictionary from the event function `inference`.
@@ -434,7 +515,7 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
         """
             The event function to execute some processes after training the current task.
 
-            GEM samples the instances in the training dataset for computing gradients in :func:`beforeInference` (or :func:`processTrainIteration`) for the future tasks.
+            PI-GNN samples the instances in the training dataset for the future tasks.
                 
             Args:
                 task_id (int): the index of the current task.
@@ -445,9 +526,27 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
         """
         super().processAfterTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         curr_training_states['prv_degs'] = curr_dataset.in_degrees()
-        # self.max_num_epochs
 
     def processAfterEachIteration(self, curr_model, curr_optimizer, curr_training_states, curr_iter_results):
+        """
+            The event function to execute some processes for every end of each epoch.
+            Whether to continue training or not is determined by the return value of this function.
+            If the returned value is False, the trainer stops training the current model in the current task.
+            For PI-GNN, if the rectify phase ends, we need to move to the parameter-isolation phase.
+            
+            Note:
+                This function is called for every end of each epoch,
+                and the event function ``processAfterTraining`` is called only when the learning on the current task has ended. 
+                
+            Args:
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+                curr_iter_results (dict): the dictionary containing the training/validation results of the current epoch.
+                
+            Returns:
+                A boolean value. If the returned value is False, the trainer stops training the current model in the current task.
+        """
         if curr_training_states['phase'] == 'retrain':
             curr_training_states['n_epochs'] += 1
             val_loss = curr_iter_results['val_stats']['loss']
@@ -479,7 +578,6 @@ class NCTimeILPIGNNTrainer(NCClassILPIGNNTrainer):
             
             # stopping criteria for training
             if (-1e-9 < (curr_optimizer.param_groups[0]['lr'] - scheduler.min_lrs[0]) < 1e-9) or (curr_training_states['n_epochs'] >= (self.max_num_epochs // 10)):
-                print("MOVE_TO_RETRAIN_PHASE")
                 curr_training_states['phase'] = 'retrain'
                 curr_model.load_state_dict(curr_training_states['best_weights'])
                 self._reset_optimizer(curr_optimizer)

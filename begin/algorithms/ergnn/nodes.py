@@ -33,17 +33,6 @@ class NCTaskILERGNNTrainer(NCTrainer):
         return {'sampler': _samp, 'buffered_nodes':[]}
     
     def inference(self, model, _curr_batch, training_states):
-        """
-            ERGNN requires node sampler. We use CM sampler as the default sampler.
-            
-            Args:
-                scenario (begin.scenarios.common.BaseScenarioLoader): the given ScenarioLoader to the trainer
-                model (torch.nn.Module): the given model to the trainer
-                optmizer (torch.optim.Optimizer): the optimizer generated from the given `optimizer_fn` 
-                
-            Returns:
-                Initialized training state (dict).
-        """
         curr_batch, mask = _curr_batch
         preds = model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device), task_masks=curr_batch.ndata['task_specific_mask'].to(self.device))
         loss = self.loss_fn(preds[mask], curr_batch.ndata['label'][mask].to(self.device))
@@ -298,7 +287,7 @@ class NCClassILERGNNMinibatchTrainer(NCMinibatchTrainer):
         g_buf = torch.Generator()
         g_buf.manual_seed(0)
         buf_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
-        buf_loader = dgl.dataloading.NodeDataLoader(
+        buf_loader = dgl.dataloading.DataLoader(
             curr_dataset, curr_training_states['buffered_nodes'], buf_sampler,
             batch_size=131072,
             shuffle=True,

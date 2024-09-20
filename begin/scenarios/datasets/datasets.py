@@ -818,7 +818,7 @@ class ZINCGraphDataset:
 class AQSOLGraphDataset:
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
         pkl_path = os.path.join(raw_dir, f'aqsol_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/pretrain/metadata/aqsol_metadata_domainIL.pkl', pkl_path, overwrite=False)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/aqsol_metadata_domainIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
         
         self._graphs = []
@@ -869,7 +869,9 @@ class MovielensDataset(dgl.data.DGLBuiltinDataset):
                 if tokens[2] in ['4', '5']:
                     logs.append((int(tokens[0]), int(tokens[1]), int(tokens[-1])))
                 valid[int(tokens[0]) - 1, int(tokens[1]) - 1] = 0
-                
+
+        logs = sorted(logs, key=lambda x: x[-1])
+        
         ufeats = np.zeros((6040, 24))
         with open(os.path.join(self.save_path, 'ml-1m/users.dat'), 'r') as f:
             for i, line in enumerate(f):
@@ -910,6 +912,7 @@ class MovielensDataset(dgl.data.DGLBuiltinDataset):
         self.metadata = {}
         self.metadata['edges'] = logs
         self.metadata['feats'] = (ufeats, ifeats)
+        self.metadata['time'] = torch.arange(len(logs)) // ((len(logs) // 10) + 1)
         
     def has_cache(self):
         return False

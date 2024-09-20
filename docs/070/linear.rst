@@ -1,9 +1,9 @@
-AdaptiveLinear
+Pretraining
 ==========================
 
-Our framework ``BeGin`` provides the linear layer, which supports variable number of classes and masking the outputs based on the task ids or ideal outputs of the training data.
+Our framework ``BeGin`` supports pretraining and provides pre-implemented self-supervised learning (SSL) methods.
  
-.. autoclass:: begin.utils.AdaptiveLinear
+.. autoclass:: begin.utils.pretraining
     :undoc-members:
     :members:
     :private-members:

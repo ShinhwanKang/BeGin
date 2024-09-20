@@ -114,11 +114,18 @@ class BaseTrainer:
             Reinitialize an optimizer.
             
             Args:
-                target_model (torch.optim.Optimizer): an optimizer needed to re-initialize
+                target_optimizer (torch.optim.Optimizer): an optimizer needed to re-initialize
         """
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
     
     def add_parameters(self, target_model, target_optimizer):
+        """ 
+            Add parameters and register them to the target optimizer.
+            
+            Args:
+                target_model (torch.nn.Module): an extended model
+                target_optimizer (torch.optim.Optimizer): an optimizer needed to register the new parameters
+        """
         target_model.zero_grad()
         original_weights = torch.load(self.__model_weight_path)
         changed = 0
