@@ -1,6 +1,6 @@
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/logo.png" height="200px" width="600px"></p>
 
-[![Latest Release](https://img.shields.io/badge/Latest-v0.2-success)](https://github.com/ShinhwanKang/BeGin/releases)
+[![Latest Release](https://img.shields.io/badge/Latest-v0.4-success)](https://github.com/ShinhwanKang/BeGin/releases)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 
