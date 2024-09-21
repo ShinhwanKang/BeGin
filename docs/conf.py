@@ -61,8 +61,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.todo',
-    'recommonmark'
+    'sphinx.ext.todo'
 ]
 
 intersphinx_mapping = {
