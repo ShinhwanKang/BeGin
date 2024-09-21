@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
 
 
-<tr><td colspan="4"> <a href=https://begin.readthedocs.io/>Read the docs</a></td></tr> | <tr><td colspan="4"> <a href=https://arxiv.org/abs/2211.14568>Paper</a></td></tr> | <tr><td colspan="4"> <a href="#Installation">Installation</a></td></tr> | <tr><td colspan="4"> <a href="#Citing-BeGin">Citing Begin</a></td></tr>
+<tr><td colspan="4"> <a href=https://begin.readthedocs.io/>Read the docs</a></td></tr> | <tr><td colspan="4"> <a href=https://arxiv.org/abs/2211.14568>Paper</a></td></tr> | <tr><td colspan="4"> <a href="#Installation">Installation</a></td></tr> | <tr><td colspan="4"> <a href="#Citing-BeGin">Citing Begin</a></td></tr> | <tr><td colspan="4"> <a href=https://docs.google.com/spreadsheets/d/1lS1JHpTAdLTfdMKvhzJ4TFZ6Pap7MYQD__CfNGBdHns/edit?usp=sharing>Detailed Hyperparameter Settings</a></td></tr>
 
 
 # Overview
@@ -46,7 +46,7 @@ Before running the command, we strongly recommend installing the proper version 
 - `torch-sparse>=0.6.9`
 - `torch-geometric>=2.0.4`
 - `ogb>=1.3.4`
-- `dgl-lifesci==0.3.0`
+- `dgl-lifesci>=0.3.0`
 - `rdkit-pypi>=2022.9.1`
 
 For running some algorithms, you may need the following additional packages:
