@@ -26,6 +26,9 @@ Contents
    :caption: Scenarios
 
    030/common
+   030/node
+   030/link
+   030/graph
 
 .. toctree::
    :maxdepth: 1
