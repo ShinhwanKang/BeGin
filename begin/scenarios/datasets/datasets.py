@@ -683,7 +683,7 @@ class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
         return True
 
 class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
-  _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
+    _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
   
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
         super(SentimentGraphDataset, self).__init__(name='sentiment',
