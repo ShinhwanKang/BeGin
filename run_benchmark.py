@@ -108,17 +108,16 @@ special_params = {'Bare': ('none', [None]),
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Graph CL Benchmark Example')
     parser.add_argument("--dataset-name", type=str, default="cora",
-                        help="dataset name (cora, citeseer, ogbn-arxiv, corafull, ogbn-mag, ogbn-products, ogbn-proteins, bitcoin, ogbl-collab, wikics, mnist, cifar10, aromaticity, nyctaxi, ogbg-molhiv, zinc)")
+                        help="dataset name (cora, citeseer, ogbn-arxiv, corafull, ogbn-mag, ogbn-products, ogbn-proteins, bitcoin, ogbl-collab, wikics, mnist, cifar10, aromaticity, nyctaxi, ogbg-molhiv, zinc, aqso, gowalla, or movielens)")
     parser.add_argument("--algo", type=str, default="Bare",
-                        help="algorithm name (Bare, LwF, EWC, MAS, GEM, TWP, ERGNN, CGNN, PackNet, Piggyback, HAT, CaT)") 
+                        help="algorithm name (Bare, LwF, EWC, MAS, GEM, TWP, ERGNN, CGNN, PackNet, Piggyback, HAT, PIGNN, or CaT)") 
     parser.add_argument("--incr", type=str, default="class",
                         help="incremental setting (task, class, domain, or time)")
     parser.add_argument("--gpu", type=int, default=0,
                         help="gpu_id")
     parser.add_argument("--task-type", type=str, default="NC",
                         help="target task (NC, LC, LP, or GC)")
-    parser.add_argument("--pretrain", type=str, default=None)
-    parser.add_argument("--num-tasks", type=int, default=0)
+    parser.add_argument("--pretrain", type=str, default=None, help="pretraining method (DGI, InfoGraph, LightGCL, or GraphCL)")
     parser.add_argument("--save-path", type=str, default="./",
                         help="result save path (default: '.')")
     args = parser.parse_args()
@@ -144,8 +143,6 @@ if __name__ == '__main__':
     
     num_task, metric, max_num_epochs, patience, min_scale = exp_settings[(args.dataset_name, args.incr)]
     n_layers, n_hidden = model_settings[args.task_type]
-    if args.num_tasks > 0:
-        num_task = args.num_tasks
     special_param_name, special_param_range = special_params[args.algo]
     
     lrs = [1e-3, 5e-3, 1e-2]
