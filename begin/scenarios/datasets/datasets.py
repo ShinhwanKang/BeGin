@@ -475,7 +475,7 @@ class OgbgPpaSampledDataset:
     def __init__(self, save_path):
         dataset = DglGraphPropPredDataset(name = 'ogbg-ppa', root=save_path)
         pkl_path = os.path.join(save_path, f'ogbg-ppa_metadata_domainIL.pkl')
-        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
+        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         self.graphs = []
         for i in tqdm.tqdm(metadata['sampled_indices']):
@@ -683,8 +683,8 @@ class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
         return True
 
 class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
-    _url = 'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
-    
+  _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
+  
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
         super(SentimentGraphDataset, self).__init__(name='sentiment',
                                                   url=self._url,
@@ -782,7 +782,7 @@ class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
     @property
     def num_feats(self):
         return self._num_feats
-
+        
 class ZINCGraphDataset:
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
         self.data = [dgl.data.ZINCDataset(mode='train', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='valid', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='test', raw_dir=raw_dir)]

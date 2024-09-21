@@ -25,21 +25,22 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{kumar2016edge,
-  title={Edge weight prediction in weighted signed networks},
-  author={Kumar, Srijan and Spezzano, Francesca and Subrahmanian, VS and Faloutsos, Christos},
-  booktitle={ICDM},
-  year={2016},
-}
+.. code-block::
 
-@inproceedings{kumar2018rev2,
-  title={Rev2: Fraudulent user prediction in rating platforms},
-  author={Kumar, Srijan and Hooi, Bryan and Makhija, Disha and Kumar, Mohit and Faloutsos, Christos and Subrahmanian, VS},
-  booktitle={WSDM},
-  year={2018},
-}
-```
+   @inproceedings{kumar2016edge,
+     title={Edge weight prediction in weighted signed networks},
+     author={Kumar, Srijan and Spezzano, Francesca and Subrahmanian, VS and Faloutsos, Christos},
+     booktitle={ICDM},
+     year={2016},
+   }
+   
+   @inproceedings{kumar2018rev2,
+     title={Rev2: Fraudulent user prediction in rating platforms},
+     author={Kumar, Srijan and Hooi, Bryan and Makhija, Disha and Kumar, Mohit and Faloutsos, Christos and Subrahmanian, VS},
+     booktitle={WSDM},
+     year={2018},
+   }
+
 
 ------------------------------
 Wiki-CS (Link Prediction)
@@ -48,7 +49,7 @@ Wiki-CS (Link Prediction)
 `Wiki-CS <https://github.com/pmernyei/wiki-cs-dataset>`_ is a hyperlink network between computer science articles.
 Each article has a label indicating one of the 10 subfields that it belongs to. For Domain-IL, the
 node labels are used as domains, and specifically, the edges are divide into 54 groups, according
-to the labels of their endpoints.
+to the labels of their endpoints. According to the original paper, the node features are computed as the average of pretrained GloVe embeddings.
 
 Statistics:
 
@@ -60,13 +61,23 @@ Statistics:
    
    + Domain-IL with 54 tasks
 
+Citing:
+
+.. code-block::
+
+   @article{mernyei2020wiki,
+     title={Wiki-CS: A Wikipedia-Based Benchmark for Graph Neural Networks},
+     author={Mernyei, P{\'e}ter and Cangea, C{\u{a}}t{\u{a}}lina},
+     journal={arXiv preprint arXiv:2007.02901},
+     year={2020}
+   }
+
 ------------------------------
 ogbl-collab (Link Prediction)
 ------------------------------
 
 `ogbl-collab <https://ogb.stanford.edu/docs/linkprop/#ogbl-collab>`_ s a co-authorship network, where nodes are
-authors. We use publication years to form 50 groups for the Time-IL setting. Due to the imbalance on the publication years of the considered papers, we constructed formed the first task using the paper published before 1971. From the second task, we constructed the `i`-th task with the paper published in `1969 + i`.
-Each node feature is obtained by averaging the word embeddings of published papers.
+authors. We use publication years to form 50 groups for the Time-IL setting. Due to the imbalance in the publication years of the considered papers, we constructed the first task using the paper published before the year `1971`. For each subsequent `i`-th task, we used the papers published in the year `(1969 + i)`.
 
 Statistics:
 
@@ -78,14 +89,32 @@ Statistics:
    
    + Time-IL with 50 tasks
 
+Citing:
+
+.. code-block::
+
+   @inproceedings{hu2020open,
+     title={Open graph benchmark: datasets for machine learning on graphs},
+     author={Hu, Weihua and Fey, Matthias and Zitnik, Marinka and Dong, Yuxiao and Ren, Hongyu and Liu, Bowen and Catasta, Michele and Leskovec, Jure},
+     booktitle={NeurIPS},
+     year={2020}
+   }
+   
+   @article{wang2020microsoft,
+     title={Microsoft academic graph: When experts are not enough},
+     author={Wang, Kuansan and Shen, Zhihong and Huang, Chiyuan and Wu, Chieh-Han and Dong, Yuxiao and Kanakia, Anshul},
+     journal={Quantitative Science Studies},
+     volume={1},
+     number={1},
+     pages={396--413},
+     year={2020}
+   }
+
 ------------------------------
 Facebook (Link Prediction)
 ------------------------------
 
-`Facebook <https://github.com/benedekrozemberczki/datasets#facebook-page-page-networks>`_ is a social network, where nodes are pages of Facebook, and its class belongs to one
-among 8 categories. Edges indicate mutual likes among the pages, and they exist only between
-pages within the same category. We divide the edges into 8 groups, according to the labels of their
-endpoints. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
+`Facebook <https://github.com/benedekrozemberczki/datasets#facebook-page-page-networks>`_ is a social network, where nodes are pages of Facebook, and its class belongs to one among 8 categories. Edges indicate mutual likes among the pages, and they exist only between pages within the same category. We divide the edges into 8 groups, according to the labels of their endpoints. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
 
 Statistics:
 
@@ -99,20 +128,22 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{rozemberczki2019gemsec,    
-                title={GEMSEC: Graph Embedding with Self Clustering},    
-                author={Rozemberczki, Benedek and Davies, Ryan and Sarkar, Rik and Sutton, Charles},    
-                booktitle={ASONAM},    
-                year={2019},    
-}
-```
+.. code-block::
+
+   @inproceedings{rozemberczki2019gemsec,    
+                   title={GEMSEC: Graph Embedding with Self Clustering},    
+                   author={Rozemberczki, Benedek and Davies, Ryan and Sarkar, Rik and Sutton, Charles},    
+                   booktitle={ASONAM},    
+                   year={2019},    
+   }
+
 
 ------------------------------
 Ask-Ubuntu (Link Prediction)
 ------------------------------
 
-Nodes in `Ask-Ubuntu <http://snap.stanford.edu/data/sx-askubuntu.html>`_ are users of askubuntu, and edges indicate there is interaction between the users. The edges are divided into 69 groups according to the timestamps for Time-IL. Specifically, we constructed the tasks with the papers published in the same month. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
+Nodes in `Ask-Ubuntu <http://snap.stanford.edu/data/sx-askubuntu.html>`_ are users of askubuntu, and edges indicate there is interaction between the
+users. The edges are divided into 69 groups according to the timestamps for Time-IL. Specifically, we used the interactions occurring within the same month to form each task. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
 
 Statistics:
 
@@ -126,15 +157,16 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{paranjape2017motifs,
-  title={Motifs in temporal networks},
-  author={Paranjape, Ashwin and Benson, Austin R and Leskovec, Jure},
-  booktitle={Proceedings of the tenth ACM international conference on web search and data mining},
-  pages={601--610},
-  year={2017}
-}
+.. code-block::
 
+   @inproceedings{paranjape2017motifs,
+     title={Motifs in temporal networks},
+     author={Paranjape, Ashwin and Benson, Austin R and Leskovec, Jure},
+     booktitle={Proceedings of the tenth ACM international conference on web search and data mining},
+     pages={601--610},
+     year={2017}
+   }
+   
 ------------------------------
 Gowalla (Link Prediction)
 ------------------------------
@@ -153,24 +185,24 @@ Statistics:
 
 Citing:
 
-```bibtex
-@inproceedings{liang2016modeling,
-  title={Modeling user exposure in recommendation},
-  author={Liang, Dawen and Charlin, Laurent and McInerney, James and Blei, David M},
-  booktitle={Proceedings of the 25th international conference on World Wide Web},
-  pages={951--961},
-  doi = {10.48550/arXiv.1510.07025},
-  year={2016}
-}
+.. code-block::
 
-@inproceedings{wang2019neural,
-  title={Neural graph collaborative filtering},
-  author={Wang, Xiang and He, Xiangnan and Wang, Meng and Feng, Fuli and Chua, Tat-Seng},
-  booktitle={Proceedings of the 42nd international ACM SIGIR conference on Research and development in Information Retrieval},
-  pages={165--174},
-  year={2019}
-}
-```
+  @inproceedings{liang2016modeling,
+    title={Modeling user exposure in recommendation},
+    author={Liang, Dawen and Charlin, Laurent and McInerney, James and Blei, David M},
+    booktitle={Proceedings of the 25th international conference on World Wide Web},
+    pages={951--961},
+    doi = {10.48550/arXiv.1510.07025},
+    year={2016}
+  }
+
+  @inproceedings{wang2019neural,
+    title={Neural graph collaborative filtering},
+    author={Wang, Xiang and He, Xiangnan and Wang, Meng and Feng, Fuli and Chua, Tat-Seng},
+    booktitle={Proceedings of the 42nd international ACM SIGIR conference on Research and development in Information Retrieval},
+    pages={165--174},
+    year={2019}
+  }
 
 ------------------------------
 MovieLens (Link Prediction)
@@ -190,16 +222,17 @@ Statistics:
 
 Citing:
 
-```bibtex
-@article{harper2015movielens,
-  title={The movielens datasets: History and context},
-  author={Harper, F Maxwell and Konstan, Joseph A},
-  journal={Acm transactions on interactive intelligent systems (tiis)},
-  volume={5},
-  number={4},
-  pages={1--19},
-  year={2015},
-  doi = {10.1145/2827872},
-  publisher={Acm New York, NY, USA}
-}
-```
+.. code-block::
+
+  @article{harper2015movielens,
+    title={The movielens datasets: History and context},
+    author={Harper, F Maxwell and Konstan, Joseph A},
+    journal={Acm transactions on interactive intelligent systems (tiis)},
+    volume={5},
+    number={4},
+    pages={1--19},
+    year={2015},
+    doi = {10.1145/2827872},
+    publisher={Acm New York, NY, USA}
+  }
+

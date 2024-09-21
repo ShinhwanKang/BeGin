@@ -155,17 +155,11 @@ if __name__ == '__main__':
         os.mkdir(log_path)
     except:
         pass
-    
-    if args.algo == 'TWP':
-        lrs = [1e-3, 5e-3, 1e-2]
-        drs = [0.0, 0.25, 0.5]
-        wds = [0.0, 5e-4]
-        
+      
     print(f"The result will be saved at {log_path} directory (See _result.log for the final results)")
     for lr in lrs: # learning rate
         for dr in drs: # dropout
             for wd in wds: # weight decay
-                # if wd == 0.0 and lr in [1e-3, 5e-3]: continue
                 for special_param in special_param_range:
                     total_val_ap, total_val_af, total_test_ap, total_test_af = [], [], [], []
                     print(f'Current Hyperparameter: lr={lr} dropout={dr} weight_decay={wd} {(str(special_param_name) + "=" + str(special_param)) if special_param_name != "none" else ""}')
@@ -276,3 +270,4 @@ if __name__ == '__main__':
                     except:
                         print(ee)
                         pass
+                      

@@ -146,7 +146,6 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         neg_srcs, neg_dsts, _ = zip(*metadata['neg_edges'])
         negs = torch.stack((torch.LongTensor(neg_srcs), torch.LongTensor(neg_dsts) + num_srcs), dim=-1) - 1
         neg_edges = {'val': negs[0::2], 'test': negs[1::2]}
-        
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     
@@ -423,8 +422,8 @@ class LCScenarioLoader(BaseScenarioLoader):
     """
     def _init_continual_scenario(self):
         self.num_classes, self.num_feats, self.__graph = load_linkc_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
-        self.__domain_info = self.__graph.edata.get('domain', None)
-        self.__time_splits = self.__graph.edata.get('time', None)
+        if 'domain' in self.__graph.edata: self.__domain_info = self.__graph.edata['domain']
+        if 'time' in self.__graph.edata: self.__time_splits = self.__graph.edata['time']
         
         if self.incr_type in ['domain']:
             raise NotImplementedError
