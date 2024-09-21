@@ -12,7 +12,7 @@ BeGin works with the following Python packages:
 - torch-scatter >= 2.0.6
 - torch-sparse >= 0.6.9
 - torch-geometric >= 2.0.4
-- dgllife <= 0.3.0
+- dgllife >= 0.3.0
 - rdkit-pypi
 
 For running some examples, you may need the following additional packages:

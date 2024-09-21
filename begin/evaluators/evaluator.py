@@ -40,7 +40,25 @@ class BaseEvaluator:
                 answer (torch.Tensor): ground-truth answer
         """
         raise NotImplementedError
+
+class MAEEvaluator(BaseEvaluator):
+    r"""
+        The evaluator for computing MAE (Mean Absolute Error).
         
+        Bases: ``BaseEvaluator``
+    """
+    def __call__(self, _prediction, _answer, indices):
+        prediction = _prediction.squeeze().to(_answer.device)
+        answer = _answer.squeeze()
+        scope = self._task_ids[indices] < self.num_tasks
+        mae_per_task = scatter((prediction - answer).abs(), self._task_ids[indices], dim=-1, reduce='mean', dim_size = self.num_tasks + 1)
+        mae_per_task[self.num_tasks] = self.simple_eval(prediction[scope], answer[scope])
+        return mae_per_task
+    
+    def simple_eval(self, prediction, answer):
+        return ((prediction.squeeze().to(answer.device) - answer.squeeze()).abs().sum() / answer.shape[0]).item()
+
+
 class AccuracyEvaluator(BaseEvaluator):
     r"""
         The evaluator for computing accuracy.

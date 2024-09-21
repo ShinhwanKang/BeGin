@@ -26,7 +26,37 @@ class GCTrainer(BaseTrainer):
         
     def initTrainingStates(self, scenario, model, optimizer):
         return {}
-    
+
+    def preparePretrainLoader(self, curr_dataset, curr_training_states):
+        g_train = torch.Generator()
+        g_train.manual_seed(0)
+        train_loader = dgl.dataloading.GraphDataLoader(curr_dataset['train'], batch_size=128, shuffle=True, drop_last=False, num_workers=4, worker_init_fn=self._dataloader_seed_worker, generator=g_train)
+        return train_loader
+        
+    def processPretraining(self, pretrain_loader, curr_model, curr_training_states):
+        pre_model = self.pretraining(copy.deepcopy(curr_model)).to(self.device)
+        pre_optimizer = self.optimizer_fn(pre_model.parameters())
+        pre_scheduler = self.scheduler_fn(pre_optimizer)
+        
+        best_loss = 1e10
+        for epoch_cnt in range(self.max_num_epochs):
+            total_loss = 0.
+            for _curr_batch in pretrain_loader:
+                curr_batch, labels = _curr_batch
+                pre_optimizer.zero_grad()
+                loss = pre_model.inference(curr_batch.to(self.device))
+                loss.backward()
+                pre_optimizer.step()
+                total_loss = total_loss + (labels.shape[0] * loss.item())
+            if total_loss < best_loss:
+                best_loss = total_loss
+                pre_model.update()
+                pre_checkpoint = copy.deepcopy(pre_model.encoder.state_dict())
+            pre_scheduler.step(total_loss)
+            if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
+                break
+        pre_model.processAfterTraining(curr_model)
+        
     def prepareLoader(self, curr_dataset, curr_training_states):
         # dataloader for training dataset
         g_train = torch.Generator()
@@ -45,6 +75,7 @@ class GCTrainer(BaseTrainer):
         return train_loader, val_loader, test_loader
     
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
+        self._reset_optimizer(curr_optimizer)
         curr_training_states['scheduler'] = self.scheduler_fn(curr_optimizer)
         curr_training_states['best_val_acc'] = -1.
         curr_training_states['best_val_loss'] = 1e10
@@ -53,8 +84,7 @@ class GCTrainer(BaseTrainer):
             curr_model.observe_labels(torch.LongTensor([0]))
         else:
             curr_model.observe_labels(torch.LongTensor([curr_dataset['train'][i][1] for i in range(len(curr_dataset['train']))] + [curr_dataset['val'][i][1] for i in range(len(curr_dataset['val']))]))
-        self._reset_optimizer(curr_optimizer)
-    
+            
     def predictionFormat(self, results):
         if self.binary:
             return results['preds']

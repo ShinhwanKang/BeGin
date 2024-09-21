@@ -133,7 +133,7 @@ class NYCTaxiDataset(dgl.data.DGLBuiltinDataset):
         days = [None, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
         graphs, labels, times = [], [], []
         
-        map_to_id = {'"Bronx"': 1, '"Brooklyn"': 2, '"EWR"': 3, '"Manhattan"': 4, '"Queens"': 5, '"Staten Island"': 6, '"Unknown"': 7}
+        map_to_id = {'"Bronx"': 1, '"Brooklyn"': 2, '"EWR"': 3, '"Manhattan"': 4, '"Queens"': 5, '"Staten Island"': 6, '"Unknown"': 7, '"N/A"': 7}
         download('https://d37ci6vzurychx.cloudfront.net/misc/taxi+_zone_lookup.csv', path=os.path.join(root, 'lookup.csv'))
         with open(os.path.join(root, 'lookup.csv'), 'r') as fcsv:
             fcsv.readline()
@@ -683,8 +683,8 @@ class FacebookLinkDataset(dgl.data.DGLBuiltinDataset):
         return True
 
 class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
-    _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
-    
+  _url = 'https://github.com/jihoon-ko/BeGin/raw/main/metadata/sentiment_metadata_allIL.pkl'
+  
     def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
         super(SentimentGraphDataset, self).__init__(name='sentiment',
                                                   url=self._url,
@@ -782,3 +782,157 @@ class SentimentGraphDataset(dgl.data.DGLBuiltinDataset):
     @property
     def num_feats(self):
         return self._num_feats
+        
+class ZINCGraphDataset:
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        self.data = [dgl.data.ZINCDataset(mode='train', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='valid', raw_dir=raw_dir), dgl.data.ZINCDataset(mode='test', raw_dir=raw_dir)]
+        self._graphs = [*(self.data[0]._graphs), *(self.data[1]._graphs), *(self.data[2]._graphs)]
+        self.labels = torch.cat([(self.data[0]._labels['g_label']), (self.data[1]._labels['g_label']), (self.data[2]._labels['g_label'])], dim=-1).unsqueeze(-1)
+        self.metadata = torch.LongTensor([g.num_nodes() for g in self._graphs]) - 18
+        self._train_masks = ((torch.arange(12000) % 10) <= 8)
+        self._val_masks = ((torch.arange(12000) % 10) == 8)
+        self._test_masks = ((torch.arange(12000) % 10) > 8)
+        self.metadata[self.metadata < 0] = 0
+        self.metadata[self.metadata > 10] = 10
+    @property
+    def num_atom_types(self):
+        return 28
+
+    @property
+    def num_bond_types(self):
+        return 4
+
+    def __len__(self):
+        return len(self._graphs)
+        
+    def __getitem__(self, idx):
+        return self._graphs[idx], self.labels[idx]
+        
+    def __len__(self):
+        return len(self._graphs)
+
+    @property
+    def num_classes(self):
+        return 1
+
+class AQSOLGraphDataset:
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        pkl_path = os.path.join(raw_dir, f'aqsol_metadata_domainIL.pkl')
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/aqsol_metadata_domainIL.pkl', pkl_path, overwrite=False)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        
+        self._graphs = []
+        self.labels = []
+        for g in chain.from_iterable(metadata):
+            curr_g = dgl.graph((torch.LongTensor(g[2][0]), torch.LongTensor(g[2][1])), num_nodes=g[0].shape[0])
+            curr_g.ndata['feat'] = torch.LongTensor(g[0])
+            curr_g.edata['edge_attr'] = torch.LongTensor(g[1])
+            curr_g.add_self_loop()
+            self._graphs.append(curr_g)
+            self.labels.append(g[3])
+        self.labels = torch.FloatTensor(self.labels).unsqueeze(-1)
+        self._train_masks = ((torch.arange(9982) % 10) <= 8)
+        self._val_masks = ((torch.arange(9982) % 10) == 8)
+        self._test_masks = ((torch.arange(9982) % 10) > 8)
+        self.metadata = torch.LongTensor(list(chain.from_iterable([[i for _ in range(len(metadata[i]))] for i in range(5)])))
+        
+    def __len__(self):
+        return len(self._graphs)
+        
+    def __getitem__(self, idx):
+        return self._graphs[idx], self.labels[idx]
+        
+    def __len__(self):
+        return len(self._graphs)
+
+    @property
+    def num_classes(self):
+        return 1
+
+class MovielensDataset(dgl.data.DGLBuiltinDataset):
+    _url = 'https://files.grouplens.org/datasets/movielens/ml-1m.zip'
+
+    def __init__(self, dataset_name, raw_dir=None, force_reload=False, verbose=False, transform=None):
+        super(MovielensDataset, self).__init__(name='movielens',
+                                                 url=self._url,
+                                                 raw_dir=raw_dir,
+                                                 force_reload=force_reload,
+                                                 verbose=verbose)
+    def process(self):
+        logs = []
+        negs = []
+        banned = {}
+        valid = torch.ones(6040, 3952)
+        with open(os.path.join(self.save_path, 'ml-1m/ratings.dat'), 'r') as f:
+            for line in f:
+                tokens = line.strip().split('::')
+                if tokens[2] in ['4', '5']:
+                    logs.append((int(tokens[0]), int(tokens[1]), int(tokens[-1])))
+                valid[int(tokens[0]) - 1, int(tokens[1]) - 1] = 0
+
+        logs = sorted(logs, key=lambda x: x[-1])
+        
+        ufeats = np.zeros((6040, 24))
+        with open(os.path.join(self.save_path, 'ml-1m/users.dat'), 'r') as f:
+            for i, line in enumerate(f):
+                tokens = line.strip().split('::')
+                if 'F' in tokens[1]:
+                    ufeats[i, 0] = 1.
+                else:
+                    ufeats[i, 1] = 1.
+                ufeats[i, 2] = int(tokens[2]) / 56.0
+                ufeats[i, 3 + int(tokens[3])] = 1.
+
+        genres =["Action",
+                 "Adventure", 
+            	"Animation",
+            	"Children's",
+            	"Comedy",
+            	"Crime",
+            	"Documentary",
+            	"Drama",
+            	"Fantasy",
+            	"Film-Noir",
+            	"Horror",
+            	"Musical",
+            	"Mystery",
+            	"Romance",
+            	"Sci-Fi",
+            	"Thriller",
+            	"War",
+            	"Western"]
+        gmap = {k: i for i, k in enumerate(genres)}
+        ifeats = np.zeros((3952, 18))
+        with open(os.path.join(self.save_path, 'ml-1m/movies.dat'), 'r', encoding='latin1') as f:
+            for i, line in enumerate(f):
+                tokens = line.strip().split('::')
+                for mov in tokens[-1].split('|'):
+                    ifeats[i, gmap[mov]] = 1.
+        
+        self.metadata = {}
+        self.metadata['edges'] = logs
+        self.metadata['feats'] = (ufeats, ifeats)
+        self.metadata['time'] = torch.arange(len(logs)) // ((len(logs) // 10) + 1)
+        
+    def has_cache(self):
+        return False
+
+    def save(self):
+        pass
+        
+    def load(self):
+        pass
+        
+    @property
+    def graphs(self):
+        return self._graphs
+
+    @property
+    def num_classes(self):
+        return 2
+
+    def __len__(self):
+        return len(self.graphs)
+
+    def __getitem__(self, item):
+        return self.graphs[item]

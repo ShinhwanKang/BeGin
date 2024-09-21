@@ -22,8 +22,8 @@ html_theme_options = {
     'display_version': True,
 }
 
-release = '0.1'
-version = '0.1.0'
+release = '0.4'
+version = '0.4.0'
 
 # -- General configuration
 

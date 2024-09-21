@@ -19,7 +19,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
         
     def initTrainingStates(self, scenario, model, optimizer):
         return {'class_to_task': -torch.ones(model.classifier.num_outputs, dtype=torch.long)}
-    
+
     def beforeInference(self, model, optimizer, _curr_batch, training_states):
         """
             The event function to execute some processes right before inference (for training).
@@ -104,7 +104,7 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                     p.data.copy_(results['_before_inference'][ccnt])
                     ccnt += 1
         return {'loss': results['loss'].item(), 'acc': self.eval_fn(results['preds'].argmax(-1), _curr_batch[0].ndata['label'][_curr_batch[1]].to(self.device))}
-    
+        
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
             The event function to execute some processes before training.
@@ -117,31 +117,6 @@ class NCTaskILPiggybackTrainer(NCTrainer):
                 curr_optimizer (torch.optim.Optimizer): the current optimizer function.
                 curr_training_states (dict): the dictionary containing the current training states.
         """
-        if self.curr_task == 0:
-            # pre-training with Deep Graph Infomax
-            trainloader, _1, _2 = self.prepareLoader(curr_dataset, curr_training_states)
-            pre_model = copy.deepcopy(curr_model)
-            dgi_model = DGI(pre_model).to(self.device)
-            pre_optimizer = self.optimizer_fn(dgi_model.parameters())
-            pre_scheduler = self.scheduler_fn(pre_optimizer)
-            best_val_loss = 1e10
-            for epoch_cnt in range(self.max_num_epochs):
-                val_loss = 0.
-                for _curr_batch in trainloader:
-                    pre_optimizer.zero_grad()
-                    curr_batch, _ = _curr_batch
-                    _loss = dgi_model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))
-                    _loss.backward()
-                    pre_optimizer.step()    
-                    val_loss = val_loss + _loss.item()
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    pre_checkpoint = copy.deepcopy(dgi_model.encoder.state_dict())
-                pre_scheduler.step(val_loss)
-                if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
-                    break
-            curr_model.load_state_dict(pre_checkpoint)
-        
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         # initialize masks and fix batchnorm

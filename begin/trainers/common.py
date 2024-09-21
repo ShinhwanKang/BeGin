@@ -7,6 +7,7 @@ import numpy as np
 import sys
 import dgl
 import os
+import logging
 
 class BaseTrainer:
     r""" Base framework for implementing trainer module.
@@ -69,6 +70,8 @@ class BaseTrainer:
         self.__accum_optimizer = optimizer_fn(self.__accum_model.parameters())
         self._reset_model(self.__accum_model)
         self._reset_optimizer(self.__accum_optimizer)
+
+        self.init_lrs = [pg['lr'] for pg in self.__base_optimizer.param_groups]
         
         # other initialization settings 
         self.loss_fn = loss_fn if loss_fn is not None else (lambda x: None) # loss function
@@ -78,6 +81,7 @@ class BaseTrainer:
         self.full_mode = kwargs.get('full_mode', False) # joint model is used when full_mode=True
         self.verbose = kwargs.get('verbose', True)
         self.binary = kwargs.get('binary', False)
+        self.pretraining = kwargs.get('pretraining', None)
         
     @property
     def incr_type(self):
@@ -104,16 +108,54 @@ class BaseTrainer:
                 target_model (torch.nn.Module): a model needed to re-initialize
         """
         target_model.load_state_dict(torch.load(self.__model_weight_path))
-        
+            
     def _reset_optimizer(self, target_optimizer):
         """ 
             Reinitialize an optimizer.
             
             Args:
-                target_model (torch.optim.Optimizer): an optimizer needed to re-initialize
+                target_optimizer (torch.optim.Optimizer): an optimizer needed to re-initialize
         """
         target_optimizer.load_state_dict(torch.load(self.__optim_weight_path))
-        
+    
+    def add_parameters(self, target_model, target_optimizer):
+        """ 
+            Add parameters and register them to the target optimizer.
+            
+            Args:
+                target_model (torch.nn.Module): an extended model
+                target_optimizer (torch.optim.Optimizer): an optimizer needed to register the new parameters
+        """
+        target_model.zero_grad()
+        original_weights = torch.load(self.__model_weight_path)
+        changed = 0
+        registered_params = set()
+        for group in target_optimizer.param_groups:
+            registered_params.update(set(group["params"]))
+            
+        really_new_parameters = []
+        unregistered_params = []
+        for k, v in target_model.state_dict().items():
+            if k not in original_weights:
+                changed += 1
+                original_weights[k] = v
+                really_new_parameters.append(v)
+
+        for p in target_model.parameters():
+            if p not in registered_params:
+                unregistered_params.append(p)
+                
+        if changed > 0:
+            print(f"DETECTED {changed} PARAM CHANGE(S) / {len(unregistered_params)} UNREGISTERED PARAM(S)")
+            torch.save(original_weights, self.__model_weight_path)
+            self._reset_optimizer(target_optimizer)
+            target_optimizer.add_param_group({'params': unregistered_params})
+            torch.save(target_optimizer.state_dict(), self.__optim_weight_path)
+        elif len(unregistered_params) > 0:
+            print(f"DETECTED {len(unregistered_params)} UNREGISTERED PARAM(S)")
+            target_optimizer.add_param_group({'params': unregistered_params})
+            self._reset_optimizer(target_optimizer)
+            
     def run(self, epoch_per_task = 1):
         """
             Run the overall process of graph continual learning optimization.
@@ -145,12 +187,13 @@ class BaseTrainer:
                 break
             
             # re-initialize base model and joint model (at the every beginning of training)
-            training_states['base'] = copy.deepcopy(initial_training_state)
-            self._reset_model(self.__base_model)
-            self._reset_optimizer(self.__base_optimizer)
-            training_states['accum'] = copy.deepcopy(initial_training_state)
-            self._reset_model(self.__accum_model)
-            self._reset_optimizer(self.__accum_optimizer)
+            if self.curr_task == 0 or self.full_mode:
+                training_states['base'] = copy.deepcopy(initial_training_state)
+                self._reset_model(self.__base_model)
+                self._reset_optimizer(self.__base_optimizer)
+                training_states['accum'] = copy.deepcopy(initial_training_state)
+                self._reset_model(self.__accum_model)
+                self._reset_optimizer(self.__accum_optimizer)
             
             # dictionaries to store current models and optimizers
             models = {'exp': self.__model, 'base': self.__base_model, 'accum': self.__accum_model}
@@ -164,12 +207,18 @@ class BaseTrainer:
             dataloaders = {}
             for exp_name in ['exp', 'base']:
                 dataloaders[exp_name] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(curr_dataset, training_states[exp_name]))}
-                if exp_name == 'exp' or self.curr_task == 0 or self.full_mode:
+                if self.curr_task == 0:
+                    if self.pretraining is not None:
+                        pretrain_loader = self.preparePretrainLoader(curr_dataset, training_states[exp_name])
+                        self.processPretraining(pretrain_loader, models[exp_name], training_states[exp_name])
                     self.processBeforeTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+                elif self.full_mode or exp_name in ['exp']:
+                    self.processBeforeTraining(self.__scenario._curr_task, curr_dataset, models[exp_name], optims[exp_name], training_states[exp_name])
+                    
             dataloaders['accum'] = {k: v for k, v in zip(['train', 'val', 'test'], self.prepareLoader(accumulated_dataset, training_states['accum']))}
             if self.full_mode:
-                self.processBeforeTraining(self.__scenario._curr_task, accumulated_dataset, models['accum'], optims['accum'], training_states['accum'])    
-            
+                self.processBeforeTraining(self.__scenario._curr_task, accumulated_dataset, models['accum'], optims['accum'], training_states['accum']) 
+
             # compute initial performance
             if self.curr_task == 0:
                 with torch.no_grad():
@@ -295,7 +344,10 @@ class BaseTrainer:
                 Initialized training state (dict).
         """
         return {}
-    
+
+    def preparePretrainLoader(self, curr_dataset, curr_training_states):
+        raise NotImplementedError
+        
     def prepareLoader(self, curr_dataset, curr_training_states):
         """
             The event function to generate dataloaders from the given dataset for the current task.
@@ -311,6 +363,19 @@ class BaseTrainer:
         """
         raise NotImplementedError
         
+    def processPretraining(self, pretrain_loader, curr_model, curr_training_states):
+        """
+            The event function to execute some processes before training.
+            
+            Args:
+                task_id (int): the index of the current task
+                curr_dataset (object): The dataset for the current task.
+                curr_model (torch.nn.Module): the current trained model.
+                curr_optimizer (torch.optim.Optimizer): the current optimizer function.
+                curr_training_states (dict): the dictionary containing the current training states.
+        """
+        pass
+
     def processBeforeTraining(self, task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states):
         """
             The event function to execute some processes before training.

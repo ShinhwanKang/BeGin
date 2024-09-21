@@ -93,7 +93,7 @@ class GCTaskILEWCTrainer(GCTrainer):
             total_num_items += curr_num_items
             for name, p in curr_model.named_parameters():
                 params[name] = p.data.clone().detach()
-                fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
+                if p.grad is not None: fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
                     
         for name, p in curr_model.named_parameters():
             fishers[name] /= total_num_items
@@ -169,7 +169,7 @@ class GCClassILEWCTrainer(GCTrainer):
             total_num_items += curr_num_items
             for name, p in curr_model.named_parameters():
                 params[name] = p.data.clone().detach()
-                fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
+                if p.grad is not None: fishers[name] += (p.grad.data.clone().detach() ** 2) * curr_num_items
                     
         for name, p in curr_model.named_parameters():
             fishers[name] /= total_num_items

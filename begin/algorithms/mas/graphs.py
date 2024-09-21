@@ -92,7 +92,7 @@ class GCTaskILMASTrainer(GCTrainer):
             total_num_items += curr_num_items
             for name, p in curr_model.named_parameters():
                 curr_training_states['params'][name] = p.data.clone().detach()
-                importances[name] += p.grad.data.clone().detach().abs() * curr_num_items
+                if p.grad is not None: importances[name] += p.grad.data.clone().detach().abs() * curr_num_items
                 
         for name, p in curr_model.named_parameters():
             curr_training_states['importances'][name] += (importances[name] / total_num_items)
@@ -164,7 +164,7 @@ class GCClassILMASTrainer(GCTrainer):
             total_num_items += curr_num_items
             for name, p in curr_model.named_parameters():
                 curr_training_states['params'][name] = p.data.clone().detach()
-                importances[name] += p.grad.data.clone().detach().abs() * curr_num_items
+                if p.grad is not None: importances[name] += p.grad.data.clone().detach().abs() * curr_num_items
                 
         for name, p in curr_model.named_parameters():
             curr_training_states['importances'][name] += (importances[name] / total_num_items)

@@ -1,5 +1,6 @@
 import torch
 import copy
+import dgl
 import torch.nn.functional as F
 from begin.trainers.nodes import NCTrainer, NCMinibatchTrainer
 from .utils import project2cone2
@@ -302,7 +303,7 @@ class NCClassILGEMMinibatchTrainer(NCMinibatchTrainer):
         g_train = torch.Generator()
         g_train.manual_seed(0)
         train_sampler = dgl.dataloading.MultiLayerNeighborSampler([5, 10, 10])
-        train_loader = dgl.dataloading.NodeDataLoader(
+        train_loader = dgl.dataloading.DataLoader(
             curr_dataset, candidates[perm[:self.num_memories]], train_sampler,
             batch_size=131072,
             shuffle=True,

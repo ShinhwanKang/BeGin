@@ -37,7 +37,7 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         # We need to designate train/val/test split since DGL does not provide the information.
         # We used random train/val/test split (6 : 2 : 2)
         pkl_path = os.path.join(save_path, f'corafull_metadata_allIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/corafull_metadata_allIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/corafull_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits'] % 10
         graph.ndata['train_mask'] = (inner_tvt_splits < 6)
@@ -56,7 +56,7 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         if incr_type == 'time':
             # load train/val/test split
             pkl_path = os.path.join(save_path, f'ogbn-arxiv_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-arxiv_metadata_timeIL.pkl', pkl_path)
+            download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbn-arxiv_metadata_timeIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             inner_tvt_splits = metadata['inner_tvt_splits']
             graph.ndata['train_mask'] = (inner_tvt_splits < 4)
@@ -104,7 +104,7 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         
         # load train/val/test split
         pkl_path = os.path.join(save_path, f'ogbn-proteins_metadata_domainIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-proteins_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbn-proteins_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits']
         graph.ndata['train_mask'] = (inner_tvt_splits < 4)
@@ -147,7 +147,7 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
             graph.ndata['label'] = label.squeeze()
         elif incr_type in ['time']:
             pkl_path = os.path.join(save_path, f'ogbn-mag_metadata_timeIL.pkl')
-            download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbn-mag_metadata_timeIL.pkl', pkl_path)
+            download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbn-mag_metadata_timeIL.pkl', pkl_path)
             metadata = pickle.load(open(pkl_path, 'rb'))
             inner_tvt_splits = metadata['inner_tvt_splits']
             graph.ndata['train_mask'] = (inner_tvt_splits < 4)
@@ -164,7 +164,7 @@ def load_node_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats, num_classes = graph.ndata['feat'].shape[-1], dataset.num_classes
         
         pkl_path = os.path.join(save_path, f'twitch_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/twitch_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/twitch_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits']
         graph.ndata['train_mask'] = (inner_tvt_splits < 4)
