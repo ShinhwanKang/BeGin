@@ -23,7 +23,7 @@ Our framework **BeGin** has the following advantages:
 
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/interaction.png" width="800px"></p>
 
-- BeGin provides 25 benchmark scenarios for graph from 15 real-world datasets, which cover 12 combinations of the incremental settings and the levels of problem. In addition, BeGin provides various basic evaluation metrics for measuring the performances and final evalution metrics designed for continual learning.
+- BeGin provides 35 benchmark scenarios for graph from 24 real-world datasets, which cover 12 combinations of the incremental settings and the levels of problem. In addition, BeGin provides various basic evaluation metrics for measuring the performances and final evalution metrics designed for continual learning.
 
 <p align="center"><img src="https://github.com/ShinhwanKang/BeGin/raw/main/static/coverage.png" width="600px"></p>
 
