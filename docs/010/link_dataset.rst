@@ -111,13 +111,10 @@ Citing:
    }
 
 ------------------------------
-facebook (Link Prediction)
+Facebook (Link Prediction)
 ------------------------------
 
-`facebook <https://github.com/benedekrozemberczki/datasets#facebook-page-page-networks>`_ is a social network, where nodes are pages of Facebook, and its class belongs to one
-among 8 categories. Edges indicate mutual likes among the pages, and they exist only between
-pages within the same category. We divide the edges into 8 groups, according to the labels of their
-endpoints. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
+`Facebook <https://github.com/benedekrozemberczki/datasets#facebook-page-page-networks>`_ is a social network, where nodes are pages of Facebook, and its class belongs to one among 8 categories. Edges indicate mutual likes among the pages, and they exist only between pages within the same category. We divide the edges into 8 groups, according to the labels of their endpoints. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
 
 Statistics:
 
@@ -142,10 +139,10 @@ Citing:
 
 
 ------------------------------
-askubuntu (Link Prediction)
+Ask-Ubuntu (Link Prediction)
 ------------------------------
 
-Nodes in `askubuntu <http://snap.stanford.edu/data/sx-askubuntu.html>`_ are users of askubuntu, and edges indicate there is interaction between the
+Nodes in `Ask-Ubuntu <http://snap.stanford.edu/data/sx-askubuntu.html>`_ are users of askubuntu, and edges indicate there is interaction between the
 users. The edges are divided into 69 groups according to the timestamps for Time-IL. Specifically, we used the interactions occurring within the same month to form each task. We make the graph to be undirected, and since there is no external node feature, we use degrees as node features.
 
 Statistics:
@@ -169,3 +166,73 @@ Citing:
      pages={601--610},
      year={2017}
    }
+   
+------------------------------
+Gowalla (Link Prediction)
+------------------------------
+
+`Gowalla <https://github.com/xiangwang1223/neural_graph_collaborative_filtering/tree/master/Data/gowalla>`_ consists of check-in history from a location-based social networking platform where users share their locations through check-ins. Each node represents either a user or a location, and each edge represents a user’s check-in at a location. For Time-IL, we organize 10 tasks chronologically based on check-in timestamps. This scenario and the next one (i.e., MovieLens) are directly related to personalized recommendation systems (spec., movie and POI recommendations), which are essential for helping users find relevant options among numerous candidates.
+
+Statistics:
+
+- Nodes: 70,839
+- Edges: 1,027,370
+- Number of Classes: 2
+- Number of Node Features: 2
+- Supported Incremental Settings:
+   
+   + Time-IL with 10 tasks
+
+Citing:
+
+.. code-block::
+
+  @inproceedings{liang2016modeling,
+    title={Modeling user exposure in recommendation},
+    author={Liang, Dawen and Charlin, Laurent and McInerney, James and Blei, David M},
+    booktitle={Proceedings of the 25th international conference on World Wide Web},
+    pages={951--961},
+    doi = {10.48550/arXiv.1510.07025},
+    year={2016}
+  }
+
+  @inproceedings{wang2019neural,
+    title={Neural graph collaborative filtering},
+    author={Wang, Xiang and He, Xiangnan and Wang, Meng and Feng, Fuli and Chua, Tat-Seng},
+    booktitle={Proceedings of the 42nd international ACM SIGIR conference on Research and development in Information Retrieval},
+    pages={165--174},
+    year={2019}
+  }
+
+------------------------------
+MovieLens (Link Prediction)
+------------------------------
+
+`MovieLens <https://grouplens.org/datasets/movielens/1m/>`_ is a movie-rating dataset. We convert it into a graph where nodes represent either users or movies. An edge is created between a user and a movie if and only if the user gives the movie a rating of 4 or higher. For Time-IL, we organize 10 tasks chronologically based on the rating timestamps. This scenario and the previous one (i.e., Gowalla) are directly related to personalized recommendation systems (spec., movie and POI recommendations), which are essential for helping users find relevant options among numerous candidates.
+
+Statistics:
+
+- Nodes: 9,992
+- Edges: 575,281
+- Number of Classes: 2
+- Number of Node Features: 42
+- Supported Incremental Settings:
+   
+   + Time-IL with 10 tasks
+
+Citing:
+
+.. code-block::
+
+  @article{harper2015movielens,
+    title={The movielens datasets: History and context},
+    author={Harper, F Maxwell and Konstan, Joseph A},
+    journal={Acm transactions on interactive intelligent systems (tiis)},
+    volume={5},
+    number={4},
+    pages={1--19},
+    year={2015},
+    doi = {10.1145/2827872},
+    publisher={Acm New York, NY, USA}
+  }
+

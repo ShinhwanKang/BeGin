@@ -125,33 +125,6 @@ class GCTaskILPiggybackTrainer(GCTrainer):
         """
         trainloader, _1, _2 = self.prepareLoader(curr_dataset, curr_training_states)
         first_train_batch = next(iter(trainloader))
-        
-        if self.curr_task == 0:    
-            # pre-training with InfoGraph
-            pre_model = copy.deepcopy(curr_model)
-            infograph_model = InfoGraph(pre_model, curr_model.n_hidden, curr_model.n_layers, curr_model.n_mlp_layers).to(self.device)
-            pre_optimizer = self.optimizer_fn(infograph_model.parameters())
-            pre_scheduler = self.scheduler_fn(pre_optimizer)
-            best_val_loss = 1e10
-            for epoch_cnt in range(self.max_num_epochs):
-                val_loss = 0.
-                infograph_model.train()
-                for _curr_batch in trainloader:
-                    curr_batch, labels, _2 = _curr_batch
-                    if labels.shape[0] < 128: break
-                    pre_optimizer.zero_grad()
-                    _loss = infograph_model(curr_batch.to(self.device), curr_batch.ndata['feat'].to(self.device))
-                    _loss.backward()
-                    val_loss = val_loss + (_loss.item() * labels.shape[0])
-                    pre_optimizer.step()
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    pre_checkpoint = copy.deepcopy(infograph_model.encoder.state_dict())
-                pre_scheduler.step(val_loss)
-                if -1e-9 < (pre_optimizer.param_groups[0]['lr'] - pre_scheduler.min_lrs[0]) < 1e-9:
-                    break
-            curr_model.load_state_dict(pre_checkpoint)
-            
         super().processBeforeTraining(task_id, curr_dataset, curr_model, curr_optimizer, curr_training_states)
         
         # initialize masks and fix batchnorm

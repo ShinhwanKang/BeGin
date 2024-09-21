@@ -12,6 +12,7 @@ from . import evaluator_map
 
 def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
     neg_edges = {}
+    is_bipartite = False
     if dataset_load_func is not None:
         custom_dataset = dataset_load_func(save_path=save_path)
         graph = custom_dataset['graph']
@@ -49,7 +50,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         # load time split and train/val/test split information
         pkl_path = os.path.join(save_path, f'ogbl-collab_metadata_timeIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/ogbl-collab_metadata_timeIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbl-collab_metadata_timeIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = metadata['inner_tvt_splits']    
         # choose negative edges
@@ -62,7 +63,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         # load tvt_splits and negative edges
         pkl_path = os.path.join(save_path, f'wikics_metadata_domainIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/wikics_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/wikics_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = metadata['inner_tvt_splits']
         neg_edges = metadata['neg_edges']
@@ -87,7 +88,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats = graph.ndata['feat'].shape[-1]
         
         pkl_path = os.path.join(save_path, f'askubuntu_metadata_timeIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/askubuntu_metadata_timeIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/askubuntu_metadata_timeIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
@@ -96,10 +97,55 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         graph = dataset.graphs[0]
         num_feats = graph.ndata['feat'].shape[-1]
         pkl_path = os.path.join(save_path, f'facebook_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/facebook_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/facebook_metadata_domainIL.pkl', pkl_path, overwrite=False)
         metadata = pickle.load(open(pkl_path, 'rb'))
         tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
         neg_edges = metadata['neg_edges']
+    elif dataset_name in ['gowalla'] and incr_type in ['time']:
+        is_bipartite = True
+        num_srcs, num_dsts = 29858, 40981
+        num_feats = 2
+        pkl_path = os.path.join(save_path, f'gowalla_metadata_timeIL.pkl')
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/gowalla_metadata_timeIL.pkl', pkl_path, overwrite=False)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        srcs, dsts, _ = zip(*metadata['edges'])
+        srcs, dsts = torch.LongTensor(srcs), (torch.LongTensor(dsts) + num_srcs)
+        graph = dgl.graph((torch.stack((srcs, dsts), dim=-1).view(-1), torch.stack((dsts, srcs), dim=-1).view(-1)))
+        feats = torch.zeros(num_srcs + num_dsts, 2)
+        feats[:num_srcs, 0] = 1.
+        feats[num_srcs:, 1] = 1.
+        graph.ndata['feat'] = feats
+        tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
+        graph.edata['time'] = torch.repeat_interleave(metadata['time'], 2, dim=0)
+        neg_edges = metadata['neg_edges']
+        neg_edges['val'][:, 1] += num_srcs
+        neg_edges['test'][:, 1] += num_srcs
+    elif dataset_name in ['movielens'] and incr_type in ['time']:
+        is_bipartite = True
+        dataset = MovielensDataset(dataset_name=dataset_name, raw_dir=save_path)
+        num_srcs, num_dsts = 6040, 3952
+        pkl_path = os.path.join(save_path, f'movielens_metadata_timeIL.pkl')
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/movielens_metadata_timeIL.pkl', pkl_path, overwrite=False)
+        metadata = pickle.load(open(pkl_path, 'rb'))
+        # edges, feats, time are not in preprocessed file (due to the license)
+        metadata['edges'] = dataset.metadata['edges']
+        metadata['feats'] = dataset.metadata['feats']
+        metadata['time'] = dataset.metadata['time']
+        
+        num_feats = metadata['feats'][0].shape[-1] + metadata['feats'][1].shape[-1]
+        srcs, dsts, _ = zip(*metadata['edges'])
+        metadata['feats'] = list(map(torch.FloatTensor, metadata['feats']))
+        srcs, dsts = torch.LongTensor(srcs) - 1, (torch.LongTensor(dsts) - 1 + num_srcs)
+        graph = dgl.graph((torch.stack((srcs, dsts), dim=-1).view(-1), torch.stack((dsts, srcs), dim=-1).view(-1)))
+        ufeats = torch.cat((metadata['feats'][0], torch.zeros(metadata['feats'][0].shape[0], metadata['feats'][1].shape[-1])), dim=-1)
+        ifeats = torch.cat((torch.zeros(metadata['feats'][1].shape[0], metadata['feats'][0].shape[-1]), metadata['feats'][1]), dim=-1)
+        graph.ndata['feat'] = torch.cat((ufeats, ifeats), dim=0)
+        tvt_splits = torch.repeat_interleave(metadata['inner_tvt_splits'], 2, dim=0)
+        graph.edata['time'] = torch.repeat_interleave(metadata['time'], 2, dim=0)
+
+        neg_srcs, neg_dsts, _ = zip(*metadata['neg_edges'])
+        negs = torch.stack((torch.LongTensor(neg_srcs), torch.LongTensor(neg_dsts) + num_srcs), dim=-1) - 1
+        neg_edges = {'val': negs[0::2], 'test': negs[1::2]}
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     
@@ -114,7 +160,7 @@ def load_linkp_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         print("graph.edata['domain']", graph.edata['domain'].shape)
     print("===============")
     
-    return num_feats, graph, tvt_splits, neg_edges
+    return num_feats, graph, tvt_splits, neg_edges, is_bipartite
 
 class LPScenarioLoader(BaseScenarioLoader):
     """
@@ -128,7 +174,7 @@ class LPScenarioLoader(BaseScenarioLoader):
         Bases: ``BaseScenarioLoader``
     """
     def _init_continual_scenario(self):
-        self.num_feats, self.__graph, self.__inner_tvt_splits, self.__neg_edges = load_linkp_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
+        self.num_feats, self.__graph, self.__inner_tvt_splits, self.__neg_edges, self.__is_bipartite = load_linkp_dataset(self.dataset_name, self.dataset_load_func, self.incr_type, self.save_path)
         self.num_classes = 1
         
         if self.incr_type in ['class', 'task']:
@@ -329,17 +375,16 @@ def load_linkc_dataset(dataset_name, dataset_load_func, incr_type, save_path):
             # make 7 chunks (with same size) for making 7 tasks
             counts = torch.cumsum(torch.bincount(graph.edata['time']), dim=-1)
             task_ids = (counts / ((graph.num_edges() + 1.) / num_tasks)).long()
-            time_info = task_ids[graph.edata['time']]
+            graph.edata['time'] = task_ids[graph.edata['time']]
             # to formulate binary classification problem
             graph.edata['label'] = (graph.edata.pop('label') < 0).long()
-            graph.edata['time'] = time_info
         else:
             num_classes = 6
             label_to_class = torch.LongTensor([0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 6, 6, 6, 2, 3, 4, 5, 5, 5, 5, 5]) # for balanced split
             graph.edata['label'] = label_to_class[graph.edata.pop('label').squeeze(-1) + 10]
             
         pkl_path = os.path.join(save_path, f'bitcoin_metadata_allIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/bitcoin_metadata_allIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/bitcoin_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         graph.edata['train_mask'] = ((metadata['inner_tvt_split'] % 10) < 8)
         graph.edata['val_mask'] = ((metadata['inner_tvt_split'] % 10) == 8)

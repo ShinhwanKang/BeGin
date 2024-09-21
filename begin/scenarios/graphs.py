@@ -26,7 +26,7 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats, num_classes = 2, 30
         # load train/val/test split (6:2:2 random split)
         pkl_path = os.path.join(save_path, f'{dataset_name}_metadata_allIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/{dataset_name}_metadata_allIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/{dataset_name}_metadata_allIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits']
         dataset._train_masks = (inner_tvt_splits % 10) < 6
@@ -47,7 +47,7 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         """
         # load train/val/test split and domain_info
         pkl_path = os.path.join(save_path, f'molhivx_metadata_domainIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/molhivx_metadata_domainIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/molhivx_metadata_domainIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits']
         # set train/val/test split (random split, 8:1:1)
@@ -62,7 +62,7 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         
         # load time split information and train/val/test splits (random split, 6:2:2)
         pkl_path = os.path.join(save_path, f'nyctaxi_metadata_timeIL.pkl')
-        download(f'https://github.com/anonymous-submission-23/anonymous-submission-23.github.io/raw/main/_splits/nyctaxi_metadata_timeIL.pkl', pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/nyctaxi_metadata_timeIL.pkl', pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_splits']
         dataset._train_masks = (inner_tvt_splits % 10) < 6
@@ -73,7 +73,7 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         dataset = OgbgPpaSampledDataset(save_path)
         num_feats, num_classes = 2, 37
         pkl_path = os.path.join(save_path, f'ogbg-ppa_metadata_domainIL.pkl')
-        download(f'https://github.com/jihoon-ko/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
+        download(f'https://github.com/ShinhwanKang/BeGin/raw/main/metadata/ogbg-ppa_metadata_domainIL.pkl', path=pkl_path)
         metadata = pickle.load(open(pkl_path, 'rb'))
         inner_tvt_splits = metadata['inner_tvt_split']
         # set train/val/test split (random split, 8:1:1)
@@ -86,6 +86,14 @@ def load_graph_dataset(dataset_name, dataset_load_func, incr_type, save_path):
         num_feats, num_classes = dataset._num_feats, dataset._num_classes
         time_info = dataset._time_info
         delattr(dataset, "_time_info")
+    elif dataset_name in ['zinc'] and incr_type in ['domain']:
+        dataset = ZINCGraphDataset(dataset_name='zinc', raw_dir=save_path)
+        num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
+        domain_info = dataset.metadata
+    elif dataset_name in ['aqsol'] and incr_type in ['domain']:
+        dataset = AQSOLGraphDataset(dataset_name='aqsol', raw_dir=save_path)
+        num_feats, num_classes = dataset[0][0].ndata['feat'].shape[-1], 1
+        domain_info = dataset.metadata
     else:
         raise NotImplementedError("Tried to load unsupported scenario.")
     

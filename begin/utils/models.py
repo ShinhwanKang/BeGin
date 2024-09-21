@@ -25,6 +25,9 @@ class AdaptiveLinear(nn.Module):
         self.num_outputs = out_channels
         self.output_masks = None
         self.observed = torch.zeros(out_channels, dtype=torch.bool)
+
+    def reset_parameters(self):
+        self.lin.reset_parameters()
         
     def observe_outputs(self, new_outputs, verbose=True):
         r"""
@@ -50,6 +53,7 @@ class AdaptiveLinear(nn.Module):
         
         # if a new class whose index exceeds `self.num_outputs` is observed, expand the output
         if new_num_outputs > self.num_outputs:
+            printf("CALLED!!!")
             prev_weight, prev_bias = self.lin.weight.data[prv_observed], (self.lin.bias.data[prv_observed] if self.bias else None)
             self.observed = torch.cat((self.observed.to(device), torch.zeros(new_num_outputs - self.num_outputs, dtype=torch.bool).to(device)), dim=-1)
             self.lin = nn.Linear(in_features, new_num_outputs, bias=self.bias)
@@ -57,8 +61,7 @@ class AdaptiveLinear(nn.Module):
             if self.bias: self.lin.bias.data[self.observed] = prev_bias    
             self.num_outputs = new_num_outputs
         self.observed = self.observed.to(device) | new_output_mask
-    
-    
+        
     def get_output_mask(self, task_ids=None):
         r"""
             Returns the mask managed by the layer.
@@ -111,12 +114,23 @@ class GCNNode(nn.Module):
             self.classifier = AdaptiveLinear(n_hidden, n_classes, bias=True, accum = False if incr_type == 'task' else True)
         else:
             self.classifier = None
-            
+
+    def reset_parameters(self):
+        for conv in self.convs:
+            conv.reset_parameters()
+        for norm in self.norms:
+            norm.reset_parameters()
+        self.classifier.reset_parameters()
+        
     def forward(self, graph, feat, task_masks=None):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](graph, h)
+            if graph is not None:
+                conv = self.convs[i](graph, h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)  
+            # conv = self.convs[i](graph, h)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
@@ -146,7 +160,24 @@ class GCNNode(nn.Module):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](graph, h)
+            if graph is not None:
+                conv = self.convs[i](graph, h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
+            h = conv
+            h = self.norms[i](h)
+            h = self.activation(h)
+            h = self.dropout(h)
+        return h
+
+    def bforward_without_classifier(self, blocks, feat, task_masks=None):
+        h = feat
+        h = self.dropout(h)
+        for i in range(self.n_layers):
+            if blocks is not None:
+                conv = self.convs[i](blocks[i], h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
@@ -157,7 +188,10 @@ class GCNNode(nn.Module):
         h = feat
         h = self.dropout(h)
         for i in range(self.n_layers):
-            conv = self.convs[i](blocks[i], h)
+            if blocks is not None:
+                conv = self.convs[i](blocks[i], h)
+            else:
+                conv = torch.matmul(h, self.convs[i].weight)
             h = conv
             h = self.norms[i](h)
             h = self.activation(h)
@@ -374,6 +408,11 @@ class GCNGraph(nn.Module):
         self.readout_mode = readout
         
     def forward(self, graph, feat, task_masks=None, edge_weight=None, edge_attr=None, get_intermediate_outputs=False):
+        if len(feat.shape) == 1:
+            feat = feat.unsqueeze(-1)
+        if edge_attr is not None and len(edge_attr.shape) == 1:
+            edge_attr = edge_attr.unsqueeze(-1)
+        
         h = self.enc(feat)
         h = self.dropout(h)
         inter_hs = []

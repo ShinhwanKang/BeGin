@@ -66,86 +66,87 @@ class DGILC(nn.Module):
         l1 = self.loss(positive, torch.ones_like(positive))
         l2 = self.loss(negative, torch.zeros_like(negative))
         return l1 + l2
-    
-def get_positive_expectation(p_samples, average=True):
-    """Computes the positive part of a JS Divergence.
-    Args:
-        p_samples: Positive samples.
-        average: Average the result over samples.
-    Returns:
-        th.Tensor
-    """
-    log_2 = math.log(2.0)
-    Ep = log_2 - F.softplus(-p_samples)
 
-    if average:
-        return Ep.mean()
-    else:
-        return Ep
-
-
-def get_negative_expectation(q_samples, average=True):
-    """Computes the negative part of a JS Divergence.
-    Args:
-        q_samples: Negative samples.
-        average: Average the result over samples.
-    Returns:
-        th.Tensor
-    """
-    log_2 = math.log(2.0)
-    Eq = F.softplus(-q_samples) + q_samples - log_2
-
-    if average:
-        return Eq.mean()
-    else:
-        return Eq
-
-
-def local_global_loss_(l_enc, g_enc, graph_id):
-    num_graphs = g_enc.shape[0]
-    num_nodes = l_enc.shape[0]
-
-    device = g_enc.device
-
-    pos_mask = torch.zeros((num_nodes, num_graphs)).to(device)
-    neg_mask = torch.ones((num_nodes, num_graphs)).to(device)
-
-    for nodeidx, graphidx in enumerate(graph_id.tolist()):
-        pos_mask[nodeidx][graphidx] = 1.0
-        neg_mask[nodeidx][graphidx] = 0.0
-
-    res = torch.mm(l_enc, g_enc.t())
-
-    E_pos = get_positive_expectation(res * pos_mask, average=False).sum()
-    E_pos = E_pos / num_nodes
-    E_neg = get_negative_expectation(res * neg_mask, average=False).sum()
-    E_neg = E_neg / (num_nodes * (num_graphs - 1))
-
-    return E_neg - E_pos
-
-class FeedforwardNetwork(nn.Module):
-    def __init__(self, in_dim, hid_dim, out_dim):
-        super(FeedforwardNetwork, self).__init__()
-        self.block = nn.Sequential(
-            nn.Linear(in_dim, hid_dim),
-            nn.ReLU(),
-            nn.Linear(hid_dim, hid_dim),
-            nn.ReLU(),
-            nn.Linear(hid_dim, out_dim)
-        )
-        self.jump_con = nn.Linear(in_dim, out_dim)
-
-    def forward(self, feat):
-        block_out = self.block(feat)
-        jump_out = self.jump_con(feat)
-        out = block_out + jump_out
-        return out
-    
 class InfoGraph(nn.Module):
-    def __init__(self, encoder, n_hidden, n_layers, n_mlp_layers):
-        super(InfoGraph, self).__init__()
+    class FeedforwardNetwork(nn.Module):
+        def __init__(self, in_dim, hid_dim, out_dim):
+            super().__init__()
+            self.block = nn.Sequential(
+                nn.Linear(in_dim, hid_dim),
+                nn.ReLU(),
+                nn.Linear(hid_dim, hid_dim),
+                nn.ReLU(),
+                nn.Linear(hid_dim, out_dim)
+            )
+            self.jump_con = nn.Linear(in_dim, out_dim)
+    
+        def forward(self, feat):
+            block_out = self.block(feat)
+            jump_out = self.jump_con(feat)
+            out = block_out + jump_out
+            return out
+
+    def get_positive_expectation(self, p_samples, average=True):
+        """Computes the positive part of a JS Divergence.
+        Args:
+            p_samples: Positive samples.
+            average: Average the result over samples.
+        Returns:
+            th.Tensor
+        """
+        log_2 = math.log(2.0)
+        Ep = log_2 - F.softplus(-p_samples)
+    
+        if average:
+            return Ep.mean()
+        else:
+            return Ep
+    
+    
+    def get_negative_expectation(self, q_samples, average=True):
+        """Computes the negative part of a JS Divergence.
+        Args:
+            q_samples: Negative samples.
+            average: Average the result over samples.
+        Returns:
+            th.Tensor
+        """
+        log_2 = math.log(2.0)
+        Eq = F.softplus(-q_samples) + q_samples - log_2
+    
+        if average:
+            return Eq.mean()
+        else:
+            return Eq
+    
+    
+    def local_global_loss_(self, l_enc, g_enc, graph_id):
+        num_graphs = g_enc.shape[0]
+        num_nodes = l_enc.shape[0]
+    
+        device = g_enc.device
+    
+        pos_mask = torch.zeros((num_nodes, num_graphs)).to(device)
+        neg_mask = torch.ones((num_nodes, num_graphs)).to(device)
+    
+        for nodeidx, graphidx in enumerate(graph_id.tolist()):
+            pos_mask[nodeidx][graphidx] = 1.0
+            neg_mask[nodeidx][graphidx] = 0.0
+    
+        res = torch.mm(l_enc, g_enc.t())
+    
+        E_pos = self, get_positive_expectation(res * pos_mask, average=False).sum()
+        E_pos = E_pos / num_nodes
+        E_neg = self, get_negative_expectation(res * neg_mask, average=False).sum()
+        E_neg = E_neg / (num_nodes * (num_graphs - 1))
+    
+        return E_neg - E_pos
+
+    
+    def __init__(self, encoder):
+        super().__init__()
         self.encoder = encoder
-        self.local_d = FeedforwardNetwork(n_hidden * n_layers, n_hidden, n_hidden // (1 << n_mlp_layers))
+        self.local_d = self.FeedforwardNetwork(encoder.n_hidden * encoder.n_layers, encoder.n_hidden, encoder.n_hidden // (1 << encoder.n_mlp_layers))
         
     def forward(self, graph, features):
         _, intermediate_outputs = self.encoder(graph, features, get_intermediate_outputs=True)
@@ -153,10 +154,11 @@ class InfoGraph(nn.Module):
         global_h = intermediate_outputs[-1]
         local_h = self.local_d(torch.cat(intermediate_outputs[:-1], dim=-1))
         graph_id = torch.cat([(torch.ones(_num, dtype=torch.long) * i) for i, _num in enumerate(graph.batch_num_nodes().tolist())], dim=-1)
-        loss = local_global_loss_(local_h, global_h, graph_id)
+        loss = self, local_global_loss_(local_h, global_h, graph_id)
 
         return loss
-    
+
+"""
 class LogReg(nn.Module):
     def __init__(self, ft_in, nb_classes):
         super(LogReg, self).__init__()
@@ -238,3 +240,4 @@ def evaluate_embedding(embeddings, labels, search=False, device="cpu"):
 
     logreg_accuracy = logistic_classify(x, y, device)
     return logreg_accuracy
+"""
