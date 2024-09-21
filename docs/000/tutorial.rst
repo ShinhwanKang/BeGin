@@ -238,7 +238,7 @@ Suppose we implement Deep Graph Infomax (DGI) method for node-level problems. DG
 Step 1. Extending the base and Implementing discriminator
 ============================================================
 
-First, we need to create a new class by extending ``PretrainingMethod`` and passi the encoder to perform pretraining (GCN) to the superclass constructor in the ``__init__`` method. Next, we need to implement the discriminator in this subclass to distinguish between real and corrupted node embeddings, maximizing the mutual information between the node embeddings and the global summary.
+First, we need to create a new class by extending ``PretrainingMethod`` and pass the encoder to perform pretraining (GCN) to the superclass constructor in the ``__init__`` method. Next, we need to implement the discriminator in this subclass to distinguish between real and corrupted node embeddings, maximizing the mutual information between the node embeddings and the global summary.
 
 .. code-block:: python
 
@@ -285,7 +285,7 @@ We need to implement code that maximizes mutual information using the encoder an
     negative = self.encoder.forward_without_classifier(graph, features[perm])
     summary = torch.sigmoid(positive.mean(dim=0))
 
-Lastly, we need to input pairs consisting of the real embeddings and global summary, as well as the corrupted embeddings and global summary, into the discriminator. To maximize the difference between the two, use the nn.BCEWithLogitsLoss function to calculate the loss. The final code is as follows. This returned loss is used in the default :func:`processPretraining` to perform backpropagation, facilitating the overall pretraining process.
+Lastly, we need to input pairs consisting of the real embeddings and global summary, as well as the corrupted embeddings and global summary, into the discriminator. To maximize the difference between the two, we use the nn.BCEWithLogitsLoss function to calculate the loss. The final code is as follows. This returned loss is used in the default :func:`processPretraining` to perform backpropagation, facilitating the overall pretraining process.
 
 .. code-block:: python
 

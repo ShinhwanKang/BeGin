@@ -78,7 +78,7 @@ class PretrainingMethod(nn.Module):
         original_model.load_state_dict(self.best_checkpoint)
 
 class DGI(PretrainingMethod):
-    r""" An implementation of DGL for node-level and link-level problems. This code was implemented based on the official implementation by authors.
+    r""" An implementation of DGI for node-level and link-level problems. This code was implemented based on the official implementation by authors.
     For the details, see the `original paper <https://arxiv.org/pdf/1809.10341>`_.
     
     Arguments:

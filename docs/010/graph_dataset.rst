@@ -1,9 +1,9 @@
 Datasets for Graph-Level Problems
 ===================================
 
-----------
-MNIST
-----------
+------------------------------
+MNIST (Graph Classification)
+------------------------------
 Images in `MNIST <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to
 graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups,
 which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
@@ -44,9 +44,9 @@ Citing:
 
 -----
 
-----------
-CIFAR10
-----------
+----------------------------------------
+CIFAR10 (Graph Classification)
+----------------------------------------
 Images in `CIFAR10 <https://pytorch-geometric.readthedocs.io/en/latest/modules/datasets.html#torch_geometric.datasets.GNNBenchmarkDataset>`_ are converted to
 graphs of super-pixels. There are 10 classes of graphs, and they are partitioned into 5 groups,
 which are used separately for Task-IL and accumulated for Class-IL. According to the original paper, they used SLIC super-pixels as nodes and build a k-nearest neighbor adjacency matrix to generate edges.
@@ -221,9 +221,9 @@ Statistics:
 
 -----
 
-----------
-ogbg-ppa
-----------
+----------------------------------------
+ogbg-ppa (Graph Classification)
+----------------------------------------
 
 Graphs in `ogbg-ppa <https://ogb.stanford.edu/docs/graphprop/#ogbg-ppa>`_ are protein-protein interactions. For Domain-IL, we formulate multi-class classification problem with $37$ classes to predict what taxonomic groups of species the graph comes from. The dataset is sampled so that there are $11$ species for each taxonomic group and $100$ graphs for each species. We formulate $11$ tasks, and each task was formulated to contain graphs of exactly one species per group so that there is no duplicated graph among the tasks. Since there is no external node feature, we use in-degrees
 and out-degrees as node features. According to OGB, the edges are associated with 7-dimensional features, where each element takes a value between 0 and 1 and represents the approximate confidence of a particular type of protein protein association such as gene co-occurrence, gene fusion events, and co-expression.
@@ -280,9 +280,9 @@ Statistics:
 
 -----
 
-----------
-Sentiment
-----------
+----------------------------------------
+Sentiment (Graph Classification)
+----------------------------------------
 
 Graphs in `Sentiment <http://help.sentiment140.com/for-students>`_ are parsed dependency tree from tweets. Specifically, we used SpaCy
 library to parse the dependency trees of tokens and obtain the node embeddings of the trees. The
